@@ -75,7 +75,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-start pt-24 md:pt-44 bg-navy-900 transition-colors duration-500">
+        <section id="hero" className="relative w-full h-[50vh] md:h-screen overflow-hidden flex flex-col items-center justify-start pt-24 md:pt-44 bg-navy-900 transition-colors duration-500">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div

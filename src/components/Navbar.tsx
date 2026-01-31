@@ -48,7 +48,7 @@ export default function Navbar() {
                                     </motion.div>
                                     <motion.span
                                         layoutId="niveshak-title"
-                                        className="font-bold text-xl tracking-tight text-white hidden xl:block whitespace-nowrap"
+                                        className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
                                         transition={{ duration: 0.5 }}
                                     >
                                         NIVESHAK
@@ -133,6 +133,16 @@ export default function Navbar() {
                             <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800">
                                 Admin Login
                             </Link>
+                            <button
+                                onClick={() => {
+                                    setTheme(theme === 'light' ? 'dark' : 'light');
+                                    setIsOpen(false);
+                                }}
+                                className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between"
+                            >
+                                <span>Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode</span>
+                                {theme === 'light' ? <Moon className="w-4 h-4 ml-2" /> : <Sun className="w-4 h-4 ml-2" />}
+                            </button>
                         </div>
                     </motion.div>
                 )}

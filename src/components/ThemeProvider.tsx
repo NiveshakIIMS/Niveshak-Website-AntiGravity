@@ -16,13 +16,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>("light"); // Default to light
 
     useEffect(() => {
-        // Check local storage or system preference
+        // Check local storage only
         const savedTheme = localStorage.getItem("theme") as Theme | null;
         if (savedTheme) {
             setTheme(savedTheme);
-        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            setTheme("dark");
         }
+        // Default is already 'light' in useState, so we don't need to do anything else.
     }, []);
 
     useEffect(() => {
