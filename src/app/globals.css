@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+
+  :root,
+  .light {
+    --background: #ffffff;
+    --foreground: #000000;
+    --card: #ffffff;
+    --card-foreground: #000000;
+    --primary: #0D1B2A;
+    --primary-foreground: #ffffff;
+    --accent: #00A8E8;
+    --accent-foreground: #ffffff;
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
+    --border: #e5e7eb;
+  }
+
+  .dark {
+    --background: #0a0a0a;
+    --foreground: #ffffff;
+    --card: #171717;
+    --card-foreground: #ffffff;
+    --primary: #ADE8F4;
+    --primary-foreground: #0D1B2A;
+    --accent: #00A8E8;
+    --accent-foreground: #ffffff;
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
+    --border: #262626;
+  }
+
+
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-navy-900: #0D1B2A;
+  --color-navy-800: #1B263B;
+  --color-navy-700: #415A77;
+  --color-blue-600: #00A8E8;
+  --color-blue-400: #48CAE4;
+  --color-blue-200: #ADE8F4;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+  /* Offset for fixed navbar */
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}

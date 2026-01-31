@@ -1,0 +1,28 @@
+"use client";
+
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import MagazinesSection from "@/components/sections/MagazinesSection";
+
+
+
+export default function Magazines() {
+    return (
+        <main className="min-h-screen bg-background">
+            <Navbar />
+            <section className="pt-32 pb-12 px-4 bg-background border-b border-border transition-colors">
+                <div className="max-w-7xl mx-auto text-center">
+                    <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+                        Niveshak <span className="text-accent">Magazine</span>
+                    </h1>
+                    <p className="text-xl text-muted-foreground">Insights into the financial world, curated by students.</p>
+                </div>
+            </section>
+
+            <div className="max-w-7xl mx-auto">
+                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" />
+            </div>
+            <Footer />
+        </main>
+    );
+}
