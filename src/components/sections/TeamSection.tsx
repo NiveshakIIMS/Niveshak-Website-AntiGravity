@@ -75,9 +75,11 @@ function TeamCard({ member, idx }: { member: TeamMember; idx: number }) {
                     />
                 </div>
 
-                <h3 className="text-base font-bold text-card-foreground text-center break-words w-full leading-tight mb-2">
-                    {member.name}
-                </h3>
+                <div className="h-11 w-full flex items-center justify-center mb-1">
+                    <h3 className="text-base font-bold text-card-foreground text-center break-words leading-tight line-clamp-2">
+                        {member.name}
+                    </h3>
+                </div>
                 <p className="text-xs text-accent font-medium text-center uppercase tracking-wide mb-1">
                     {member.role}
                 </p>
