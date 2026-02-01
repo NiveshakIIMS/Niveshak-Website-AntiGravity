@@ -16,11 +16,24 @@ export default function NoticesPage() {
         dataService.getNotices().then(setNotices);
     }, []);
 
-    const filteredNotices = filter === "All"
-        ? notices
-        : notices.filter(n => n.category === filter);
+    const filteredNotices = notices.filter(n => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Compare dates without time
+        const expiry = n.expiryDate ? new Date(n.expiryDate) : null;
+        const isExpired = expiry ? expiry < now : false;
 
-    const categories = ["All", "General", "Promotion", "Reminder", "Urgent"];
+        if (filter === "History") {
+            return isExpired;
+        }
+
+        // For other filters, show only Active (Non-expired) notices
+        if (isExpired) return false;
+
+        if (filter === "All") return true;
+        return n.category === filter;
+    });
+
+    const categories = ["All", "General", "Promotion", "Reminder", "Urgent", "History"];
 
     return (
         <main className="min-h-screen bg-background flex flex-col">
