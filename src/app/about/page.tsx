@@ -14,23 +14,17 @@ export default function About() {
         dataService.getAbout().then(setData);
     }, []);
 
-    const features = [
-        {
-            icon: <Target className="w-8 h-8 text-blue-400" />,
-            title: "Our Mission",
-            description: "To bridge the gap between theoretical financial concepts and real-world application through workshops, competitions, and live projects."
-        },
-        {
-            icon: <Users className="w-8 h-8 text-blue-400" />,
-            title: "Who We Are",
-            description: "A student-run body at IIM Shillong dedicated to fostering a culture of financial awareness and investment acumen among students."
-        },
-        {
-            icon: <BookOpen className="w-8 h-8 text-blue-400" />,
-            title: "What We Do",
-            description: "We publish the monthly 'Niveshak' magazine, manage the student investment fund (NIF), and organize the flagship 'Finathlon' event."
-        }
+    const icons = [
+        <Target key="target" className="w-8 h-8 text-blue-400" />,
+        <Users key="users" className="w-8 h-8 text-blue-400" />,
+        <BookOpen key="book" className="w-8 h-8 text-blue-400" />
     ];
+
+    const features = data?.cards ? data.cards.map((card, idx) => ({
+        icon: icons[idx] || <Target className="w-8 h-8 text-blue-400" />,
+        title: card.title,
+        description: card.description
+    })) : [];
 
     // Helper to split title for styling (Last word accent)
     const renderTitle = (title: string) => {

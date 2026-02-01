@@ -12,16 +12,11 @@ export default function TeamSection() {
         dataService.getTeam().then(setMembers);
     }, []);
 
-    const seniorTeam = members
-        .filter(m => !m.category || m.category === "Senior Team")
-        .sort((a, b) => a.name.localeCompare(b.name));
-    const juniorTeam = members
-        .filter(m => m.category === "Junior Team")
-        .sort((a, b) => a.name.localeCompare(b.name));
+    const sortedMembers = [...members].sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <section id="team" className="py-20 px-4 bg-background transition-colors">
-            <div className="max-w-[1400px] mx-auto space-y-20">
+            <div className="max-w-[1400px] mx-auto space-y-12">
                 <div className="text-center">
                     <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
                         Meet the <span className="text-accent">Team</span>
@@ -29,27 +24,11 @@ export default function TeamSection() {
                     <p className="text-lg text-muted-foreground">The minds behind Niveshak</p>
                 </div>
 
-                {/* Senior Team */}
-                {seniorTeam.length > 0 && (
-                    <div>
-                        <h3 className="text-2xl font-bold text-center mb-10 text-accent uppercase tracking-widest">Senior Team</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
-                            {seniorTeam.map((member, idx) => (
-                                <TeamCard key={member.id} member={member} idx={idx} />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Junior Team */}
-                {juniorTeam.length > 0 && (
-                    <div>
-                        <h3 className="text-2xl font-bold text-center mb-10 text-accent uppercase tracking-widest">Junior Team</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
-                            {juniorTeam.map((member, idx) => (
-                                <TeamCard key={member.id} member={member} idx={idx} />
-                            ))}
-                        </div>
+                {sortedMembers.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
+                        {sortedMembers.map((member, idx) => (
+                            <TeamCard key={member.id} member={member} idx={idx} />
+                        ))}
                     </div>
                 )}
             </div>
