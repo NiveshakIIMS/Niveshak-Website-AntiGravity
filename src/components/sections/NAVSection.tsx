@@ -26,7 +26,7 @@ export default function NAVSection() {
     if (!latestNAV) return null;
 
     return (
-        <section id="nav" className="py-20 bg-background border-t border-border/50">
+        <section id="nav" className="py-20 bg-background">
             <div className="max-w-4xl mx-auto px-4">
 
                 {/* Section Header */}
@@ -45,9 +45,9 @@ export default function NAVSection() {
                     whileHover={{ y: -5, boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.2)" }}
                     viewport={{ once: true }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    className="relative max-w-sm mx-auto aspect-square flex flex-col items-center justify-center rounded-[30px] bg-gradient-to-b from-blue-500/10 to-transparent p-px shadow-2xl cursor-default"
+                    className="relative max-w-sm mx-auto aspect-square flex flex-col items-center justify-center rounded-[30px] bg-card border border-border shadow-2xl cursor-default"
                 >
-                    <div className="w-full h-full bg-background rounded-[29px] p-8 flex flex-col items-center justify-center gap-6 relative z-10">
+                    <div className="w-full h-full rounded-[29px] p-8 flex flex-col items-center justify-center gap-6 relative z-10">
 
                         {/* 1. Label */}
                         <div className="text-center space-y-2">

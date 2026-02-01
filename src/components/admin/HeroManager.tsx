@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Image as ImageIcon, Check, X } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Check, X, ArrowUp, ArrowDown } from "lucide-react";
 import { dataService, HeroSlide } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,15 @@ export default function HeroManager() {
             setSlides(newSlides);
             dataService.saveHeroSlides(newSlides);
         }
+    };
+
+    const moveSlide = (index: number, direction: -1 | 1) => {
+        const newSlides = [...slides];
+        if (index + direction < 0 || index + direction >= newSlides.length) return;
+
+        [newSlides[index], newSlides[index + direction]] = [newSlides[index + direction], newSlides[index]];
+        setSlides(newSlides);
+        dataService.saveHeroSlides(newSlides);
     };
 
     const handleAdd = () => {
@@ -70,7 +79,7 @@ export default function HeroManager() {
 
             <div className="space-y-6">
                 <AnimatePresence>
-                    {slides.map((slide) => (
+                    {slides.map((slide, index) => (
                         <motion.div
                             key={slide.id}
                             layout
@@ -157,7 +166,29 @@ export default function HeroManager() {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex flex-col gap-2 justify-center border-l border-gray-100 dark:border-navy-700 pl-6 min-w-[100px]">
+                                <div className="flex flex-col gap-2 justify-center border-l border-gray-100 dark:border-navy-700 pl-6 min-w-[120px]">
+                                    {/* Sorting Controls */}
+                                    {!isEditing && (
+                                        <div className="flex gap-2 mb-2 pb-2 border-b border-border">
+                                            <button
+                                                onClick={() => moveSlide(index, -1)}
+                                                disabled={index === 0}
+                                                className="flex-1 py-1.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                title="Move Up"
+                                            >
+                                                <ArrowUp className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => moveSlide(index, 1)}
+                                                disabled={index === slides.length - 1}
+                                                className="flex-1 py-1.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                title="Move Down"
+                                            >
+                                                <ArrowDown className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {isEditing === slide.id ? (
                                         <>
                                             <button onClick={handleSave} className="flex items-center justify-center gap-2 w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20">

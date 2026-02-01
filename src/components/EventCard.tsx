@@ -9,6 +9,12 @@ interface EventCardProps {
     event: Event;
 }
 
+const getOrdinal = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+};
+
 export default function EventCard({ event }: EventCardProps) {
     const { theme } = useTheme();
     const eventDate = new Date(event.date);
@@ -68,46 +74,49 @@ export default function EventCard({ event }: EventCardProps) {
 
                 <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3 text-base text-muted-foreground">
-                        <div className="p-2 bg-secondary rounded-full shrink-0"><Clock className="w-5 h-5 text-accent" /></div>
-                        <span className="font-medium">{event.time}</span>
+                        <div className="p-2 bg-secondary rounded-full shrink-0"><Clock className="w-6 h-6 sm:w-7 sm:h-7 text-accent" /></div>
+                        <span className="font-medium text-lg sm:text-xl">{event.time}</span>
                     </div>
                     <div className="flex items-center gap-3 text-base text-muted-foreground">
-                        <div className="p-2 bg-secondary rounded-full shrink-0"><MapPin className="w-5 h-5 text-accent" /></div>
-                        <span className="font-medium">{event.location}</span>
+                        <div className="p-2 bg-secondary rounded-full shrink-0"><MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-accent" /></div>
+                        <span className="font-medium text-lg sm:text-xl">{event.location}</span>
                     </div>
                 </div>
 
                 {/* Bottom Section: Date & Countdown */}
-                <div className="mt-auto pt-6 border-t border-border/50 flex flex-wrap justify-between items-end gap-4">
-                    <div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold text-foreground">{eventDate.getDate()}</span>
-                            <div className="flex flex-col leading-none">
-                                <span className="text-sm font-bold uppercase text-accent tracking-wider">{eventDate.toLocaleString('default', { month: 'short' })}</span>
-                                <span className="text-xs text-muted-foreground">{eventDate.getFullYear()}</span>
-                            </div>
-                        </div>
-                        <div className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
+                <div className="mt-auto pt-6 border-t border-border/50 flex items-center justify-between gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-xl sm:text-2xl font-bold text-foreground">
+                            {eventDate.getDate()}
+                            <sup className="text-xs align-top top-0 sm:text-sm">{getOrdinal(eventDate.getDate())}</sup>{" "}
+                            {eventDate.toLocaleString('default', { month: 'short' })}, {eventDate.getFullYear()}
+                        </span>
+                        <div className="text-base sm:text-lg font-medium text-muted-foreground mt-1 flex items-center gap-1">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                             {eventDate.toLocaleString('default', { weekday: 'long' })}
                         </div>
                     </div>
 
                     <div className="text-right">
-                        <div
-                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold shadow-sm border ${diffDays === 0 ? "bg-green-50 text-green-600 border-transparent dark:bg-green-900/30 dark:text-green-400" :
-                                diffDays < 0 ? "bg-gray-100 text-gray-500 border-transparent dark:bg-gray-800 dark:text-gray-400" :
-                                    "transition-colors duration-300" // classes for diffDays > 0 are handled by style
-                                }`}
-                            style={diffDays > 0 ? {
-                                backgroundColor: theme === "dark" ? "rgba(30, 58, 138, 0.3)" : "#ffffff",
-                                color: theme === "dark" ? "#60a5fa" : "#000000",
-                                borderColor: theme === "dark" ? "#1e40af" : "#e5e7eb"
-                            } : {}}
-                        >
-                            <Hourglass className="w-3 h-3" />
-                            {countdownText}
-                        </div>
+                        {diffDays > 0 ? (
+                            <div className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl shadow-sm min-w-[100px] border ${theme === 'dark'
+                                    ? "bg-blue-950 border-blue-900 text-blue-400"
+                                    : "bg-blue-50 border-blue-100 text-blue-600"
+                                }`}>
+                                <span className="text-3xl font-bold leading-none mb-1">{diffDays}</span>
+                                <span className={`text-[11px] uppercase font-bold tracking-wide text-center leading-none ${theme === 'dark' ? "text-blue-400/80" : "text-blue-500/80"
+                                    }`}>Days to go</span>
+                            </div>
+                        ) : (
+                            <div
+                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm border ${diffDays === 0 ? "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800" :
+                                    "bg-gray-100/80 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+                                    }`}
+                            >
+                                <Hourglass className="w-3.5 h-3.5" />
+                                {diffDays === 0 ? "Today" : "Completed"}
+                            </div>
+                        )}
                     </div>
                 </div>
 

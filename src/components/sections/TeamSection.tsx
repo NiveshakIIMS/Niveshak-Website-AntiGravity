@@ -5,7 +5,11 @@ import { Linkedin, Mail, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { dataService, TeamMember } from "@/services/dataService";
 
-export default function TeamSection() {
+interface TeamSectionProps {
+    showTitle?: boolean;
+}
+
+export default function TeamSection({ showTitle = true }: TeamSectionProps) {
     const [members, setMembers] = useState<TeamMember[]>([]);
 
     useEffect(() => {
@@ -17,12 +21,14 @@ export default function TeamSection() {
     return (
         <section id="team" className="py-20 px-4 bg-background transition-colors">
             <div className="max-w-[1400px] mx-auto space-y-12">
-                <div className="text-center">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-                        Meet the <span className="text-accent">Team</span>
-                    </h2>
-                    <p className="text-lg text-muted-foreground">The minds behind Niveshak</p>
-                </div>
+                {showTitle && (
+                    <div className="text-center">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+                            Meet the <span className="text-accent">Team</span>
+                        </h2>
+                        <p className="text-lg text-muted-foreground">The minds behind Niveshak</p>
+                    </div>
+                )}
 
                 {sortedMembers.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
@@ -87,7 +93,7 @@ function SocialIcon({ type, value }: { type: "linkedin" | "email"; value: string
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const icon = type === "linkedin" ? <Linkedin className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />;
+    const icon = type === "linkedin" ? <Linkedin className="w-5 h-5" /> : <Mail className="w-5 h-5" />;
 
     // For display in tooltip
     const displayValue = type === "email" ? value : "LinkedIn Profile";
@@ -102,7 +108,7 @@ function SocialIcon({ type, value }: { type: "linkedin" | "email"; value: string
             <a
                 href={linkHref}
                 target={type === "linkedin" ? "_blank" : undefined}
-                className="flex items-center justify-center w-7 h-7 rounded-full bg-secondary text-secondary-foreground hover:bg-primary hover:text-white transition-all shadow-sm transform hover:scale-110 active:scale-95 border border-transparent hover:border-white/10"
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-secondary-foreground hover:bg-primary hover:text-white transition-all shadow-sm transform hover:scale-110 active:scale-95 border border-transparent hover:border-white/10"
             >
                 {icon}
             </a>
