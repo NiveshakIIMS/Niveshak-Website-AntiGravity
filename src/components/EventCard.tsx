@@ -75,7 +75,11 @@ export default function EventCard({ event }: EventCardProps) {
                 <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3 text-base text-muted-foreground">
                         <div className="p-2 bg-secondary rounded-full shrink-0"><Clock className="w-6 h-6 sm:w-7 sm:h-7 text-accent" /></div>
-                        <span className="font-medium text-lg sm:text-xl">{event.time}</span>
+                        <span className="font-medium text-lg sm:text-xl">
+                            {event.time.match(/^\d{1,2}:\d{2}$/)
+                                ? new Date(`2000-01-01T${event.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase()
+                                : event.time}
+                        </span>
                     </div>
                     <div className="flex items-center gap-3 text-base text-muted-foreground">
                         <div className="p-2 bg-secondary rounded-full shrink-0"><MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-accent" /></div>
@@ -100,8 +104,8 @@ export default function EventCard({ event }: EventCardProps) {
                     <div className="text-right">
                         {diffDays > 0 ? (
                             <div className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl shadow-sm min-w-[100px] border ${theme === 'dark'
-                                    ? "bg-blue-950 border-blue-900 text-blue-400"
-                                    : "bg-blue-50 border-blue-100 text-blue-600"
+                                ? "bg-blue-950 border-blue-900 text-blue-400"
+                                : "bg-blue-50 border-blue-100 text-blue-600"
                                 }`}>
                                 <span className="text-3xl font-bold leading-none mb-1">{diffDays}</span>
                                 <span className={`text-[11px] uppercase font-bold tracking-wide text-center leading-none ${theme === 'dark' ? "text-blue-400/80" : "text-blue-500/80"

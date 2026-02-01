@@ -10,6 +10,7 @@ import MagazinesManager from "./MagazinesManager";
 import EventsManager from "./EventsManager";
 import NIFManager from "./NIFManager";
 import SocialManager from "./SocialManager";
+import NoticesManager from "./NoticesManager";
 import { supabase } from "@/lib/supabaseClient";
 
 interface AdminDashboardProps {
@@ -33,6 +34,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
             case "events": return <EventsManager />;
             case "nif": return <NIFManager />;
             case "social": return <SocialManager />;
+            case "notices": return <NoticesManager />;
             default: return <HeroManager />;
         }
     };

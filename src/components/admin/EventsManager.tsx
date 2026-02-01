@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Calendar, BookOpen, Save, X, Download } from "lucide-react";
 import { dataService, Event } from "@/services/dataService";
 import MediaInput from "./MediaInput";
+import TimePicker from "./TimePicker";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function EventsManager() {
@@ -76,7 +77,11 @@ export default function EventsManager() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
-                                    <input type="time" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <TimePicker
+                                        value={eventForm.time || ""}
+                                        onChange={(val) => setEventForm({ ...eventForm, time: val })}
+                                        use12HourFormat={true} // Persist as hh:mm AM/PM for Events
+                                    />
                                 </div>
                                 <input placeholder="Location" value={eventForm.location} onChange={e => setEventForm({ ...eventForm, location: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
 

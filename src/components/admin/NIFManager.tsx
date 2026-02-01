@@ -6,6 +6,7 @@ import { Plus, Trash2, TrendingUp, Save, BarChart3 } from "lucide-react";
 import { dataService, NAVData } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
+import * as XLSX from "xlsx";
 
 export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
@@ -22,6 +23,86 @@ export default function NIFManager() {
         });
     }, []);
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[];
+
+                // Map: DateString -> NAVData
+                // Initialize with existing data to preserve manual entries not in Excel
+                const dataMap = new Map<string, NAVData>();
+                data.forEach(d => dataMap.set(d.date, d));
+
+                let addedCount = 0;
+                let updatedCount = 0;
+
+                // Iterate Excel Rows (Skip Header Row 0)
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    // Expect Col A=Date, Col B=Value
+                    let dateObj = row[0];
+                    const val = row[1];
+
+                    if (!dateObj || val === undefined || val === null) continue;
+
+                    // Parse Date
+                    if (!(dateObj instanceof Date)) {
+                        // Attempt to parse string or excel serial
+                        dateObj = new Date(dateObj);
+                    }
+                    if (isNaN(dateObj.getTime())) continue;
+
+                    // Normalize to YYYY-MM-DD (Local Time to avoid UTC shift if Excel was local)
+                    // Excel 'cellDates: true' usually parses to local JS Date with time 00:00 (offset applied)
+                    // We want the date part string.
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${month}-${day}`;
+
+                    const numVal = parseFloat(val);
+                    if (isNaN(numVal)) continue;
+
+                    if (dataMap.has(dateStr)) {
+                        updatedCount++;
+                    } else {
+                        addedCount++;
+                    }
+
+                    // Update or Add
+                    dataMap.set(dateStr, {
+                        id: dataMap.get(dateStr)?.id || (Date.now() + i).toString(),
+                        date: dateStr,
+                        value: numVal
+                    });
+                }
+
+                // Convert back to array and sort
+                const newData = Array.from(dataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                setData(newData);
+                await dataService.saveNAVData(newData);
+                alert(`Upload Complete!\nAdded: ${addedCount}\nUpdated: ${updatedCount}`);
+
+                // Clear input
+                e.target.value = "";
+
+            } catch (error) {
+                console.error("Excel Parse Error:", error);
+                alert("Failed to parse Excel file. Ensure Date is Col A and Value is Col B.");
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
     const addEntry = async () => {
         if (!newEntry.date || !newEntry.value) return;
         const entry: NAVData = {
@@ -29,7 +110,15 @@ export default function NIFManager() {
             date: newEntry.date,
             value: parseFloat(newEntry.value)
         };
-        const newData = [...data, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Check duplication
+        const existsRef = data.find(d => d.date === newEntry.date);
+        let newData;
+        if (existsRef) {
+            newData = data.map(d => d.date === newEntry.date ? { ...d, value: parseFloat(newEntry.value) } : d);
+        } else {
+            newData = [...data, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        }
+
         setData(newData);
         await dataService.saveNAVData(newData);
         setNewEntry({ date: "", value: "" });
@@ -54,9 +143,20 @@ export default function NIFManager() {
                     <p className="text-muted-foreground mt-1">Update Net Asset Value (NAV) of the student fund.</p>
                 </div>
 
-                <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-navy-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-navy-600 rounded-xl hover:bg-gray-50 dark:hover:bg-navy-700 font-medium transition-all shadow-sm">
-                    <BarChart3 className="w-5 h-5" /> View Analytics
-                </button>
+                <div className="flex gap-3">
+                    <div className="relative overflow-hidden">
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={handleFileUpload}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            title="Upload Excel File"
+                        />
+                        <button className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-medium transition-all shadow-sm">
+                            <Save className="w-5 h-5" /> Bulk Upload Excel
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -66,7 +166,7 @@ export default function NIFManager() {
                         <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
 
                         <h3 className="font-bold text-lg text-foreground mb-6 flex items-center gap-2">
-                            <Plus className="w-5 h-5 text-blue-500" /> New Data Point
+                            <Plus className="w-5 h-5 text-blue-500" /> Manual Data Point
                         </h3>
 
                         <div className="space-y-5">

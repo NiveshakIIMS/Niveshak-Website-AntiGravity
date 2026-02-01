@@ -87,6 +87,19 @@ export interface SocialLink {
     isActive: boolean;
 }
 
+export interface Notice {
+    id: string;
+    title: string;
+    category: "General" | "Promotion" | "Reminder" | "Urgent" | string;
+    content: string;
+    date: string;
+    time?: string;
+    expiryDate?: string;
+    imageUrl?: string;
+    link?: string;
+    linkLabel?: string;
+}
+
 export interface SiteSettings {
     socialLinks: SocialLink[];
 }
@@ -335,5 +348,45 @@ export const dataService = {
             console.error("Save Settings Error:", error);
             throw error;
         }
+    },
+
+    // --- Notices ---
+    getNotices: async (): Promise<Notice[]> => {
+        const { data, error } = await supabase.from('notices').select('*').order('date', { ascending: false });
+        if (error || !data) return [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return data.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            category: d.category,
+            content: d.content,
+            date: d.date,
+            time: d.time, // Map time
+            expiryDate: d.expiry_date,
+            imageUrl: d.image_url,
+            link: d.link,
+            linkLabel: d.link_label
+        }));
+    },
+    saveNotices: async (notices: Notice[]) => {
+        // Full replace strategy for simplicity in Admin UI list management
+        // Note: For large datasets, upsert is better. For this scale, delete-insert is fine to keep order/cleanups easy.
+        await supabase.from('notices').delete().neq('id', '0');
+
+        const rows = notices.map(n => ({
+            id: n.id,
+            title: n.title,
+            category: n.category,
+            content: n.content,
+            date: n.date,
+            time: n.time, // Save time
+            expiry_date: n.expiryDate,
+            image_url: n.imageUrl,
+            link: n.link,
+            link_label: n.linkLabel
+        }));
+
+        const { error } = await supabase.from('notices').insert(rows);
+        if (error) console.error("Save Notices Error", error);
     }
 };

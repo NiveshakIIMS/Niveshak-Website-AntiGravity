@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen, Info, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
-import { dataService, AboutContent } from "@/services/dataService";
+import { AboutContent } from "@/services/dataService";
 
-export default function AboutSection() {
-    const [content, setContent] = useState<AboutContent | null>(null);
+interface AboutSectionProps {
+    initialData: AboutContent;
+}
 
-    useEffect(() => {
-        dataService.getAbout().then(setContent);
-    }, []);
+export default function AboutSection({ initialData }: AboutSectionProps) {
+    const content = initialData;
 
     // Default Icons for the 3 cards
     const icons = [

@@ -2,21 +2,30 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import AboutSection from "@/components/sections/AboutSection";
 import TeamSection from "@/components/sections/TeamSection";
-import MagazinesSection from "@/components/sections/MagazinesSection";
 import EventsSection from "@/components/sections/EventsSection";
+import MagazinesSection from "@/components/sections/MagazinesSection";
 import NAVSection from "@/components/sections/NAVSection";
+import NoticesSection from "@/components/sections/NoticesSection";
 import Footer from "@/components/Footer";
+import { dataService } from "@/services/dataService";
 
-export default function Home() {
+export const revalidate = 60; // Revalidate homepage every 60s
+
+export default async function Home() {
+  const aboutData = await dataService.getAbout();
+
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Navbar />
       <Hero />
-      <AboutSection />
-      <TeamSection />
-      <MagazinesSection limit={4} showFilters={false} showViewAll={true} showTitle={true} />
-      <EventsSection />
-      <NAVSection />
+      <div className="space-y-0">
+        <AboutSection initialData={aboutData} />
+        <TeamSection />
+        <MagazinesSection />
+        <EventsSection />
+        <NAVSection />
+        <NoticesSection />
+      </div>
       <Footer />
     </main>
   );

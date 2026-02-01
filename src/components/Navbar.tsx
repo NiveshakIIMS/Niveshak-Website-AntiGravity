@@ -13,6 +13,7 @@ const navItems = [
     { name: "Team", href: "/team" },
     { name: "Magazines", href: "/magazines" },
     { name: "Events", href: "/events" },
+    { name: "Notice Board", href: "/notices" },
     { name: "NIF", href: "/dashboard" },
 ];
 import { usePathname } from "next/navigation";
@@ -129,6 +130,14 @@ export default function Navbar() {
                                     {item.name}
                                 </Link>
                             ))}
+                            <Link
+                                href="/notices"
+                                onClick={() => setIsOpen(false)}
+                                className={`block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between ${pathname === "/notices" ? "text-white bg-navy-800" : ""}`}
+                            >
+                                Notice Board
+                                <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
+                            </Link>
                             <div className="h-px bg-navy-800 my-2" />
                             <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800">
                                 Admin Login
