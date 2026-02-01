@@ -36,7 +36,7 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
                     <div className="space-y-10">
                         <div className="text-center">
                             <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
-                                <span className="text-accent">Mentors</span>
+                                <span className="text-accent">Faculty Mentor</span>
                                 <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
                             </h3>
                         </div>
