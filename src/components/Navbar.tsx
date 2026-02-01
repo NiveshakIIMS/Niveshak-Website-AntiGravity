@@ -13,7 +13,7 @@ const navItems = [
     { name: "Team", href: "/team" },
     { name: "Magazines", href: "/magazines" },
     { name: "Events", href: "/events" },
-    { name: "NAV", href: "/dashboard" },
+    { name: "NIF", href: "/dashboard" },
 ];
 import { usePathname } from "next/navigation";
 

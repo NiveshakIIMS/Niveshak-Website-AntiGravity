@@ -5,10 +5,32 @@ import { Save, FileText, Layout, Info, Plus, Trash2, Type, Image as ImageIcon, A
 import { dataService, AboutContent, ContentBlock } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from 'next/dynamic';
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function AboutManager() {
     const [data, setData] = useState<AboutContent | null>(null);
     const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
+
+    // Quill Modules
+    const modules = {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+            ['link', 'image'],
+            ['clean']
+        ],
+    };
+
+    const formats = [
+        'header',
+        'bold', 'italic', 'underline', 'strike', 'blockquote',
+        'list', 'indent',
+        'link', 'image'
+    ];
 
     useEffect(() => {
         dataService.getAbout().then((loadedData) => {
@@ -77,47 +99,8 @@ export default function AboutManager() {
         setData({ ...data, richContent: newBlocks });
     };
 
-    const insertTextAtCursor = (textToInsert: string) => {
-        if (!expandedBlockId || !data) return;
-
-        const block = data.richContent?.find(b => b.id === expandedBlockId);
-        if (!block) return;
-
-        // Simple append for now as textarea cursor tracking in React state can be complex without refs. 
-        // User requested "support", appending is a safe MVP or just letting them type.
-        // Better UX: Append to end if we don't have ref.
-        updateBlock(expandedBlockId, block.content + textToInsert);
-    };
-
     // Find the currently expanded block object
     const expandedBlock = data?.richContent?.find(b => b.id === expandedBlockId);
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, blockId: string, currentContent: string) => {
-        e.preventDefault();
-        const pastedText = e.clipboardData.getData("text");
-
-        // Normalize bullets
-        // Replace common bullet characters and specific Word patterns
-        const normalizedText = pastedText
-            .replace(/^[ \t]*[•●○■-][ \t]+/gm, "• ") // Standardize existing bullets
-            .replace(/^\s*\d+\.\s+/gm, (match) => match) // Keep numbered lists
-            .replace(/\r\n/g, "\n"); // Normalize newlines
-
-        const textarea = e.currentTarget;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-
-        const newContent = currentContent.substring(0, start) + normalizedText + currentContent.substring(end);
-
-        updateBlock(blockId, newContent);
-
-        // Restore cursor position (simple attempt)
-        setTimeout(() => {
-            if (textarea) {
-                textarea.selectionStart = textarea.selectionEnd = start + normalizedText.length;
-            }
-        }, 0);
-    };
 
     if (!data) return <div className="p-8 text-muted-foreground">Loading editor...</div>;
 
@@ -273,13 +256,14 @@ export default function AboutManager() {
                                             </div>
 
                                             {block.type === "paragraph" && (
-                                                <div className="relative">
-                                                    <textarea
+                                                <div className="relative text-foreground">
+                                                    <ReactQuill
+                                                        theme="snow"
                                                         value={block.content}
-                                                        onChange={(e) => updateBlock(block.id, e.target.value)}
-                                                        onPaste={(e) => handlePaste(e, block.id, block.content)}
-                                                        className="w-full bg-transparent border-none outline-none resize-none text-foreground min-h-[80px]"
-                                                        placeholder="Write your paragraph text here..."
+                                                        onChange={(content) => updateBlock(block.id, content)}
+                                                        modules={modules}
+                                                        formats={formats}
+                                                        className="bg-background text-foreground"
                                                     />
                                                 </div>
                                             )}
@@ -479,35 +463,15 @@ export default function AboutManager() {
                                 </div>
                             </div>
 
-                            <div className="p-2 border-b border-border bg-muted/20 flex gap-2">
-                                <button
-                                    onClick={() => insertTextAtCursor("\n• ")}
-                                    className="px-3 py-1.5 text-xs font-bold bg-background border border-border rounded hover:bg-muted flex items-center gap-2"
-                                >
-                                    <List className="w-3 h-3" /> List Item
-                                </button>
-                                <button
-                                    onClick={() => insertTextAtCursor(" 👍 ")}
-                                    className="px-3 py-1.5 text-xs font-bold bg-background border border-border rounded hover:bg-muted"
-                                >
-                                    👍 Thumbs Up
-                                </button>
-                                <button
-                                    onClick={() => insertTextAtCursor(" ➤ ")}
-                                    className="px-3 py-1.5 text-xs font-bold bg-background border border-border rounded hover:bg-muted"
-                                >
-                                    ➤ Arrow
-                                </button>
-                            </div>
-
-                            <div className="flex-1 p-6 overflow-hidden">
-                                <textarea
+                            <div className="flex-1 p-6 overflow-hidden bg-background">
+                                <ReactQuill
+                                    theme="snow"
                                     value={expandedBlock.content}
-                                    onChange={(e) => updateBlock(expandedBlock.id, e.target.value)}
-                                    onPaste={(e) => handlePaste(e, expandedBlock.id, expandedBlock.content)}
-                                    className="w-full h-full bg-transparent border-none outline-none resize-none text-lg leading-relaxed text-foreground font-sans p-2"
-                                    placeholder="Type your content here..."
-                                    autoFocus
+                                    onChange={(content) => updateBlock(expandedBlock.id, content)}
+                                    modules={modules}
+                                    formats={formats}
+                                    className="h-full"
+                                    style={{ height: '90%' }}
                                 />
                             </div>
 

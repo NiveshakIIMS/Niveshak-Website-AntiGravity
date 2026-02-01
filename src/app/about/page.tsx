@@ -108,7 +108,7 @@ export default function About() {
                                         <h2 className="text-3xl font-bold text-foreground mb-6 text-center">{block.content}</h2>
                                     )}
                                     {block.type === "paragraph" && (
-                                        <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line">{block.content}</p>
+                                        <div className="text-lg text-muted-foreground leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>h1]:text-2xl [&>h1]:font-bold [&>h2]:text-xl [&>h2]:font-bold [&>p]:mb-2" dangerouslySetInnerHTML={{ __html: block.content }} />
                                     )}
                                     {block.type === "image" && (
                                         <div className={`my-8 flex ${block.style?.align === "left" ? "justify-start" : block.style?.align === "right" ? "justify-end" : "justify-center"}`}>

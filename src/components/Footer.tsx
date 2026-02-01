@@ -54,7 +54,7 @@ export default function Footer() {
                             <li><Link href="/about" className="hover:text-blue-400 transition-colors">About Us</Link></li>
                             <li><Link href="/team" className="hover:text-blue-400 transition-colors">Team</Link></li>
                             <li><Link href="/magazines" className="hover:text-blue-400 transition-colors">Niveshak Magazine</Link></li>
-                            <li><Link href="/dashboard" className="hover:text-blue-400 transition-colors">NIF Dashboard</Link></li>
+                            <li><Link href="/dashboard" className="hover:text-blue-400 transition-colors">Niveshak Investment Fund (NIF)</Link></li>
                         </ul>
                     </div>
 
