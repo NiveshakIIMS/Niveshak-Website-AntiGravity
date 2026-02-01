@@ -8,17 +8,18 @@ import { NAVData } from "@/services/dataService";
 import { useTheme } from "@/components/ThemeProvider";
 
 // --- Types ---
+// --- Types ---
 interface NAVChartProps {
     data: NAVData[];
 }
 
-type FilterMode = "OVERALL" | "YEAR" | "MONTH";
+type FilterMode = "DAYS" | "MONTHS" | "YEARS";
 
 interface ChartData {
     label: string;
     value: number;
     fullDate: Date;
-    monthIdx?: number;
+    sortKey?: number;
 }
 
 // --- Helper Functions (Pure) ---
@@ -33,50 +34,9 @@ const processChartData = (
 
     let filtered = [...data];
 
-    if (filterMode === "OVERALL") {
-        const groups: { [key: string]: { sum: number, count: number, date: Date } } = {};
-        for (const d of filtered) {
-            const date = new Date(d.date);
-            const key = `${date.getFullYear()}-${date.getMonth()}`;
-            if (!groups[key]) groups[key] = { sum: 0, count: 0, date };
-            groups[key].sum += d.value;
-            groups[key].count += 1;
-        }
-        return Object.values(groups)
-            .map(g => ({
-                label: g.date.toLocaleString('default', { month: 'short', year: '2-digit' }),
-                value: parseFloat((g.sum / g.count).toFixed(2)),
-                fullDate: g.date
-            }))
-            .sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime());
-    }
-
-    if (filterMode === "YEAR") {
-        filtered = filtered.filter(d => new Date(d.date).getFullYear().toString() === selectedYear);
-        const groups: { [key: number]: { sum: number, count: number } } = {};
-        for (const d of filtered) {
-            const month = new Date(d.date).getMonth();
-            if (!groups[month]) groups[month] = { sum: 0, count: 0 };
-            groups[month].sum += d.value;
-            groups[month].count += 1;
-        }
-        return Object.entries(groups)
-            .map(([monthIdx, g]) => {
-                const date = new Date();
-                date.setMonth(parseInt(monthIdx));
-                return {
-                    label: date.toLocaleString('default', { month: 'short' }),
-                    value: parseFloat((g.sum / g.count).toFixed(2)),
-                    fullDate: date,
-                    monthIdx: parseInt(monthIdx)
-                };
-            })
-            .sort((a, b) => (a.monthIdx ?? 0) - (b.monthIdx ?? 0));
-    }
-
-    if (filterMode === "MONTH") {
+    // 1. DAYS: Show daily data for a specific Month of a specific Year
+    if (filterMode === "DAYS") {
         const monthIndex = availableMonths.indexOf(selectedMonth);
-        // Safety check: if month is invalid, return empty or handle gracefully
         if (monthIndex === -1) return [];
 
         filtered = filtered.filter(d => {
@@ -88,10 +48,57 @@ const processChartData = (
         return filtered
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .map(d => ({
-                label: new Date(d.date).getDate().toString(),
+                label: new Date(d.date).getDate().toString(), // "1", "2", "31"
                 value: d.value,
-                fullDate: new Date(d.date) // Ensure fullDate is always Date object
+                fullDate: new Date(d.date)
             }));
+    }
+
+    // 2. MONTHS: Show monthly averages for a specific Year
+    if (filterMode === "MONTHS") {
+        filtered = filtered.filter(d => new Date(d.date).getFullYear().toString() === selectedYear);
+        const groups: { [key: number]: { sum: number, count: number } } = {};
+
+        for (const d of filtered) {
+            const month = new Date(d.date).getMonth();
+            if (!groups[month]) groups[month] = { sum: 0, count: 0 };
+            groups[month].sum += d.value;
+            groups[month].count += 1;
+        }
+
+        return Object.entries(groups)
+            .map(([monthIdx, g]) => {
+                const date = new Date();
+                date.setMonth(parseInt(monthIdx));
+                return {
+                    label: date.toLocaleString('default', { month: 'short' }), // "Jan", "Feb"
+                    value: parseFloat((g.sum / g.count).toFixed(2)),
+                    fullDate: date,
+                    sortKey: parseInt(monthIdx)
+                };
+            })
+            .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
+    }
+
+    // 3. YEARS: Show yearly averages for all time
+    if (filterMode === "YEARS") {
+        const groups: { [key: string]: { sum: number, count: number } } = {};
+
+        for (const d of filtered) {
+            const year = new Date(d.date).getFullYear().toString();
+            if (!groups[year]) groups[year] = { sum: 0, count: 0 };
+            groups[year].sum += d.value;
+            groups[year].count += 1;
+        }
+
+        return Object.entries(groups)
+            .map(([year, g]) => ({
+                label: year, // "2025", "2026"
+                value: parseFloat((g.sum / g.count).toFixed(2)),
+                fullDate: new Date(parseInt(year), 0, 1),
+                sortKey: parseInt(year)
+            }))
+            .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
     }
 
     return [];
@@ -102,12 +109,16 @@ const processChartData = (
 export default function NAVChart({ data }: NAVChartProps) {
     const { theme } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
-    const [filterMode, setFilterMode] = useState<FilterMode>("OVERALL");
+
+    // Default to DAYS as requested
+    const [filterMode, setFilterMode] = useState<FilterMode>("DAYS");
+
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
 
     const availableYears = useMemo(() => {
         const years = new Set(data.map(d => new Date(d.date).getFullYear().toString()));
+        if (years.size === 0) years.add(new Date().getFullYear().toString());
         return Array.from(years).sort().reverse();
     }, [data]);
 
@@ -244,6 +255,7 @@ const ChartView = ({ processedData }: { processedData: ChartData[] }) => (
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    interval="preserveStartEnd"
                     padding={{ left: 10, right: 10 }}
                 />
                 <YAxis
@@ -252,6 +264,7 @@ const ChartView = ({ processedData }: { processedData: ChartData[] }) => (
                     tick={{ fill: '#9ca3af', fontSize: 12 }}
                     tickFormatter={(value) => `₹ ${value}`}
                     domain={['auto', 'auto']}
+                    width={50}
                 />
                 <Tooltip
                     contentStyle={{
@@ -276,6 +289,11 @@ const ChartView = ({ processedData }: { processedData: ChartData[] }) => (
                 />
             </LineChart>
         </ResponsiveContainer>
+        {processedData.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-white/50 dark:bg-black/20 backdrop-blur-sm z-10 pointer-events-none">
+                No data available for this selection
+            </div>
+        )}
     </div>
 );
 
@@ -303,7 +321,7 @@ const Controls = ({
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
             }}
         >
-            {(["OVERALL", "YEAR", "MONTH"] as FilterMode[]).map((mode) => (
+            {(["DAYS", "MONTHS", "YEARS"] as FilterMode[]).map((mode) => (
                 <button
                     key={mode}
                     onClick={() => setFilterMode(mode)}
@@ -317,7 +335,38 @@ const Controls = ({
             ))}
         </div>
 
-        {(filterMode === "YEAR" || filterMode === "MONTH") && (
+        {/* Days Logic: Show Year AND Month Selects */}
+        {filterMode === "DAYS" && (
+            <>
+                <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="p-1.5 text-sm border border-gray-200 dark:border-navy-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{
+                        backgroundColor: theme === 'dark' ? '#1B263B' : '#ffffff',
+                        color: theme === 'dark' ? '#ffffff' : '#1f2937',
+                        borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
+                    }}
+                >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="p-1.5 text-sm border border-gray-200 dark:border-navy-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{
+                        backgroundColor: theme === 'dark' ? '#1B263B' : '#ffffff',
+                        color: theme === 'dark' ? '#ffffff' : '#1f2937',
+                        borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
+                    }}
+                >
+                    {availableMonths.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+            </>
+        )}
+
+        {/* Months Logic: Show Year Select ONLY */}
+        {filterMode === "MONTHS" && (
             <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
@@ -329,21 +378,6 @@ const Controls = ({
                 }}
             >
                 {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-        )}
-
-        {filterMode === "MONTH" && (
-            <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="p-1.5 text-sm border border-gray-200 dark:border-navy-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                style={{
-                    backgroundColor: theme === 'dark' ? '#1B263B' : '#ffffff',
-                    color: theme === 'dark' ? '#ffffff' : '#1f2937',
-                    borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
-                }}
-            >
-                {availableMonths.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
         )}
     </div>

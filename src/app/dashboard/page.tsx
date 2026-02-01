@@ -52,6 +52,11 @@ export default function Dashboard() {
                                 </div>
                                 <h3 className="text-3xl font-bold text-foreground">₹ {Number(metrics?.totalAUM || 0).toLocaleString('en-IN')}</h3>
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Total AUM</p>
+                                {latestNAV && (
+                                    <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
+                                        <span>For {new Date(latestNAV.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

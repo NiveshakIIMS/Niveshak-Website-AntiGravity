@@ -76,6 +76,7 @@ export interface NIFMetrics {
     annualizedReturn: string;
     totalAUM: string;
     ytdReturn: string;
+    fundUnits?: string; // New field for auto AUM calc
     assetAllocation: { name: string; value: number; color: string }[];
 }
 
@@ -108,7 +109,7 @@ export interface SiteSettings {
 
 const DEFAULT_HERO: HeroSlide[] = [{ id: "1", imageUrl: "/hero_background.png", title: "Niveshak Supabase", subtitle: "Connecting...", objectFit: "cover", timer: 5 }];
 const DEFAULT_ABOUT: AboutContent = { title: "About Niveshak", description: "Loading content...", slides: [], cards: [], richContent: [] };
-const DEFAULT_NIF: NIFMetrics = { annualizedReturn: "0", totalAUM: "0", ytdReturn: "0", assetAllocation: [] };
+const DEFAULT_NIF: NIFMetrics = { annualizedReturn: "0", totalAUM: "0", ytdReturn: "0", fundUnits: "0", assetAllocation: [] };
 
 // --- Service ---
 
@@ -305,6 +306,7 @@ export const dataService = {
             annualizedReturn: data.annualized_return,
             totalAUM: data.total_aum,
             ytdReturn: data.ytd_return,
+            fundUnits: data.fund_units, // Load from DB
             assetAllocation: data.asset_allocation
         };
     },
@@ -314,6 +316,7 @@ export const dataService = {
             annualized_return: data.annualizedReturn,
             total_aum: data.totalAUM,
             ytd_return: data.ytdReturn,
+            fund_units: data.fundUnits, // Save to DB
             asset_allocation: data.assetAllocation
         };
         await supabase.from('nif_metrics').upsert(row);
