@@ -40,9 +40,14 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
                                 <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
                             </h3>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
+                        <div className="flex flex-wrap justify-center gap-6">
                             {facultyMembers.map((member, idx) => (
-                                <TeamCard key={member.id} member={member} idx={idx} />
+                                <TeamCard
+                                    key={member.id}
+                                    member={member}
+                                    idx={idx}
+                                    className="w-[calc(50%-0.75rem)] sm:w-[calc(33.33%-1rem)] md:w-[calc(25%-1rem)] lg:w-[calc(20%-1rem)] xl:w-[calc(16.66%-1rem)] max-w-[280px]"
+                                />
                             ))}
                         </div>
                     </div>
@@ -71,14 +76,14 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
     );
 }
 
-function TeamCard({ member, idx }: { member: TeamMember; idx: number }) {
+function TeamCard({ member, idx, className = "" }: { member: TeamMember; idx: number; className?: string }) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: idx * 0.05 }}
-            className="group relative bg-card rounded-xl overflow-visible shadow-sm border border-border/50 hover:shadow-md hover:border-accent/40 hover:-translate-y-1 transition-all duration-300 p-4 flex flex-col items-center aspect-[4/5]"
+            className={`group relative bg-card rounded-xl overflow-visible shadow-sm border border-border/50 hover:shadow-md hover:border-accent/40 hover:-translate-y-1 transition-all duration-300 p-4 flex flex-col items-center aspect-[4/5] ${className}`}
         >
             <div className="flex-1 flex flex-col items-center justify-center w-full">
                 <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden mb-6 border-2 border-muted group-hover:border-accent transition-colors shrink-0 shadow-sm">
