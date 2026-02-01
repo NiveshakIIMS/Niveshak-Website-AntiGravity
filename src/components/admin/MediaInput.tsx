@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Link as LinkIcon, Upload, Check, X, RotateCcw, ZoomIn } from "lucide-react";
+import { Link as LinkIcon, Upload, Check, X, ZoomIn } from "lucide-react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 
