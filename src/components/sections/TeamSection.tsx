@@ -16,13 +16,14 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
         dataService.getTeam().then(setMembers);
     }, []);
 
-    const sortedMembers = [...members].sort((a, b) => a.name.localeCompare(b.name));
+    const facultyMembers = members.filter(m => m.category === "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));
+    const studentMembers = members.filter(m => m.category !== "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <section id="team" className="py-20 px-4 bg-background transition-colors">
-            <div className="max-w-[1400px] mx-auto space-y-12">
+            <div className="max-w-[1400px] mx-auto space-y-20">
                 {showTitle && (
-                    <div className="text-center">
+                    <div className="text-center mb-12">
                         <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
                             Meet the <span className="text-accent">Team</span>
                         </h2>
@@ -30,11 +31,39 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
                     </div>
                 )}
 
-                {sortedMembers.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
-                        {sortedMembers.map((member, idx) => (
-                            <TeamCard key={member.id} member={member} idx={idx} />
-                        ))}
+                {/* Faculty Mentors Section */}
+                {facultyMembers.length > 0 && (
+                    <div className="space-y-10">
+                        <div className="text-center">
+                            <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
+                                Faculty <span className="text-accent">Mentors</span>
+                                <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
+                            {facultyMembers.map((member, idx) => (
+                                <TeamCard key={member.id} member={member} idx={idx} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Student Team Section */}
+                {studentMembers.length > 0 && (
+                    <div className="space-y-10">
+                        {facultyMembers.length > 0 && (
+                            <div className="text-center">
+                                <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
+                                    Student <span className="text-accent">Team</span>
+                                    <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
+                                </h3>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
+                            {studentMembers.map((member, idx) => (
+                                <TeamCard key={member.id} member={member} idx={idx} />
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

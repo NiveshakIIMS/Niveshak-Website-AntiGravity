@@ -119,71 +119,85 @@ export default function MagazinesSection({
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredMagazines.map((mag, idx) => (
-                        <div key={mag.id} className="group relative flex flex-col h-full bg-card rounded-xl border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-                            {/* Magazine Cover */}
-                            <div className="relative w-full aspect-[1/1.4] bg-muted overflow-hidden">
-                                <Image
-                                    src={mag.coverUrl || "/magazine_cover.png"}
-                                    alt={mag.title}
-                                    fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                />
-                            </div>
-
-                            {/* Info & Actions */}
-                            <div className="p-5 flex flex-col flex-1 border-t border-border bg-card relative z-10">
-                                <div className="mb-4 text-center">
-                                    <h3 className="text-lg font-bold text-foreground leading-tight mb-1 line-clamp-2 group-hover:text-accent transition-colors">{mag.title}</h3>
-                                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{mag.issueMonth} {mag.issueYear}</p>
-                                </div>
-
-                                <div className="mt-auto relative h-12 w-full">
-                                    {/* Default State: Read Issue Button */}
-                                    <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 opacity-100 group-hover:opacity-0 pointer-events-none group-hover:pointer-events-none">
-                                        <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-navy-900 dark:bg-accent text-white font-semibold text-sm shadow-md">
-                                            <BookOpen className="w-4 h-4" /> Read Issue
-                                        </button>
-                                    </div>
-
-                                    {/* Hover State: Expanded Options */}
-                                    <div className="absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
-                                        {mag.flipUrl && (
-                                            <a href={mag.flipUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-colors" title="Read as Flipbook">
-                                                <BookOpen className="w-4 h-4" /> Flipbook
-                                            </a>
-                                        )}
-                                        {mag.pdfUrl && (
-                                            <a href={mag.pdfUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-gray-800 text-white text-xs font-bold shadow-sm hover:bg-gray-900 transition-colors" title="View PDF">
-                                                <FileText className="w-4 h-4" /> PDF
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {filteredMagazines.map((mag) => (
+                        <MagazineCard key={mag.id} mag={mag} />
                     ))}
                 </div>
 
-                {
-                    filteredMagazines.length === 0 && (
-                        <div className="text-center py-20 text-muted-foreground">
-                            <p className="text-xl">No magazines found for this filter.</p>
-                            <button onClick={() => { setSelectedYear("All"); setSelectedMonth("All") }} className="mt-4 text-accent hover:underline">Reset Filters</button>
-                        </div>
-                    )
-                }
+                {filteredMagazines.length === 0 && (
+                    <div className="text-center py-20 text-muted-foreground">
+                        <p className="text-xl">No magazines found for this filter.</p>
+                        <button onClick={() => { setSelectedYear("All"); setSelectedMonth("All") }} className="mt-4 text-accent hover:underline">Reset Filters</button>
+                    </div>
+                )}
 
-                {
-                    showViewAll && (
-                        <div className="mt-12 text-center">
-                            <a href="/magazines" className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-accent text-white font-semibold hover:bg-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                View All Magazines <ArrowRight className="w-5 h-5" />
+                {showViewAll && (
+                    <div className="mt-12 text-center">
+                        <a href="/magazines" className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-accent text-white font-semibold hover:bg-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            View All Magazines <ArrowRight className="w-5 h-5" />
+                        </a>
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function MagazineCard({ mag }: { mag: Magazine }) {
+    const [isMobileActive, setIsMobileActive] = useState(false);
+
+    return (
+        <div
+            className="group relative flex flex-col h-full bg-card rounded-xl border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+            onMouseLeave={() => setIsMobileActive(false)}
+        >
+            {/* Magazine Cover */}
+            <div className="relative w-full aspect-[1/1.4] bg-muted overflow-hidden">
+                <Image
+                    src={mag.coverUrl || "/magazine_cover.png"}
+                    alt={mag.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+            </div>
+
+            {/* Info & Actions */}
+            <div className="p-5 flex flex-col flex-1 border-t border-border bg-card relative z-10">
+                <div className="mb-4 text-center">
+                    <h3 className="text-lg font-bold text-foreground leading-tight mb-1 line-clamp-2 group-hover:text-accent transition-colors">{mag.title}</h3>
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{mag.issueMonth} {mag.issueYear}</p>
+                </div>
+
+                <div className="mt-auto relative h-12 w-full">
+                    {/* Default State: Read Issue Button */}
+                    <div
+                        className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isMobileActive ? 'opacity-0 pointer-events-none' : 'opacity-100 group-hover:opacity-0 group-hover:pointer-events-none'}`}
+                    >
+                        <button
+                            onClick={() => setIsMobileActive(true)}
+                            className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-navy-900 dark:bg-accent text-white font-semibold text-sm shadow-md"
+                        >
+                            <BookOpen className="w-4 h-4" /> Read Issue
+                        </button>
+                    </div>
+
+                    {/* Hover/Active State: Expanded Options */}
+                    <div
+                        className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ${isMobileActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'}`}
+                    >
+                        {mag.flipUrl && (
+                            <a href={mag.flipUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-colors" title="Read as Flipbook">
+                                <BookOpen className="w-4 h-4" /> Flipbook
                             </a>
-                        </div>
-                    )
-                }
-            </div >
-        </section >
+                        )}
+                        {mag.pdfUrl && (
+                            <a href={mag.pdfUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-gray-800 text-white text-xs font-bold shadow-sm hover:bg-gray-900 transition-colors" title="View PDF">
+                                <FileText className="w-4 h-4" /> PDF
+                            </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

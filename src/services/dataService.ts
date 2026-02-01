@@ -39,7 +39,7 @@ export interface TeamMember {
     email: string;
     linkedin: string;
     details: string;
-    category?: "Senior Team" | "Junior Team";
+    category?: "Senior Team" | "Junior Team" | "Faculty Mentor";
 }
 
 export interface Magazine {

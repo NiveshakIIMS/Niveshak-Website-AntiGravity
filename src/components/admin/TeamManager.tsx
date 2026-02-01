@@ -117,6 +117,7 @@ export default function TeamManager() {
                                             >
                                                 <option value="Senior Team">Senior Team</option>
                                                 <option value="Junior Team">Junior Team</option>
+                                                <option value="Faculty Mentor">Faculty Mentor</option>
                                             </select>
                                         </div>
                                         <div className="space-y-1">
