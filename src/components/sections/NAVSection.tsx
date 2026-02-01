@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Calendar } from "lucide-react";
+import { TrendingUp, Calendar, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 
 export default function NAVSection() {
@@ -83,6 +84,19 @@ export default function NAVSection() {
                         </div>
 
                     </div>
+                </motion.div>
+
+                {/* View NIF Dashboard Button */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-12 text-center"
+                >
+                    <Link href="/dashboard" className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-accent text-white font-semibold hover:bg-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        View NIF Dashboard <ArrowRight className="w-5 h-5" />
+                    </Link>
                 </motion.div>
             </div>
         </section>

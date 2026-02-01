@@ -5,7 +5,8 @@ import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import NAVChart from "@/components/dashboard/NAVChart";
-import { TrendingUp, Activity, PieChart, ArrowUpRight } from "lucide-react";
+import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 export default function Dashboard() {
     const [navData, setNavData] = useState<NAVData[]>([]);
@@ -107,11 +108,50 @@ export default function Dashboard() {
                         {/* Asset Allocation Placeholder */}
                         <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
                             <h3 className="text-xl font-bold text-foreground mb-6">Asset Allocation</h3>
-                            <div className="h-[400px] flex items-center justify-center bg-muted/30 rounded-xl border border-dashed border-border text-muted-foreground">
-                                <div className="text-center">
-                                    <PieChart className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>Coming Soon</p>
-                                </div>
+                            <div className="h-[400px]">
+                                {metrics?.assetAllocation && metrics.assetAllocation.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={metrics.assetAllocation}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={100}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {metrics.assetAllocation.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                    borderRadius: '8px',
+                                                    border: 'none',
+                                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                                    color: '#1f2937'
+                                                }}
+                                                itemStyle={{ color: '#1f2937', fontWeight: 600 }}
+                                                formatter={(value) => `${value}%`}
+                                            />
+                                            <Legend
+                                                verticalAlign="bottom"
+                                                height={36}
+                                                iconType="circle"
+                                                formatter={(value, entry: any) => <span className="text-foreground font-medium ml-1">{value}</span>}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center bg-muted/30 rounded-xl border border-dashed border-border text-muted-foreground">
+                                        <div className="text-center">
+                                            <PieChartIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                            <p>No Data Added</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

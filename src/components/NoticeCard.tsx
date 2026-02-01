@@ -43,24 +43,26 @@ export default function NoticeCard({ notice, idx }: NoticeCardProps) {
     }, [notice.expiryDate]);
 
     // Icon & Color based on Category
+    // Icon & Color based on Category
     let icon = <Megaphone className="w-5 h-5" />;
-    let colorClass = "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
-    let borderClass = "border-blue-200 dark:border-blue-900";
+    // Default (General, Other, etc.): White bg/Dark text (Light) | Dark bg/White text (Dark)
+    let colorClass = "bg-white text-gray-900 border border-gray-200 shadow-sm dark:bg-zinc-900 dark:text-gray-100 dark:border-zinc-700";
+    let borderClass = "border-border/50"; // Neutral border for General/Other cards
 
     switch (notice.category) {
         case "Urgent":
             icon = <AlertCircle className="w-5 h-5" />;
-            colorClass = "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
+            colorClass = "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-transparent";
             borderClass = "border-red-200 dark:border-red-900";
             break;
         case "Promotion":
             icon = <Megaphone className="w-5 h-5" />;
-            colorClass = "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400";
+            colorClass = "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 border border-transparent";
             borderClass = "border-purple-200 dark:border-purple-900";
             break;
         case "Reminder":
             icon = <Bell className="w-5 h-5" />;
-            colorClass = "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400";
+            colorClass = "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 border border-transparent";
             borderClass = "border-yellow-200 dark:border-yellow-900";
             break;
     }
