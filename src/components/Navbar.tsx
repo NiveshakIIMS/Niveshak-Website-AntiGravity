@@ -22,13 +22,20 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const { theme, setTheme } = useTheme();
-    const { isLogoInNav } = useLogo();
+    const { isLogoInNav, setLogoInNav } = useLogo();
     const pathname = usePathname();
 
     const isActive = (href: string) => {
         if (href === "/#hero") return pathname === "/";
         return pathname.startsWith(href);
     }
+
+    // Force Logo visibility on non-home pages
+    useEffect(() => {
+        if (pathname !== "/") {
+            setLogoInNav(true);
+        }
+    }, [pathname, setLogoInNav]);
 
     if (pathname.startsWith("/admin")) return null;
 
