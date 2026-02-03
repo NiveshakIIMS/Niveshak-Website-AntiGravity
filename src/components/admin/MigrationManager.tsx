@@ -9,6 +9,7 @@ export default function MigrationManager() {
     const [status, setStatus] = useState<string>("");
     const [isMigrating, setIsMigrating] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [errorDetails, setErrorDetails] = useState<string>("");
 
     const migrateSlides = async () => {
         setStatus("Migrating Hero Slides...");
@@ -22,8 +23,9 @@ export default function MigrationManager() {
                     const publicUrl = await uploadService.uploadFile(blob, `hero-${slide.id}-${Date.now()}.jpg`);
                     count++;
                     return { ...slide, imageUrl: publicUrl };
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`Failed to migrate slide ${slide.id}`, e);
+                    setErrorDetails(prev => prev + `\nHero ${slide.id}: ${e.message || e}`);
                     return slide;
                 }
             }
@@ -48,8 +50,9 @@ export default function MigrationManager() {
                     const publicUrl = await uploadService.uploadFile(blob, `team-${member.id}-${Date.now()}.jpg`);
                     count++;
                     return { ...member, imageUrl: publicUrl };
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`Failed to migrate member ${member.id}`, e);
+                    setErrorDetails(prev => prev + `\nTeam ${member.id}: ${e.message || e}`);
                     return member;
                 }
             }
@@ -74,8 +77,9 @@ export default function MigrationManager() {
                     const publicUrl = await uploadService.uploadFile(blob, `event-${event.id}-${Date.now()}.jpg`);
                     count++;
                     return { ...event, imageUrl: publicUrl };
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`Failed to migrate event ${event.id}`, e);
+                    setErrorDetails(prev => prev + `\nEvent ${event.id}: ${e.message || e}`);
                     return event;
                 }
             }
@@ -100,8 +104,9 @@ export default function MigrationManager() {
                     const publicUrl = await uploadService.uploadFile(blob, `notice-${notice.id}-${Date.now()}.jpg`);
                     count++;
                     return { ...notice, imageUrl: publicUrl };
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`Failed to migrate notice ${notice.id}`, e);
+                    setErrorDetails(prev => prev + `\nNotice ${notice.id}: ${e.message || e}`);
                     return notice;
                 }
             }
@@ -119,6 +124,7 @@ export default function MigrationManager() {
 
         setIsMigrating(true);
         setProgress(0);
+        setErrorDetails(""); // Clear previous errors
 
         try {
             let totalMoved = 0;
@@ -140,11 +146,16 @@ export default function MigrationManager() {
             totalMoved += c4;
 
             setStatus(`Migration Complete! Moved ${totalMoved} files to R2.`);
-            alert(`Migration Success! Moved ${totalMoved} files to Cloudflare R2.`);
-        } catch (error) {
+
+            if (errorDetails) {
+                alert(`Migration Finished with some errors (see list). Moved ${totalMoved} files.`);
+            } else {
+                alert(`Migration Success! Moved ${totalMoved} files to Cloudflare R2.`);
+            }
+        } catch (error: any) {
             console.error(error);
-            setStatus("Migration Failed. Check console.");
-            alert("Migration Failed. Ensure your Edge Function and Secrets are set up correctly.");
+            setStatus("Migration Failed.");
+            setErrorDetails(prev => prev + `\nCritical Failure: ${error.message}`);
         } finally {
             setIsMigrating(false);
         }
@@ -182,6 +193,15 @@ export default function MigrationManager() {
                             <p className={`text-sm font-semibold mt-2 ${status.includes("Fail") ? "text-red-500" : "text-green-600"}`}>
                                 {status}
                             </p>
+                        )}
+
+                        {errorDetails && (
+                            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg max-h-60 overflow-y-auto">
+                                <p className="text-red-600 font-bold text-sm mb-2">Errors Occurred:</p>
+                                <pre className="text-xs text-red-500 whitespace-pre-wrap font-mono">
+                                    {errorDetails}
+                                </pre>
+                            </div>
                         )}
                     </div>
                 </div>
