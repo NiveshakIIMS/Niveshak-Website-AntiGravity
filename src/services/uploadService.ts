@@ -13,18 +13,29 @@ export const uploadService = {
     uploadFile: async (file: File | Blob, path?: string): Promise<string> => {
         try {
             // 1. Get Presigned URL
-            const { data, error } = await supabase.functions.invoke<UploadResponse>('r2-presigned-url', {
-                body: {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token) throw new Error("User not authenticated");
+
+            const response = await fetch('https://rnoucamaqlptwtsjxuge.supabase.co/functions/v1/r2-presigned-url', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
                     filename: path || `upload-${Date.now()}.jpg`,
                     contentType: file.type,
-                },
+                }),
             });
 
-            if (error || !data) {
-                console.error("Presign Error", error);
-                throw new Error(`Failed to get upload URL: ${error?.message || JSON.stringify(error) || "Unknown Error"}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Edge Function Failed (${response.status}): ${errorText}`);
             }
 
+            const data = await response.json();
             const { uploadUrl, publicUrl } = data;
 
             // 2. Upload to R2 (Direct PUT)

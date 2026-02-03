@@ -1,14 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.370.0";
-import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3.370.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3@3.370.0";
+import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.370.0";
+import { createClient } from "npm:@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }
@@ -41,7 +40,7 @@ serve(async (req) => {
         const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID");
         const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY");
         const R2_BUCKET_NAME = Deno.env.get("R2_BUCKET_NAME");
-        const R2_PUBLIC_DOMAIN = Deno.env.get("R2_PUBLIC_DOMAIN"); // e.g., https://media.niveshakiims.in
+        const R2_PUBLIC_DOMAIN = Deno.env.get("R2_PUBLIC_DOMAIN");
 
         const S3 = new S3Client({
             region: "auto",
@@ -53,7 +52,6 @@ serve(async (req) => {
         });
 
         // 4. Generate Key & Signed URL
-        // Use a timestamp to prevent collisions
         const fileExt = filename.split(".").pop();
         const key = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
@@ -61,7 +59,6 @@ serve(async (req) => {
             Bucket: R2_BUCKET_NAME,
             Key: key,
             ContentType: contentType,
-            // ACL: 'public-read' // R2 buckets are private by default, usually handled by custom domain policy or public bucket setting
         });
 
         // Generate Pre-signed URL (Valid for 15 mins)
@@ -71,7 +68,7 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 uploadUrl, // Frontend PUTs to this
-                publicUrl: `${R2_PUBLIC_DOMAIN}/${key}`, // Frontend saves this
+                publicUrl: `${R2_PUBLIC_DOMAIN}/${key}`,
                 key,
             }),
             {
@@ -79,8 +76,8 @@ serve(async (req) => {
             }
         );
 
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error: any) {
+        return new Response(JSON.stringify({ error: error.message || "Unknown error" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
