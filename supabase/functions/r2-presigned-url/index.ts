@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3@3.370.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.370.0";
-import { createClient } from "npm:@supabase/supabase-js@2.38.4";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -13,29 +13,51 @@ Deno.serve(async (req) => {
     }
 
     try {
-        // 1. Verify User
+        const authHeader = req.headers.get("Authorization");
+
+        // 1. Setup Supabase Client
+        // We explicitly turn OFF persistSession for Edge Functions
         const supabaseClient = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-            { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+            {
+                global: { headers: { Authorization: authHeader! } },
+                auth: {
+                    persistSession: false
+                }
+            }
         );
 
-        const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+        // 2. Explicitly verify the token
+        // Extract "Bearer <token>" -> "<token>"
+        const token = authHeader?.replace("Bearer ", "");
+
+        // pass token directly to getUser to avoid session confusion
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
         if (authError || !user) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            console.error("Auth Error:", authError);
+            return new Response(JSON.stringify({
+                error: "Unauthorized",
+                details: authError?.message || "User is null/missing",
+                debug: {
+                    tokenReceived: !!token,
+                    tokenLen: token?.length,
+                    sbUrl: Deno.env.get("SUPABASE_URL")?.substring(0, 15) + "...",
+                }
+            }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
-        // 2. Parse Body
+        // 3. Parse Body
         const { filename, contentType } = await req.json();
         if (!filename || !contentType) {
             throw new Error("Missing filename or contentType");
         }
 
-        // 3. Configure R2 (S3 Compatible)
+        // 4. Configure R2
         const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID");
         const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID");
         const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY");
@@ -51,7 +73,7 @@ Deno.serve(async (req) => {
             },
         });
 
-        // 4. Generate Key & Signed URL
+        // 5. Generate Key & Signed URL
         const fileExt = filename.split(".").pop();
         const key = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
@@ -61,15 +83,14 @@ Deno.serve(async (req) => {
             ContentType: contentType,
         });
 
-        // Generate Pre-signed URL (Valid for 15 mins)
         const uploadUrl = await getSignedUrl(S3, command, { expiresIn: 900 });
 
-        // 5. Return Details
         return new Response(
             JSON.stringify({
-                uploadUrl, // Frontend PUTs to this
+                uploadUrl,
                 publicUrl: `${R2_PUBLIC_DOMAIN}/${key}`,
                 key,
+                user: user.id // Return user ID to confirm auth worked
             }),
             {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
