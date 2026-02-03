@@ -246,19 +246,43 @@ export const dataService = {
     getEvents: async (): Promise<Event[]> => {
         const { data, error } = await supabase.from('events').select('*');
         if (error || !data) return [];
+
+        const today = new Date();
+        // Format YYYY-MM-DD manually to avoid timezone issues
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return data.map((d: any) => ({
-            id: d.id,
-            title: d.title,
-            date: d.date,
-            time: d.time,
-            location: d.location,
-            type: d.type,
-            imageUrl: d.image_url,
-            orientation: d.orientation,
-            meetingLink: d.meeting_link,
-            isOnline: d.is_online
-        }));
+        return data.map((d: any) => {
+            let calculatedType = d.type;
+
+            // Auto-categorize based on date
+            if (d.date === todayStr) {
+                calculatedType = "Live";
+            } else if (d.date < todayStr) {
+                calculatedType = "Past";
+            } else if (d.date > todayStr) {
+                // Keep existing "Upcoming" or if it was manually set to something else, reset to "Upcoming" if it wasn't already "Live" (admin override?)
+                // Actually, simple logic: Future = Upcoming, Today = Live, Past = Past.
+                // Unless we want to support "Live" for future? Unlikely.
+                calculatedType = "Upcoming";
+            }
+
+            return {
+                id: d.id,
+                title: d.title,
+                date: d.date,
+                time: d.time,
+                location: d.location,
+                type: calculatedType, // Use calculated type
+                imageUrl: d.image_url,
+                orientation: d.orientation,
+                meetingLink: d.meeting_link,
+                isOnline: d.is_online
+            };
+        });
     },
     saveEvents: async (events: Event[]) => {
         await supabase.from('events').delete().neq('id', '0');

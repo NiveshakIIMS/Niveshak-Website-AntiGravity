@@ -19,8 +19,10 @@ export default function NoticesPage() {
     const filteredNotices = notices.filter(n => {
         const now = new Date();
         now.setHours(0, 0, 0, 0); // Compare dates without time
-        const expiry = n.expiryDate ? new Date(n.expiryDate) : null;
-        const isExpired = expiry ? expiry < now : false;
+
+        // Logic: Use expiry date if available, otherwise use the notice date itself
+        const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
+        const isExpired = checkDate < now;
 
         if (filter === "History") {
             return isExpired;

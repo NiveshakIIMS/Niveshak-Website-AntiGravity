@@ -12,8 +12,17 @@ export default function NoticesSection() {
 
     useEffect(() => {
         dataService.getNotices().then(data => {
-            // Take top 4 latest
-            setNotices(data.slice(0, 4));
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            const activeNotices = data.filter(n => {
+                const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
+                // Keep if date is today or future (>= now)
+                return checkDate >= now;
+            });
+
+            // Limit to top 4
+            setNotices(activeNotices.slice(0, 4));
         });
     }, []);
 

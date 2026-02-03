@@ -75,7 +75,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full h-[50vh] md:h-screen overflow-hidden flex flex-col items-center justify-start pt-24 md:pt-44 bg-navy-900 transition-colors duration-500">
+        <section id="hero" className="relative w-full h-[50vh] md:h-auto md:aspect-video overflow-hidden flex flex-col items-center justify-center pt-24 md:pt-20 bg-navy-900 transition-colors duration-500">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -90,8 +90,7 @@ export default function Hero() {
                         src={slide.imageUrl}
                         alt="Background"
                         fill
-                        className={`object-${slide.objectFit} object-top opacity-30 dark:opacity-40`}
-                        style={{ objectPosition: 'center 20%' }}
+                        className={`object-${slide.objectFit || 'cover'} object-center opacity-30 dark:opacity-40`}
                         priority
                     />
                     {/* Gradient adapts to theme -> Reverted to always Dark Navy */}
@@ -99,15 +98,24 @@ export default function Hero() {
                 </motion.div>
             </AnimatePresence>
 
-            <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center" style={{ opacity }}>
+            <div className="relative z-10 max-w-6xl w-full h-full mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col justify-center" style={{ opacity }}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="flex flex-col items-center"
+                    className="w-full relative h-full flex flex-col justify-center"
                 >
                     {/* Hero Logo with Scroll Animation */}
-                    <div className="h-40 mb-6 flex items-center justify-center">
+                    <motion.div
+                        initial={{ height: "auto", marginBottom: "1.5rem" }}
+                        animate={{
+                            height: isLogoInNav ? 0 : "auto",
+                            marginBottom: isLogoInNav ? 0 : "1.5rem",
+                            opacity: isLogoInNav ? 0 : 1
+                        }}
+                        transition={{ duration: 0.8 }}
+                        className="flex items-center justify-center overflow-hidden"
+                    >
                         {!isLogoInNav && (
                             <motion.div
                                 layoutId="niveshak-logo"
@@ -119,9 +127,18 @@ export default function Hero() {
                                 <Image src="/logo.png" alt="Niveshak Logo" fill className="object-contain drop-shadow-2xl" priority />
                             </motion.div>
                         )}
-                    </div>
+                    </motion.div>
 
-                    <div className="h-24 mb-6 flex items-center justify-center">
+                    <motion.div
+                        initial={{ height: "auto", marginBottom: "1.5rem" }}
+                        animate={{
+                            height: isLogoInNav ? 0 : "auto",
+                            marginBottom: isLogoInNav ? 0 : "1.5rem",
+                            opacity: isLogoInNav ? 0 : 1
+                        }}
+                        transition={{ duration: 0.8 }}
+                        className="flex items-center justify-center overflow-hidden"
+                    >
                         {!isLogoInNav && (
                             <motion.h1
                                 layoutId="niveshak-title"
@@ -130,17 +147,17 @@ export default function Hero() {
                                 NIVESHAK
                             </motion.h1>
                         )}
-                    </div>
+                    </motion.div>
 
                     <motion.div
-                        animate={{ y: isLogoInNav ? 200 : 0 }}
+                        animate={{ y: 0 }}
                         transition={{ duration: 0.8, ease: "easeInOut" }}
-                        className="flex flex-col items-center"
+                        className={`flex flex-col items-center transition-all duration-1000 ${isLogoInNav ? "absolute bottom-12 left-0 right-0 z-20" : "relative"}`}
                     >
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={slide.id}
-                                initial={{ opacity: 0, y: 10 }}
+                                initial={{ opacity: 0, y: 10 }} // Reduced motion
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 transition={{ duration: 0.5 }}
