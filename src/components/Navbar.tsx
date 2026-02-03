@@ -30,6 +30,8 @@ export default function Navbar() {
         return pathname.startsWith(href);
     }
 
+    if (pathname.startsWith("/admin")) return null;
+
     return (
         <nav className="fixed w-full z-50 transition-all duration-300 bg-navy-900/70 border-b border-navy-800 shadow-lg backdrop-blur-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

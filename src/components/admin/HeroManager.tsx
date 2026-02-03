@@ -158,7 +158,7 @@ export default function HeroManager() {
                                             <p className="text-muted-foreground">{slide.subtitle}</p>
                                             <div className="flex items-center gap-3 mt-2">
                                                 <span className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs">{slide.subtitle.substring(0, 20)}...</span>
-                                                <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded text-xs">⏱ {slide.timer}s</span>
+                                                <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">⏱ {slide.timer}s</span>
                                                 <span className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs uppercase">{slide.objectFit}</span>
                                             </div>
                                         </div>
@@ -173,7 +173,7 @@ export default function HeroManager() {
                                             <button
                                                 onClick={() => moveSlide(index, -1)}
                                                 disabled={index === 0}
-                                                className="flex-1 py-1.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                className="flex-1 py-1.5 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
                                                 title="Move Up"
                                             >
                                                 <ArrowUp className="w-4 h-4" />
@@ -181,7 +181,7 @@ export default function HeroManager() {
                                             <button
                                                 onClick={() => moveSlide(index, 1)}
                                                 disabled={index === slides.length - 1}
-                                                className="flex-1 py-1.5 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                className="flex-1 py-1.5 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
                                                 title="Move Down"
                                             >
                                                 <ArrowDown className="w-4 h-4" />

@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   description: "The official website of Niveshak, the Finance Club of IIM Shillong. Featuring financial dashboard, magazines, and events.",
 };
 
+import Navbar from "@/components/Navbar";
+
+// ... existing imports
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,6 +26,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <LogoProvider>
+            <Navbar />
             {children}
           </LogoProvider>
         </ThemeProvider>

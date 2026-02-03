@@ -1,4 +1,3 @@
-import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import AboutSection from "@/components/sections/AboutSection";
 import TeamSection from "@/components/sections/TeamSection";
@@ -16,7 +15,6 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Navbar />
       <Hero />
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />

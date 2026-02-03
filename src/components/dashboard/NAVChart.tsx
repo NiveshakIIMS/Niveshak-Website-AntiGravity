@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Maximize2, X } from "lucide-react";
@@ -8,15 +8,14 @@ import { NAVData } from "@/services/dataService";
 import { useTheme } from "@/components/ThemeProvider";
 
 // --- Types ---
-// --- Types ---
 interface NAVChartProps {
     data: NAVData[];
 }
 
-type FilterMode = "DAYS" | "MONTHS" | "YEARS";
+type FilterMode = "DAYS" | "MONTHS" | "YEARS" | "OVERALL";
 
 interface ChartData {
-    label: string;
+    label: string | number; // String for category views, Number (timestamp) for OVERALL
     value: number;
     fullDate: Date;
     sortKey?: number;
@@ -101,6 +100,17 @@ const processChartData = (
             .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
     }
 
+    // 4. OVERALL: Show all data points with continuous time axis
+    if (filterMode === "OVERALL") {
+        return filtered
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(d => ({
+                label: new Date(d.date).getTime(), // Timestamp for continuous X-axis
+                value: d.value,
+                fullDate: new Date(d.date)
+            }));
+    }
+
     return [];
 };
 
@@ -110,8 +120,8 @@ export default function NAVChart({ data }: NAVChartProps) {
     const { theme } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Default to DAYS as requested
-    const [filterMode, setFilterMode] = useState<FilterMode>("DAYS");
+    // Default to OVERALL
+    const [filterMode, setFilterMode] = useState<FilterMode>("OVERALL");
 
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
@@ -173,7 +183,7 @@ export default function NAVChart({ data }: NAVChartProps) {
                 </div>
                 <div className="h-[300px] w-full">
                     {mounted ? (
-                        <ChartView processedData={processedData} />
+                        <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
                         <div className="h-full w-full rounded-xl bg-gray-100 dark:bg-navy-800 animate-pulse flex items-center justify-center text-xs text-muted-foreground">
                             Loading Chart...
@@ -231,7 +241,7 @@ export default function NAVChart({ data }: NAVChartProps) {
                                     setSelectedMonth={setSelectedMonth}
                                 />
                                 <div className="flex-1 w-full min-h-[400px]">
-                                    <ChartView processedData={processedData} />
+                                    <ChartView processedData={processedData} filterMode={filterMode} />
                                 </div>
                             </div>
                         </div>
@@ -245,57 +255,86 @@ export default function NAVChart({ data }: NAVChartProps) {
 
 // --- Sub-components ---
 
-const ChartView = ({ processedData }: { processedData: ChartData[] }) => (
-    <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
-        <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={processedData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                    interval="preserveStartEnd"
-                    padding={{ left: 10, right: 10 }}
-                />
-                <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                    tickFormatter={(value) => `₹ ${value}`}
-                    domain={['auto', 'auto']}
-                    width={50}
-                />
-                <Tooltip
-                    contentStyle={{
-                        borderRadius: '12px',
-                        border: 'none',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)'
-                    }}
-                    itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                    formatter={(value: number | undefined) => [`₹ ${value || 0}`, "NAV"]}
-                    labelStyle={{ color: '#64748b', marginBottom: '4px' }}
-                />
-                <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#00A8E8"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                    animationDuration={800}
-                    isAnimationActive={false} // Disable animation to prevent potential freezing during rapid updates
-                />
-            </LineChart>
-        </ResponsiveContainer>
-        {processedData.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-white/50 dark:bg-black/20 backdrop-blur-sm z-10 pointer-events-none">
-                No data available for this selection
-            </div>
-        )}
-    </div>
-);
+const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; filterMode: FilterMode }) => {
+    // Determine Axis configuration based on mode
+    const isOverall = filterMode === "OVERALL";
+
+    return (
+        <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={processedData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                    <XAxis
+                        dataKey="label"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        interval={isOverall ? "preserveStartEnd" : "preserveStartEnd"}
+                        padding={{ left: 10, right: 10 }}
+                        type={isOverall ? "number" : "category"}
+                        domain={isOverall ? ['dataMin', 'dataMax'] : undefined}
+                        tickFormatter={(val) => {
+                            if (isOverall) return new Date(val).getFullYear().toString();
+                            return val;
+                        }}
+                        ticks={isOverall ? (() => {
+                            // Generate ticks only for start of years
+                            if (processedData.length === 0) return [];
+                            const minTime = Number(processedData[0].label);
+                            const maxTime = Number(processedData[processedData.length - 1].label);
+                            const minYear = new Date(minTime).getFullYear();
+                            const maxYear = new Date(maxTime).getFullYear();
+                            const ticks = [];
+                            for (let y = minYear; y <= maxYear; y++) {
+                                ticks.push(new Date(y, 0, 1).getTime());
+                            }
+                            return ticks;
+                        })() : undefined}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        tickFormatter={(value) => `₹ ${value}`}
+                        domain={['auto', 'auto']}
+                        width={50}
+                    />
+                    <Tooltip
+                        contentStyle={{
+                            borderRadius: '12px',
+                            border: 'none',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                        }}
+                        itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                        // Handle formatting for timestamp label in Overall mode vs string in others
+                        labelFormatter={(label) => {
+                            if (isOverall) return new Date(label).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                            return label;
+                        }}
+                        formatter={(value: number | undefined) => [`₹ ${value || 0}`, "NAV"]}
+                        labelStyle={{ color: '#64748b', marginBottom: '4px' }}
+                    />
+                    <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#00A8E8"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        animationDuration={800}
+                        isAnimationActive={false} // Disable animation to prevent potential freezing during rapid updates
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+            {processedData.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-white/50 dark:bg-black/20 backdrop-blur-sm z-10 pointer-events-none">
+                    No data available for this selection
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface ControlsProps {
     filterMode: FilterMode;
@@ -321,7 +360,7 @@ const Controls = ({
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
             }}
         >
-            {(["DAYS", "MONTHS", "YEARS"] as FilterMode[]).map((mode) => (
+            {(["OVERALL", "DAYS", "MONTHS", "YEARS"] as FilterMode[]).map((mode) => (
                 <button
                     key={mode}
                     onClick={() => setFilterMode(mode)}
@@ -380,5 +419,7 @@ const Controls = ({
                 {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
         )}
+
+        {/* OVERALL & YEARS Logic: No dropdowns needed */}
     </div>
 );

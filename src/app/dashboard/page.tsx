@@ -26,7 +26,6 @@ export default function Dashboard() {
 
     return (
         <main className="min-h-screen bg-background text-foreground transition-colors">
-            <Navbar />
 
             {/* Header Section */}
             <section className="pt-32 pb-12 px-4 bg-background border-b border-border">

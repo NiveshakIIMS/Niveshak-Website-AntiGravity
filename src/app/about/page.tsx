@@ -1,4 +1,3 @@
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AboutClient from "@/components/AboutClient";
 import { dataService } from "@/services/dataService";
@@ -10,7 +9,6 @@ export default async function About() {
 
     return (
         <main className="min-h-screen bg-background">
-            <Navbar />
             <AboutClient data={data} />
             <Footer />
         </main>
