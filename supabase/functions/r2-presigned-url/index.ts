@@ -39,12 +39,7 @@ Deno.serve(async (req) => {
             console.error("Auth Error:", authError);
             return new Response(JSON.stringify({
                 error: "Unauthorized",
-                details: authError?.message || "User is null/missing",
-                debug: {
-                    tokenReceived: !!token,
-                    tokenLen: token?.length,
-                    sbUrl: Deno.env.get("SUPABASE_URL")?.substring(0, 15) + "...",
-                }
+                details: authError?.message || "User is null/missing"
             }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
