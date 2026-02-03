@@ -381,12 +381,16 @@ export default function AboutManager() {
                                                                 placeholder="Left Image"
                                                             />
                                                             <div className="mt-2 h-24 rounded-lg bg-muted border border-border overflow-hidden">
-                                                                <img
-                                                                    src={block.content.split("|||")[0]}
-                                                                    alt="Left Preview"
-                                                                    className="w-full h-full object-cover"
-                                                                    onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-                                                                />
+                                                                {block.content.split("|||")[0] ? (
+                                                                    <img
+                                                                        src={block.content.split("|||")[0]}
+                                                                        alt="Left Preview"
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div>
@@ -401,12 +405,16 @@ export default function AboutManager() {
                                                                 placeholder="Right Image"
                                                             />
                                                             <div className="mt-2 h-24 rounded-lg bg-muted border border-border overflow-hidden">
-                                                                <img
-                                                                    src={block.content.split("|||")[1]}
-                                                                    alt="Right Preview"
-                                                                    className="w-full h-full object-cover"
-                                                                    onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-                                                                />
+                                                                {block.content.split("|||")[1] ? (
+                                                                    <img
+                                                                        src={block.content.split("|||")[1]}
+                                                                        alt="Right Preview"
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>

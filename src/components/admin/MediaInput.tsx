@@ -18,6 +18,7 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
     const [croppingSrc, setCroppingSrc] = useState<string | null>(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
+    const [aspect, setAspect] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -190,15 +191,40 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                                 image={croppingSrc}
                                 crop={crop}
                                 zoom={zoom}
-                                aspect={1} // Default square for profiles
+                                aspect={aspect}
                                 onCropChange={setCrop}
                                 onCropComplete={onCropComplete}
                                 onZoomChange={setZoom}
-                                objectFit="contain" // Allow zooming out to see full image
+                                objectFit="contain"
                             />
                         </div>
 
                         <div className="p-6 bg-card border-t border-border space-y-4">
+                            {/* Aspect Ratio Selector */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase">Aspect Ratio</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { label: "16:9", value: 16 / 9 },
+                                        { label: "5:4", value: 5 / 4 },
+                                        { label: "1:1", value: 1 },
+                                        { label: "4:5", value: 4 / 5 },
+                                        { label: "9:16", value: 9 / 16 }
+                                    ].map((ratio) => (
+                                        <button
+                                            key={ratio.label}
+                                            onClick={() => setAspect(ratio.value)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${Math.abs(aspect - ratio.value) < 0.01
+                                                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                                                }`}
+                                        >
+                                            {ratio.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="flex items-center gap-4">
                                 <ZoomIn className="w-5 h-5 text-muted-foreground" />
                                 <input

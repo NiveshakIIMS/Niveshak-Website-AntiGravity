@@ -6,27 +6,64 @@ import { Lock, User, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import MFAVerification from "@/components/admin/MFAVerification";
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [needsMFA, setNeedsMFA] = useState(false);
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-    useEffect(() => {
-        // Check active session on mount
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsAuthenticated(!!session);
+    // Helper to check session level
+    const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            setIsAuthenticated(false);
+            setNeedsMFA(false);
             setLoading(false);
-        });
+            return;
+        }
 
-        // Listen for auth changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setIsAuthenticated(!!session);
+        const { data: { user } } = await supabase.auth.getUser();
+        // Check if user has enrolled factors
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasFactors = factors && factors.totp.length > 0;
+
+        // Use Supabase 'aal' (Authenticator Assurance Level) claim from Refresh Token if available, 
+        // or just rely on 'amr' (Authentication Methods References) array in session.user.
+        // A simpler check: if has factors, enforce verification unless already verified in this session.
+        // But the best way is 'mfa.getAuthenticatorAssuranceLevel()'.
+
+        const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+        if (hasFactors && level && level.currentLevel === 'aal1') {
+            // Logged in with password (aal1), but needs MFA (aal2)
+            setNeedsMFA(true);
+            setIsAuthenticated(false);
+        } else {
+            // Either no factors needed, or already at aal2
+            setNeedsMFA(false);
+            setIsAuthenticated(true);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        checkSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!session) {
+                setIsAuthenticated(false);
+                setNeedsMFA(false);
+            } else {
+                // Re-evaluate security level on any auth change
+                // Simple delay to ensure session is propagated? No, await/async inside hook is tricky.
+                // We call the helper.
+                checkSession();
+            }
         });
 
         return () => subscription.unsubscribe();
@@ -44,9 +81,14 @@ export default function AdminPage() {
 
         if (error) {
             setError(error.message);
+            setIsLoggingIn(false);
         }
-        // Authentication state is updated automatically by onAuthStateChange
-        setIsLoggingIn(false);
+        // Success will filter to onAuthStateChange -> checkSession
+    };
+
+    const handleMFASuccess = () => {
+        setNeedsMFA(false);
+        setIsAuthenticated(true);
     };
 
     if (loading) {
@@ -59,6 +101,28 @@ export default function AdminPage() {
 
     if (isAuthenticated) {
         return <AdminDashboard setIsAuthenticated={setIsAuthenticated} />;
+    }
+
+    if (needsMFA) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-8"
+                >
+                    <MFAVerification onVerifySuccess={handleMFASuccess} />
+                    <div className="mt-8 text-center">
+                        <button
+                            onClick={() => supabase.auth.signOut()}
+                            className="text-sm text-red-500 hover:underline"
+                        >
+                            Log Out / Cancel
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        );
     }
 
     return (

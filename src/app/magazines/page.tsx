@@ -1,12 +1,13 @@
-"use client";
-
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MagazinesSection from "@/components/sections/MagazinesSection";
+import { dataService } from "@/services/dataService";
 
+export const revalidate = 60; // Helper for ISR
 
+export default async function Magazines() {
+    const magazines = await dataService.getMagazines();
 
-export default function Magazines() {
     return (
         <main className="min-h-screen bg-background">
             <Navbar />
@@ -20,7 +21,7 @@ export default function Magazines() {
             </section>
 
             <div className="max-w-7xl mx-auto">
-                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" />
+                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" initialMagazines={magazines} />
             </div>
             <Footer />
         </main>

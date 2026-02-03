@@ -12,6 +12,7 @@ interface MagazinesSectionProps {
     showViewAll?: boolean;
     showTitle?: boolean;
     bgColor?: string;
+    initialMagazines?: Magazine[];
 }
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -21,11 +22,16 @@ export default function MagazinesSection({
     showFilters = true,
     showViewAll = false,
     showTitle = true,
-    bgColor = "bg-background"
+    bgColor = "bg-background",
+    initialMagazines = []
 }: MagazinesSectionProps) {
-    const [magazines, setMagazines] = useState<Magazine[]>([]);
-    // Filters
-    const [years, setYears] = useState<string[]>([]);
+    const [magazines, setMagazines] = useState<Magazine[]>(initialMagazines);
+
+    // Initialize years from initial data
+    const [years, setYears] = useState<string[]>(() => {
+        return Array.from(new Set(initialMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse() as string[];
+    });
+
     const [selectedYear, setSelectedYear] = useState<string>("All");
     const [selectedMonth, setSelectedMonth] = useState<string>("All");
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -39,12 +45,15 @@ export default function MagazinesSection({
     }, []);
 
     useEffect(() => {
-        dataService.getMagazines().then((loadedMagazines) => {
-            setMagazines(loadedMagazines);
-            const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
-            setYears(distinctYears);
-        });
-    }, []);
+        // Only fetch if no initial data provided or force refresh needs to be handled (omitted for speed)
+        if (initialMagazines.length === 0) {
+            dataService.getMagazines().then((loadedMagazines) => {
+                setMagazines(loadedMagazines);
+                const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
+                setYears(distinctYears);
+            });
+        }
+    }, [initialMagazines.length]);
 
     // Derived State (useMemo)
     const filteredMagazines = useMemo(() => {

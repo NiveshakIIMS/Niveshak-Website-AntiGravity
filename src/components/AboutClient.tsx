@@ -98,7 +98,9 @@ export default function AboutClient({ data }: AboutClientProps) {
                                         <h2 className="text-3xl font-bold text-foreground mb-6 text-center">{block.content}</h2>
                                     )}
                                     {block.type === "paragraph" && (
-                                        <div className="text-lg text-muted-foreground leading-relaxed w-full max-w-none mx-auto break-words overflow-hidden [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                        <div className="bg-card border border-border/50 p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
+                                            <div className="text-lg text-muted-foreground leading-relaxed w-full max-w-none mx-auto break-words [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-foreground [&>h2]:mb-3 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:marker:text-accent [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                        </div>
                                     )}
                                     {block.type === "image" && (
                                         <div className={`my-8 flex ${block.style?.align === "left" ? "justify-start" : block.style?.align === "right" ? "justify-end" : "justify-center"}`}>
