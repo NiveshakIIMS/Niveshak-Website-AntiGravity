@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Link as LinkIcon, Upload, Check, X, ZoomIn } from "lucide-react";
+import { Link as LinkIcon, Upload, Check, X, ZoomIn, Loader2 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
+import { uploadService } from "@/services/uploadService";
 
 interface MediaInputProps {
     label?: string;
@@ -98,15 +99,22 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
 
         setIsProcessing(true);
         try {
-            const croppedImage = await getCroppedImg(croppingSrc, croppedAreaPixels);
-            if (croppedImage) {
-                onChange(croppedImage);
+            const croppedImageBase64 = await getCroppedImg(croppingSrc, croppedAreaPixels);
+
+            if (croppedImageBase64) {
+                // Convert to Blob for Upload
+                const blob = await (await fetch(croppedImageBase64)).blob();
+
+                // Upload to R2
+                const publicUrl = await uploadService.uploadFile(blob, `crop-${Date.now()}.jpg`);
+
+                onChange(publicUrl);
                 setCroppingSrc(null);
                 setZoom(1);
             }
         } catch (e) {
             console.error(e);
-            alert("Failed to crop image.");
+            alert("Failed to upload image. Please check your connection and secrets.");
         } finally {
             setIsProcessing(false);
         }
@@ -217,7 +225,7 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                                     disabled={isProcessing}
                                     className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 flex items-center gap-2"
                                 >
-                                    {isProcessing ? "Processing..." : <><Check className="w-4 h-4" /> Save Crop</>}
+                                    {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Check className="w-4 h-4" /> Save & Upload</>}
                                 </button>
                             </div>
                         </div>
