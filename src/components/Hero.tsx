@@ -142,7 +142,7 @@ export default function Hero() {
                         {!isLogoInNav && (
                             <motion.h1
                                 layoutId="niveshak-title"
-                                className="text-4xl md:text-8xl font-extrabold tracking-tighter text-white drop-shadow-2xl uppercase"
+                                className="text-3xl sm:text-4xl md:text-8xl font-extrabold tracking-tighter text-white drop-shadow-2xl uppercase"
                             >
                                 NIVESHAK
                             </motion.h1>

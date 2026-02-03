@@ -38,7 +38,7 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20">
 
                     {/* Left Side: Logo (Always Visible) */}
-                    <div className="flex-shrink-0 w-64 h-20 overflow-visible relative flex items-center">
+                    <div className="flex-shrink-0 w-auto md:w-64 h-20 overflow-visible relative flex items-center">
                         <Link href="/" className="flex items-center gap-3 group">
                             {isLogoInNav && (
                                 <>

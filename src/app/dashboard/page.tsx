@@ -99,7 +99,7 @@ export default function Dashboard() {
                         {/* Chart Section */}
                         <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-6">
                             <h3 className="text-xl font-bold text-foreground mb-6">NAV Performance</h3>
-                            <div className="h-[400px]">
+                            <div className="h-[300px] md:h-[400px]">
                                 <NAVChart data={navData} />
                             </div>
                         </div>
@@ -107,7 +107,7 @@ export default function Dashboard() {
                         {/* Asset Allocation Placeholder */}
                         <div className="bg-card border border-border rounded-2xl shadow-sm p-6">
                             <h3 className="text-xl font-bold text-foreground mb-6">Asset Allocation</h3>
-                            <div className="h-[400px]">
+                            <div className="h-[300px] md:h-[400px]">
                                 {metrics?.assetAllocation && metrics.assetAllocation.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
