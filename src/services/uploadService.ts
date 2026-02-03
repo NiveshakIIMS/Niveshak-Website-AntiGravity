@@ -22,7 +22,7 @@ export const uploadService = {
 
             if (error || !data) {
                 console.error("Presign Error", error);
-                throw new Error("Failed to get upload URL");
+                throw new Error(`Failed to get upload URL: ${error?.message || JSON.stringify(error) || "Unknown Error"}`);
             }
 
             const { uploadUrl, publicUrl } = data;
