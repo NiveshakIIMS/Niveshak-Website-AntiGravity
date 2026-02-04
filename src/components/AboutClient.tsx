@@ -84,8 +84,8 @@ export default function AboutClient({ data }: AboutClientProps) {
 
             {/* Dynamic Rich Content Section */}
             {data.richContent && data.richContent.length > 0 && (
-                <section className="py-20 bg-muted/30">
-                    <div className="max-w-4xl mx-auto px-4">
+                <section className="py-20 bg-muted/30 overflow-hidden">
+                    <div className="w-full">
                         <div className="space-y-12">
                             {data.richContent.map((block) => (
                                 <motion.div
@@ -93,6 +93,12 @@ export default function AboutClient({ data }: AboutClientProps) {
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
+                                    className={`${block.type === "heading" || block.type === "paragraph"
+                                        ? "max-w-4xl mx-auto px-4"
+                                        : block.style?.layout === "wide"
+                                            ? "w-full px-4 md:px-8 lg:px-16"
+                                            : "max-w-4xl mx-auto px-4"
+                                        }`}
                                 >
                                     {block.type === "heading" && (
                                         <h2 className="text-3xl font-bold text-foreground mb-6 text-center">{block.content}</h2>
@@ -105,36 +111,47 @@ export default function AboutClient({ data }: AboutClientProps) {
                                     {block.type === "image" && (
                                         <div className={`my-8 flex ${block.style?.align === "left" ? "justify-start" : block.style?.align === "right" ? "justify-end" : "justify-center"}`}>
                                             <div
-                                                className="rounded-2xl overflow-hidden shadow-2xl"
+                                                className="rounded-2xl overflow-hidden shadow-2xl transition-all duration-500"
                                                 style={{ width: `${block.style?.width || 100}%` }}
                                             >
-                                                <img src={block.content} alt="Content Image" className="w-full h-auto" />
+                                                <img
+                                                    src={block.content}
+                                                    alt="Content Image"
+                                                    className={`w-full ${block.style?.aspectRatio === 'auto' ? 'h-auto' : 'h-[500px] object-cover'}`}
+                                                />
                                             </div>
                                         </div>
                                     )}
                                     {block.type === "double_image" && (
-                                        <div className="my-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            {(() => {
-                                                const [url1, url2] = block.content.split("|||");
-                                                return (
-                                                    <>
-                                                        <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-                                                            <img
-                                                                src={url1}
-                                                                alt="Content Image"
-                                                                className="w-full h-64 md:h-80 object-cover hover:scale-105 transition-transform duration-500"
-                                                            />
-                                                        </div>
-                                                        <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-                                                            <img
-                                                                src={url2}
-                                                                alt="Content Image"
-                                                                className="w-full h-64 md:h-80 object-cover hover:scale-105 transition-transform duration-500"
-                                                            />
-                                                        </div>
-                                                    </>
-                                                );
-                                            })()}
+                                        <div className={`my-10 flex ${block.style?.align === "left" ? "justify-start" : block.style?.align === "right" ? "justify-end" : "justify-center"}`}>
+                                            <div
+                                                className="w-full"
+                                                style={{ width: `${block.style?.width || 100}%` }}
+                                            >
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {(() => {
+                                                        const [url1, url2] = block.content.split("|||");
+                                                        return (
+                                                            <>
+                                                                <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
+                                                                    <img
+                                                                        src={url1}
+                                                                        alt="Content Image"
+                                                                        className={`w-full hover:scale-105 transition-transform duration-500 ${block.style?.aspectRatio === 'auto' ? 'h-auto' : 'h-64 md:h-80 object-cover'}`}
+                                                                    />
+                                                                </div>
+                                                                <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
+                                                                    <img
+                                                                        src={url2}
+                                                                        alt="Content Image"
+                                                                        className={`w-full hover:scale-105 transition-transform duration-500 ${block.style?.aspectRatio === 'auto' ? 'h-auto' : 'h-64 md:h-80 object-cover'}`}
+                                                                    />
+                                                                </div>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </motion.div>

@@ -311,6 +311,7 @@ export default function AboutManager() {
                                                                                     setData({ ...data, richContent: newBlocks });
                                                                                 }
                                                                             }}
+                                                                            title={`Align ${align}`}
                                                                             className={`p-1.5 rounded-md transition-colors ${block.style?.align === align || (!block.style?.align && align === "center") ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold shadow-sm" : "hover:bg-muted text-muted-foreground"}`}
                                                                         >
                                                                             <div className={`w-4 h-4 rounded-sm border-2 border-current ${align === "left" ? "border-r-0 border-b-0 border-t-0" : align === "right" ? "border-l-0 border-b-0 border-t-0" : "border-x-2 border-y-0"}`} style={{
@@ -322,6 +323,67 @@ export default function AboutManager() {
                                                                         </button>
                                                                     ))}
                                                                 </div>
+
+                                                                {/* Layout Toggle */}
+                                                                <div className="flex items-center gap-1 bg-background rounded-lg border border-border p-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newBlocks = [...(data.richContent || [])];
+                                                                            const target = newBlocks.find(b => b.id === block.id);
+                                                                            if (target) {
+                                                                                target.style = { ...target.style, layout: "normal" };
+                                                                                setData({ ...data, richContent: newBlocks });
+                                                                            }
+                                                                        }}
+                                                                        className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${!block.style?.layout || block.style?.layout === "normal" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                                    >
+                                                                        Standard
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newBlocks = [...(data.richContent || [])];
+                                                                            const target = newBlocks.find(b => b.id === block.id);
+                                                                            if (target) {
+                                                                                target.style = { ...target.style, layout: "wide" };
+                                                                                setData({ ...data, richContent: newBlocks });
+                                                                            }
+                                                                        }}
+                                                                        className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${block.style?.layout === "wide" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                                    >
+                                                                        Wide
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Aspect Ratio Toggle */}
+                                                                <div className="flex items-center gap-1 bg-background rounded-lg border border-border p-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newBlocks = [...(data.richContent || [])];
+                                                                            const target = newBlocks.find(b => b.id === block.id);
+                                                                            if (target) {
+                                                                                target.style = { ...target.style, aspectRatio: "cover" };
+                                                                                setData({ ...data, richContent: newBlocks });
+                                                                            }
+                                                                        }}
+                                                                        className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${!block.style?.aspectRatio || block.style?.aspectRatio === "cover" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                                    >
+                                                                        Crop
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newBlocks = [...(data.richContent || [])];
+                                                                            const target = newBlocks.find(b => b.id === block.id);
+                                                                            if (target) {
+                                                                                target.style = { ...target.style, aspectRatio: "auto" };
+                                                                                setData({ ...data, richContent: newBlocks });
+                                                                            }
+                                                                        }}
+                                                                        className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${block.style?.aspectRatio === "auto" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                                    >
+                                                                        Auto
+                                                                    </button>
+                                                                </div>
+
                                                                 <div className="flex-1 flex flex-col gap-2">
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-xs font-bold text-muted-foreground whitespace-nowrap w-12">Width</span>
@@ -419,6 +481,109 @@ export default function AboutManager() {
                                                         </div>
                                                     </div>
                                                     <p className="text-xs text-muted-foreground text-center">These two images will be displayed side-by-side.</p>
+
+                                                    {/* Double Image Controls */}
+                                                    <div className="flex flex-wrap items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border mt-2">
+                                                        {/* Layout Toggle */}
+                                                        <div className="flex items-center gap-1 bg-background rounded-lg border border-border p-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newBlocks = [...(data.richContent || [])];
+                                                                    const target = newBlocks.find(b => b.id === block.id);
+                                                                    if (target) {
+                                                                        target.style = { ...target.style, layout: "normal" };
+                                                                        setData({ ...data, richContent: newBlocks });
+                                                                    }
+                                                                }}
+                                                                className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${!block.style?.layout || block.style?.layout === "normal" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                            >
+                                                                Standard
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newBlocks = [...(data.richContent || [])];
+                                                                    const target = newBlocks.find(b => b.id === block.id);
+                                                                    if (target) {
+                                                                        target.style = { ...target.style, layout: "wide" };
+                                                                        setData({ ...data, richContent: newBlocks });
+                                                                    }
+                                                                }}
+                                                                className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${block.style?.layout === "wide" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                            >
+                                                                Wide
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Aspect Ratio Toggle */}
+                                                        <div className="flex items-center gap-1 bg-background rounded-lg border border-border p-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newBlocks = [...(data.richContent || [])];
+                                                                    const target = newBlocks.find(b => b.id === block.id);
+                                                                    if (target) {
+                                                                        target.style = { ...target.style, aspectRatio: "cover" };
+                                                                        setData({ ...data, richContent: newBlocks });
+                                                                    }
+                                                                }}
+                                                                className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${!block.style?.aspectRatio || block.style?.aspectRatio === "cover" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                            >
+                                                                Crop
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newBlocks = [...(data.richContent || [])];
+                                                                    const target = newBlocks.find(b => b.id === block.id);
+                                                                    if (target) {
+                                                                        target.style = { ...target.style, aspectRatio: "auto" };
+                                                                        setData({ ...data, richContent: newBlocks });
+                                                                    }
+                                                                }}
+                                                                className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${block.style?.aspectRatio === "auto" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted"}`}
+                                                            >
+                                                                Auto
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Width Controls */}
+                                                        <div className="flex-1 flex flex-col gap-2 min-w-[200px]">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-muted-foreground whitespace-nowrap w-12">Width</span>
+                                                                <div className="flex items-center gap-1">
+                                                                    {[25, 50, 75, 100].map(w => (
+                                                                        <button
+                                                                            key={w}
+                                                                            onClick={() => {
+                                                                                const newBlocks = [...(data.richContent || [])];
+                                                                                const target = newBlocks.find(b => b.id === block.id);
+                                                                                if (target) {
+                                                                                    target.style = { ...target.style, width: w };
+                                                                                    setData({ ...data, richContent: newBlocks });
+                                                                                }
+                                                                            }}
+                                                                            className={`px-2 py-1 text-xs rounded border ${block.style?.width === w || (!block.style?.width && w === 100) ? "bg-blue-600 text-white border-blue-600" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+                                                                        >
+                                                                            {w === 25 ? "S" : w === 50 ? "M" : w === 75 ? "L" : "Full"}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="10" max="100" step="10"
+                                                                value={block.style?.width || 100}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value);
+                                                                    const newBlocks = [...(data.richContent || [])];
+                                                                    const target = newBlocks.find(b => b.id === block.id);
+                                                                    if (target) {
+                                                                        target.style = { ...target.style, width: val };
+                                                                        setData({ ...data, richContent: newBlocks });
+                                                                    }
+                                                                }}
+                                                                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-blue-600"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

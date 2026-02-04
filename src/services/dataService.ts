@@ -27,7 +27,9 @@ export interface ContentBlock {
     content: string; // For double_image: "url1|||url2"
     style?: {
         align?: "left" | "center" | "right";
-        width?: number;
+        width?: number; // percentage
+        layout?: "normal" | "wide"; // wide = max-w-7xl, normal = max-w-4xl (default)
+        aspectRatio?: "auto" | "cover"; // auto = natural, cover = fixed height (default)
     };
 }
 
