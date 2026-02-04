@@ -270,7 +270,7 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                         tickLine={false}
                         tick={{ fill: '#9ca3af', fontSize: 12 }}
                         interval={isOverall ? "preserveStartEnd" : "preserveStartEnd"}
-                        padding={{ left: 10, right: 10 }}
+                        padding={{ left: 30, right: 30 }}
                         type={isOverall ? "number" : "category"}
                         domain={isOverall ? ['dataMin', 'dataMax'] : undefined}
                         tickFormatter={(val) => {
@@ -278,16 +278,22 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                             return val;
                         }}
                         ticks={isOverall ? (() => {
-                            // Generate ticks only for start of years
                             if (processedData.length === 0) return [];
                             const minTime = Number(processedData[0].label);
                             const maxTime = Number(processedData[processedData.length - 1].label);
                             const minYear = new Date(minTime).getFullYear();
                             const maxYear = new Date(maxTime).getFullYear();
+
                             const ticks = [];
-                            for (let y = minYear; y <= maxYear; y++) {
+
+                            // Always add the exact start date as the first tick so "202X" appears at the start
+                            ticks.push(minTime);
+
+                            // Add Jan 1st for subsequent years
+                            for (let y = minYear + 1; y <= maxYear; y++) {
                                 ticks.push(new Date(y, 0, 1).getTime());
                             }
+
                             return ticks;
                         })() : undefined}
                     />
@@ -320,7 +326,7 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                         dataKey="value"
                         stroke="#00A8E8"
                         strokeWidth={3}
-                        dot={{ r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' }}
+                        dot={!isOverall ? { r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' } : false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                         animationDuration={800}
                         isAnimationActive={false} // Disable animation to prevent potential freezing during rapid updates

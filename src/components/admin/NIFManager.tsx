@@ -23,6 +23,41 @@ export default function NIFManager() {
         });
     }, []);
 
+    const calculateCAGR = (navData: NAVData[]) => {
+        if (navData.length < 2) return "0";
+        // Sort ascending
+        const sorted = [...navData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const start = sorted[0];
+        const end = sorted[sorted.length - 1];
+
+        const startVal = start.value;
+        const endVal = end.value;
+
+        if (startVal === 0) return "0";
+
+        const startDate = new Date(start.date);
+        const endDate = new Date(end.date);
+        const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const years = days / 365.25;
+
+        if (years <= 0) return "0";
+
+        const cagr = (Math.pow(endVal / startVal, 1 / years) - 1) * 100;
+        return cagr.toFixed(2); // 2 decimal places
+    };
+
+    // Auto-calculate CAGR effect
+    useEffect(() => {
+        if (metrics.isAutoReturn && data.length >= 2) {
+            const cagr = calculateCAGR(data);
+            if (cagr !== metrics.annualizedReturn) {
+                const newMetrics = { ...metrics, annualizedReturn: cagr };
+                setMetrics(newMetrics);
+                dataService.saveNIFMetrics(newMetrics);
+            }
+        }
+    }, [data, metrics.isAutoReturn, metrics.annualizedReturn]); // Refined deps
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -275,19 +310,46 @@ export default function NIFManager() {
                                         </div>
                                     </div>
                                 </div>
+
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase">Ann. Return (%)</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase">Ann. Return (%)</label>
+                                        <label className="text-[10px] cursor-pointer flex items-center gap-1 select-none font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={!!metrics.isAutoReturn}
+                                                onChange={async (e) => {
+                                                    const isAuto = e.target.checked;
+                                                    let newReturn = metrics.annualizedReturn;
+                                                    if (isAuto) {
+                                                        newReturn = calculateCAGR(data);
+                                                    }
+                                                    const newMetrics = { ...metrics, isAutoReturn: isAuto, annualizedReturn: newReturn };
+                                                    setMetrics(newMetrics);
+                                                    await dataService.saveNIFMetrics(newMetrics);
+                                                }}
+                                                className="accent-blue-600 w-3 h-3"
+                                            />
+                                            Auto Calc
+                                        </label>
+                                    </div>
                                     <input
                                         type="text"
+                                        disabled={metrics.isAutoReturn}
                                         value={metrics.annualizedReturn}
                                         onChange={async e => {
                                             const newMetrics = { ...metrics, annualizedReturn: e.target.value };
                                             setMetrics(newMetrics);
                                             await dataService.saveNIFMetrics(newMetrics);
                                         }}
-                                        className="w-full p-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-purple-500 outline-none transition-all font-mono text-foreground"
+                                        className={`w-full p-3 border border-input rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-mono text-foreground ${metrics.isAutoReturn ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-70' : 'bg-background'}`}
                                         placeholder="12.5"
                                     />
+                                    {metrics.isAutoReturn && (
+                                        <p className="text-[10px] text-muted-foreground ml-1">
+                                            Calculated from {data.length} data points (CAGR)
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
