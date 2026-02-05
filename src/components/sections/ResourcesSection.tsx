@@ -82,7 +82,11 @@ export default function ResourcesSection({ resources: initialResources, showTitl
         return (
             <section className={`py-20 px-4 ${bgColor}`}>
                 <div className="max-w-7xl mx-auto text-center">
-                    {showTitle && <h2 className="text-3xl font-bold mb-12">Resources</h2>}
+                    {showTitle && (
+                        <h2 className="text-3xl font-bold mb-12 text-foreground">
+                            <span className="text-accent">Resources</span>
+                        </h2>
+                    )}
                     <div className="p-12 border-2 border-dashed border-muted rounded-3xl bg-card/50">
                         <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                         <h3 className="text-xl font-bold">No Resources Found</h3>
@@ -98,8 +102,8 @@ export default function ResourcesSection({ resources: initialResources, showTitl
             <div className="max-w-7xl mx-auto space-y-8">
                 {showTitle && (
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 inline-block">
-                            Resources
+                        <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                            <span className="text-accent">Resources</span>
                         </h2>
                         {!isHomepage && <p className="text-muted-foreground mt-2 max-w-xl mx-auto">Browse our collection of documents, links, and folders.</p>}
                     </div>

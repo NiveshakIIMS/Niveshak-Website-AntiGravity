@@ -14,7 +14,7 @@ export default async function Resources() {
             <section className="pt-32 pb-12 px-4 bg-background border-b border-border transition-colors">
                 <div className="max-w-7xl mx-auto text-center">
                     <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                        <span className="text-blue-600 dark:text-blue-400">Resources</span>
+                        <span className="text-accent">Resources</span>
                     </h1>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                         A curated library of financial models, research reports, and educational materials from Niveshak.

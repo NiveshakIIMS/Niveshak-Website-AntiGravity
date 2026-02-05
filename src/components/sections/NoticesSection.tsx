@@ -31,7 +31,7 @@ export default function NoticesSection() {
         return (
             <section className="py-20 relative overflow-hidden bg-muted/20">
                 <div className="container mx-auto px-4 text-center">
-                    <h2 className="text-3xl font-bold text-foreground mb-4">Notice Board</h2>
+                    <h2 className="text-3xl font-bold text-foreground mb-4">Notice <span className="text-accent">Board</span></h2>
                     <p className="text-muted-foreground">No new notices at the moment. Check back later!</p>
                     <div className="mt-6">
                         <Link href="/notices">
