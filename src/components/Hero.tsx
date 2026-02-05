@@ -75,7 +75,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full h-[50vh] md:h-auto md:aspect-video overflow-hidden flex flex-col items-center justify-center pt-24 md:pt-20 bg-navy-900 transition-colors duration-500">
+        <section id="hero" className="relative w-full min-h-[50vh] h-auto md:aspect-video overflow-hidden flex flex-col items-center justify-center pt-24 pb-12 md:pt-20 md:pb-0 bg-navy-900 transition-colors duration-500">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -119,7 +119,7 @@ export default function Hero() {
                         {!isLogoInNav && (
                             <motion.div
                                 layoutId="niveshak-logo"
-                                className="relative w-32 h-32 md:w-52 md:h-52"
+                                className="relative w-24 h-24 md:w-52 md:h-52"
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ duration: 0.5 }}

@@ -97,17 +97,17 @@ export default function Dashboard() {
 
                     <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8">
                         {/* Chart Section */}
-                        <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-6">
+                        <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-6 overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-6">NAV Performance</h3>
-                            <div className="h-[300px] md:h-[400px]">
+                            <div className="h-[300px] md:h-[400px] w-full min-w-0">
                                 <NAVChart data={navData} />
                             </div>
                         </div>
 
                         {/* Asset Allocation */}
-                        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col">
+                        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-6">Asset Allocation</h3>
-                            <div className="h-[300px] md:h-[400px] w-full flex-1">
+                            <div className="h-[300px] md:h-[400px] w-full flex-1 min-w-0">
                                 {metrics?.assetAllocation && metrics.assetAllocation.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -115,8 +115,8 @@ export default function Dashboard() {
                                                 data={metrics.assetAllocation}
                                                 cx="50%"
                                                 cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={100}
+                                                innerRadius="40%"
+                                                outerRadius="70%"
                                                 paddingAngle={5}
                                                 dataKey="value"
                                             >

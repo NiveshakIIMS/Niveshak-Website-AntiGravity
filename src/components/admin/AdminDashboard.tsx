@@ -12,6 +12,7 @@ import EventsManager from "./EventsManager";
 import NIFManager from "./NIFManager";
 import SocialManager from "./SocialManager";
 import NoticesManager from "./NoticesManager";
+import ResourcesManager from "./ResourcesManager";
 import MigrationManager from "./MigrationManager";
 import MFAEnrollment from "./MFAEnrollment";
 import { supabase } from "@/lib/supabaseClient";
@@ -56,6 +57,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
             case "nif": return <NIFManager />;
             case "social": return <SocialManager />;
             case "notices": return <NoticesManager />;
+            case "resources": return <ResourcesManager />;
             case "migration": return <MigrationManager />;
             default: return <HeroManager />;
         }

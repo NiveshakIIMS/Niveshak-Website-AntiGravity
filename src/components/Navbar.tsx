@@ -15,6 +15,7 @@ const navItems = [
     { name: "Events", href: "/events" },
     { name: "Notice Board", href: "/notices" },
     { name: "NIF", href: "/dashboard" },
+    { name: "Resources", href: "/resources" },
 ];
 import { usePathname } from "next/navigation";
 
@@ -45,31 +46,33 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20">
 
                     {/* Left Side: Logo (Always Visible) */}
-                    <div className="flex-shrink-0 w-auto md:w-64 h-20 overflow-visible relative flex items-center">
-                        <Link href="/" className="flex items-center gap-3 group">
-                            {isLogoInNav && (
-                                <>
-                                    <motion.div
-                                        layoutId="niveshak-logo"
-                                        className="relative w-10 h-10 transform transition-transform group-hover:scale-110"
-                                        transition={{ duration: 0.5 }}
-                                    >
-                                        <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
-                                    </motion.div>
-                                    <motion.span
-                                        layoutId="niveshak-title"
-                                        className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
-                                        transition={{ duration: 0.5 }}
-                                    >
-                                        NIVESHAK
-                                    </motion.span>
-                                </>
-                            )}
-                        </Link>
+                    <div className="flex-1 flex justify-start"> {/* flex-1 to balance */}
+                        <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center">
+                            <Link href="/" className="flex items-center gap-3 group">
+                                {isLogoInNav && (
+                                    <>
+                                        <motion.div
+                                            layoutId="niveshak-logo"
+                                            className="relative w-10 h-10 transform transition-transform group-hover:scale-110"
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
+                                        </motion.div>
+                                        <motion.span
+                                            layoutId="niveshak-title"
+                                            className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            NIVESHAK
+                                        </motion.span>
+                                    </>
+                                )}
+                            </Link>
+                        </div>
                     </div>
 
-                    {/* Center: Nav Items (Desktop) */}
-                    <div className="hidden md:flex flex-1 justify-center items-center">
+                    {/* Center: Nav Items + Theme Toggle (Desktop) */}
+                    <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 items-center gap-4">
                         <div className="flex bg-navy-800/50 p-1.5 rounded-full border border-navy-700/50 backdrop-blur-sm">
                             {navItems.map((item) => {
                                 const active = isActive(item.href);
@@ -77,7 +80,7 @@ export default function Navbar() {
                                     <Link
                                         key={item.name}
                                         href={item.href}
-                                        className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm ${active
+                                        className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm whitespace-nowrap ${active
                                             ? "bg-white text-navy-900 shadow-md scale-105"
                                             : "text-gray-300 hover:text-white hover:bg-navy-800"
                                             }`}
@@ -87,22 +90,22 @@ export default function Navbar() {
                                 );
                             })}
                         </div>
-                    </div>
 
-                    {/* Right: Actions (Desktop) */}
-                    <div className="hidden md:flex items-center gap-3 w-auto justify-end">
-
-                        <Link href="/admin" className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md">
-                            Admin Login
-                        </Link>
-
-                        {/* Theme Toggle */}
+                        {/* Theme Toggle (Moved here) */}
                         <button
                             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                            className="p-2.5 rounded-full bg-navy-800 text-gray-300 border border-navy-700 hover:bg-navy-700 hover:text-white transition-colors"
+                            className="p-2.5 rounded-full bg-navy-800 text-gray-300 border border-navy-700 hover:bg-navy-700 hover:text-white transition-colors shadow-sm"
+                            aria-label="Toggle Theme"
                         >
                             {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                         </button>
+                    </div>
+
+                    {/* Right: Actions (Desktop) */}
+                    <div className="hidden md:flex flex-1 justify-end items-center gap-3">
+                        <Link href="/admin" className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap">
+                            Admin
+                        </Link>
                     </div>
 
                     {/* Mobile Menu Button */}

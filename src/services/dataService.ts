@@ -1,6 +1,7 @@
 
 
 import { supabase } from "@/lib/supabaseClient";
+import { R2_DOMAIN } from "@/lib/constants";
 
 // --- Types ---
 
@@ -108,11 +109,30 @@ export interface SiteSettings {
     socialLinks: SocialLink[];
 }
 
+export interface Resource {
+    id: string;
+    title: string;
+    description: string;
+    type: "file" | "link" | "folder";
+    url: string;
+    coverImage: string;
+    date: string;
+    parentId?: string | null;
+}
+
 // --- Defaults (Fallbacks) ---
 
 const DEFAULT_HERO: HeroSlide[] = [{ id: "1", imageUrl: "/hero_background.png", title: "Niveshak Supabase", subtitle: "Connecting...", objectFit: "cover", timer: 5 }];
 const DEFAULT_ABOUT: AboutContent = { title: "About Niveshak", description: "Loading content...", slides: [], cards: [], richContent: [] };
 const DEFAULT_NIF: NIFMetrics = { annualizedReturn: "0", totalAUM: "0", ytdReturn: "0", fundUnits: "0", isAutoReturn: false, assetAllocation: [] };
+
+// --- Helper for R2 Resolution ---
+const resolveUrl = (legacyUrl: string, mediaKey?: string | null, provider?: string | null) => {
+    if (provider === 'r2' && mediaKey) {
+        return `${R2_DOMAIN}/${mediaKey}`;
+    }
+    return legacyUrl;
+};
 
 // --- Service ---
 
@@ -126,7 +146,7 @@ export const dataService = {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return data.map((d: any) => ({
             id: d.id,
-            imageUrl: d.image_url,
+            imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
             title: d.title,
             subtitle: d.subtitle,
             objectFit: d.object_fit,
@@ -142,14 +162,21 @@ export const dataService = {
         // Strategy: Delete All -> Insert All (Cleanest for re-ordering)
         await supabase.from('hero_slides').delete().neq('id', '0');
 
-        const rows = slides.map(s => ({
-            id: s.id,
-            image_url: s.imageUrl,
-            title: s.title,
-            subtitle: s.subtitle,
-            object_fit: s.objectFit,
-            timer: s.timer
-        }));
+        const rows = slides.map(s => {
+            // Check if URL is R2 to preserve metadata (simple check)
+            const isR2 = s.imageUrl.startsWith(R2_DOMAIN);
+            const mediaKey = isR2 ? s.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
+            return {
+                id: s.id,
+                image_url: s.imageUrl,
+                title: s.title,
+                subtitle: s.subtitle,
+                object_fit: s.objectFit,
+                timer: s.timer,
+                storage_provider: isR2 ? 'r2' : 'legacy',
+                media_key: mediaKey
+            };
+        });
 
         const { error } = await supabase.from('hero_slides').insert(rows);
         if (error) console.error("Save Hero Error", error);
@@ -190,7 +217,7 @@ export const dataService = {
             id: d.id,
             name: d.name,
             role: d.role,
-            imageUrl: d.image_url,
+            imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
             email: d.email,
             linkedin: d.linkedin,
             details: d.details,
@@ -199,16 +226,22 @@ export const dataService = {
     },
     saveTeam: async (members: TeamMember[]) => {
         await supabase.from('team_members').delete().neq('id', '0');
-        const rows = members.map(m => ({
-            id: m.id,
-            name: m.name,
-            role: m.role,
-            image_url: m.imageUrl,
-            email: m.email,
-            linkedin: m.linkedin,
-            details: m.details,
-            category: m.category
-        }));
+        const rows = members.map(m => {
+            const isR2 = m.imageUrl.startsWith(R2_DOMAIN);
+            const mediaKey = isR2 ? m.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
+            return {
+                id: m.id,
+                name: m.name,
+                role: m.role,
+                image_url: m.imageUrl,
+                email: m.email,
+                linkedin: m.linkedin,
+                details: m.details,
+                category: m.category,
+                storage_provider: isR2 ? 'r2' : 'legacy',
+                media_key: mediaKey
+            };
+        });
         const { error } = await supabase.from('team_members').insert(rows);
         if (error) console.error("Save Team Error", error);
     },
@@ -224,23 +257,36 @@ export const dataService = {
             issueDate: d.issue_date,
             issueMonth: d.issue_month,
             issueYear: d.issue_year,
-            coverUrl: d.cover_url,
-            pdfUrl: d.pdf_url,
+            coverUrl: resolveUrl(d.cover_url, d.media_key, d.storage_provider),
+            pdfUrl: resolveUrl(d.pdf_url, d.pdf_media_key, d.storage_provider),
             flipUrl: d.flip_url
         }));
     },
     saveMagazines: async (mags: Magazine[]) => {
         await supabase.from('magazines').delete().neq('id', '0');
-        const rows = mags.map(m => ({
-            id: m.id,
-            title: m.title,
-            issue_date: m.issueDate,
-            issue_month: m.issueMonth,
-            issue_year: m.issueYear,
-            cover_url: m.coverUrl,
-            pdf_url: m.pdfUrl,
-            flip_url: m.flipUrl
-        }));
+        const rows = mags.map(m => {
+            const isR2Cover = m.coverUrl.startsWith(R2_DOMAIN);
+            const coverKey = isR2Cover ? m.coverUrl.replace(`${R2_DOMAIN}/`, '') : null;
+
+            const isR2Pdf = m.pdfUrl.startsWith(R2_DOMAIN);
+            const pdfKey = isR2Pdf ? m.pdfUrl.replace(`${R2_DOMAIN}/`, '') : null;
+
+            return {
+                id: m.id,
+                title: m.title,
+                issue_date: m.issueDate,
+                issue_month: m.issueMonth,
+                issue_year: m.issueYear,
+                cover_url: m.coverUrl,
+                pdf_url: m.pdfUrl,
+                flip_url: m.flipUrl,
+                storage_provider: (isR2Cover || isR2Pdf) ? 'r2' : 'legacy', // Simplified logic, ideally granular but schema has one provider column usually? 
+                // Wait, schema has one storage_provider. We assume if one is R2, we mark as R2. 
+                // Actually for read, we check media_key presence. Provider column is mostly metadata.
+                media_key: coverKey,
+                pdf_media_key: pdfKey
+            };
+        });
         const { error } = await supabase.from('magazines').insert(rows);
         if (error) console.error("Save Mags Error", error);
     },
@@ -280,7 +326,7 @@ export const dataService = {
                 time: d.time,
                 location: d.location,
                 type: calculatedType, // Use calculated type
-                imageUrl: d.image_url,
+                imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
                 orientation: d.orientation,
                 meetingLink: d.meeting_link,
                 isOnline: d.is_online
@@ -289,18 +335,24 @@ export const dataService = {
     },
     saveEvents: async (events: Event[]) => {
         await supabase.from('events').delete().neq('id', '0');
-        const rows = events.map(e => ({
-            id: e.id,
-            title: e.title,
-            date: e.date,
-            time: e.time,
-            location: e.location,
-            type: e.type,
-            image_url: e.imageUrl,
-            orientation: e.orientation,
-            meeting_link: e.meetingLink,
-            is_online: e.isOnline
-        }));
+        const rows = events.map(e => {
+            const isR2 = e.imageUrl.startsWith(R2_DOMAIN);
+            const mediaKey = isR2 ? e.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
+            return {
+                id: e.id,
+                title: e.title,
+                date: e.date,
+                time: e.time,
+                location: e.location,
+                type: e.type,
+                image_url: e.imageUrl,
+                orientation: e.orientation,
+                meeting_link: e.meetingLink,
+                is_online: e.isOnline,
+                storage_provider: isR2 ? 'r2' : 'legacy',
+                media_key: mediaKey
+            };
+        });
         const { error } = await supabase.from('events').insert(rows);
         if (error) console.error("Save Events Error", error);
     },
@@ -395,7 +447,7 @@ export const dataService = {
             date: d.date,
             time: d.time, // Map time
             expiryDate: d.expiry_date,
-            imageUrl: d.image_url,
+            imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
             link: d.link,
             linkLabel: d.link_label
         }));
@@ -405,20 +457,99 @@ export const dataService = {
         // Note: For large datasets, upsert is better. For this scale, delete-insert is fine to keep order/cleanups easy.
         await supabase.from('notices').delete().neq('id', '0');
 
-        const rows = notices.map(n => ({
-            id: n.id,
-            title: n.title,
-            category: n.category,
-            content: n.content,
-            date: n.date,
-            time: n.time, // Save time
-            expiry_date: n.expiryDate,
-            image_url: n.imageUrl,
-            link: n.link,
-            link_label: n.linkLabel
-        }));
+        const rows = notices.map(n => {
+            const isR2 = n.imageUrl && n.imageUrl.startsWith(R2_DOMAIN);
+            const mediaKey = isR2 && n.imageUrl ? n.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
+            return {
+                id: n.id,
+                title: n.title,
+                category: n.category,
+                content: n.content,
+                date: n.date,
+                time: n.time,
+                expiry_date: n.expiryDate,
+                image_url: n.imageUrl,
+                link: n.link,
+                link_label: n.linkLabel,
+                storage_provider: isR2 ? 'r2' : 'legacy',
+                media_key: mediaKey
+            };
+        });
 
         const { error } = await supabase.from('notices').insert(rows);
         if (error) console.error("Save Notices Error", error);
+    },
+
+    // --- Resources ---
+    getResources: async (parentId?: string | null): Promise<Resource[]> => {
+        let query = supabase.from('resources').select('*').order('type', { ascending: false }).order('date', { ascending: false });
+
+        if (parentId !== undefined) {
+            if (parentId === null) {
+                query = query.is('parent_id', null);
+            } else {
+                query = query.eq('parent_id', parentId);
+            }
+        }
+
+        const { data, error } = await query;
+        if (error || !data) return [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return data.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            description: d.description,
+            type: d.type,
+            url: d.url, // Resources usually new, use direct url
+            coverImage: d.cover_image,
+            date: d.date,
+            parentId: d.parent_id
+        }));
+    },
+
+    createResource: async (resource: Omit<Resource, "id">) => {
+        const row = {
+            title: resource.title,
+            description: resource.description,
+            type: resource.type,
+            url: resource.url,
+            cover_image: resource.coverImage,
+            date: resource.date,
+            parent_id: resource.parentId
+        };
+        const { error } = await supabase.from('resources').insert(row);
+        if (error) {
+            console.error("Create Resource Error", error);
+            throw error;
+        }
+    },
+
+    updateResource: async (resource: Resource) => {
+        const row = {
+            title: resource.title,
+            description: resource.description,
+            type: resource.type,
+            url: resource.url,
+            cover_image: resource.coverImage,
+            date: resource.date,
+            parent_id: resource.parentId
+        };
+        const { error } = await supabase.from('resources').update(row).eq('id', resource.id);
+        if (error) {
+            console.error("Update Resource Error", error);
+            throw error;
+        }
+    },
+
+    deleteResource: async (id: string) => {
+        const { error } = await supabase.from('resources').delete().eq('id', id);
+        if (error) {
+            console.error("Delete Resource Error", error);
+            throw error;
+        }
+    },
+
+    saveResources: async (resources: Resource[]) => {
+        console.warn("saveResources is deprecated. Use granular operations.");
     }
 };

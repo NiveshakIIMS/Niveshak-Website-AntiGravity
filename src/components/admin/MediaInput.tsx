@@ -11,9 +11,10 @@ interface MediaInputProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    folder?: string;
 }
 
-export default function MediaInput({ label, value, onChange, placeholder = "Image URL or Upload" }: MediaInputProps) {
+export default function MediaInput({ label, value, onChange, placeholder = "Image URL or Upload", folder = "uploads" }: MediaInputProps) {
     const [mode, setMode] = useState<"link" | "upload">("link");
     const [croppingSrc, setCroppingSrc] = useState<string | null>(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -97,24 +98,23 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
 
     const handleSaveCrop = async () => {
         if (!croppingSrc || !croppedAreaPixels) return;
-
-        setIsProcessing(true);
         try {
-            const croppedImageBase64 = await getCroppedImg(croppingSrc, croppedAreaPixels);
+            setIsProcessing(true);
+            const croppedImage = await getCroppedImg(croppingSrc, croppedAreaPixels);
+            if (!croppedImage) throw new Error("Could not create image");
 
-            if (croppedImageBase64) {
-                // Convert to Blob for Upload
-                const blob = await (await fetch(croppedImageBase64)).blob();
+            const blob = uploadService.base64ToBlob(croppedImage);
+            const file = new File([blob], "image.jpg", { type: "image/jpeg" });
 
-                // Upload to R2
-                const publicUrl = await uploadService.uploadFile(blob, `crop-${Date.now()}.jpg`);
+            // Construct path with folder
+            const filename = `${folder}/${Date.now()}.jpg`;
+            const publicUrl = await uploadService.uploadFile(file, filename);
 
-                onChange(publicUrl);
-                setCroppingSrc(null);
-                setZoom(1);
-            }
-        } catch (e) {
-            console.error(e);
+            onChange(publicUrl);
+            setCroppingSrc(null);
+            setMode("link"); // Switch back to view mode
+        } catch (error) {
+            console.error(error);
             alert("Failed to upload image. Please check your connection and secrets.");
         } finally {
             setIsProcessing(false);
