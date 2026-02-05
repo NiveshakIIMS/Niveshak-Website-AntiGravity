@@ -107,7 +107,7 @@ export default function Dashboard() {
                         {/* Asset Allocation */}
                         <div className="bg-card border border-border rounded-2xl shadow-sm p-6 flex flex-col overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-6">Asset Allocation</h3>
-                            <div className="h-[300px] md:h-[400px] w-full flex-1 min-w-0">
+                            <div className="h-[300px] md:h-[400px] w-full min-w-0">
                                 {metrics?.assetAllocation && metrics.assetAllocation.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>

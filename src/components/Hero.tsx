@@ -152,7 +152,7 @@ export default function Hero() {
                     <motion.div
                         animate={{ y: 0 }}
                         transition={{ duration: 0.8, ease: "easeInOut" }}
-                        className={`flex flex-col items-center transition-all duration-1000 ${isLogoInNav ? "absolute bottom-12 left-0 right-0 z-20" : "relative"}`}
+                        className={`flex flex-col items-center transition-all duration-1000 ${isLogoInNav ? "md:absolute md:bottom-12 md:left-0 md:right-0 z-20" : "relative"}`}
                     >
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -170,7 +170,7 @@ export default function Hero() {
                             </motion.div>
                         </AnimatePresence>
 
-                        <h2 className="text-lg md:text-2xl font-light text-blue-50 mb-8 max-w-4xl mx-auto uppercase tracking-wider">
+                        <h2 className="text-lg md:text-2xl font-light text-blue-50 mb-8 max-w-4xl mx-auto uppercase tracking-wider px-4 text-center">
                             The Investment and Finance Club of IIM Shillong
                         </h2>
 
