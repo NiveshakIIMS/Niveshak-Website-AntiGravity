@@ -97,9 +97,9 @@ export default function Dashboard() {
 
                     <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8">
                         {/* Chart Section */}
-                        <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-4 md:p-6 overflow-visible">
+                        <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-4 md:p-6 overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-4">NAV Performance</h3>
-                            <div className="h-[520px] md:h-[480px] w-full min-w-0">
+                            <div className="h-[420px] md:h-[420px] w-full min-w-0">
                                 <NAVChart data={navData} />
                             </div>
                         </div>

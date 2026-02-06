@@ -162,32 +162,30 @@ export default function NAVChart({ data }: NAVChartProps) {
             {/* Inline Chart */}
             <div className="relative">
                 {/* Controls and Maximize Button */}
-                <div className="flex flex-col items-center gap-2 mb-3">
-                    <div className="flex items-center justify-between w-full">
-                        <Controls
-                            filterMode={filterMode}
-                            setFilterMode={setFilterMode}
-                            theme={theme}
-                            availableYears={availableYears}
-                            availableMonths={availableMonths}
-                            selectedYear={selectedYear}
-                            setSelectedYear={setSelectedYear}
-                            selectedMonth={selectedMonth}
-                            setSelectedMonth={setSelectedMonth}
-                        />
-                        <button
-                            onClick={() => setIsExpanded(true)}
-                            className="p-2 bg-accent text-white hover:bg-blue-600 rounded-md transition-all shadow-sm flex-shrink-0"
-                            title="Maximize Chart"
-                            aria-label="Maximize Chart"
-                        >
-                            <Maximize2 className="w-4 h-4" />
-                        </button>
-                    </div>
+                <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <Controls
+                        filterMode={filterMode}
+                        setFilterMode={setFilterMode}
+                        theme={theme}
+                        availableYears={availableYears}
+                        availableMonths={availableMonths}
+                        selectedYear={selectedYear}
+                        setSelectedYear={setSelectedYear}
+                        selectedMonth={selectedMonth}
+                        setSelectedMonth={setSelectedMonth}
+                    />
+                    <button
+                        onClick={() => setIsExpanded(true)}
+                        className="p-2 bg-accent text-white hover:bg-blue-600 rounded-md transition-all shadow-sm flex-shrink-0"
+                        title="Maximize Chart"
+                        aria-label="Maximize Chart"
+                    >
+                        <Maximize2 className="w-4 h-4" />
+                    </button>
                 </div>
 
-                {/* Chart Container - Extra height for X-axis visibility */}
-                <div className="h-[400px] md:h-[400px] w-full">
+                {/* Chart Container - Reduced height for tighter fit */}
+                <div className="h-[340px] md:h-[350px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
