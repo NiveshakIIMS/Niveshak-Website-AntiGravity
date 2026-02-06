@@ -176,17 +176,17 @@ export default function NAVChart({ data }: NAVChartProps) {
                     />
                     <button
                         onClick={() => setIsExpanded(true)}
-                        className="self-end sm:self-start p-2 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-sm"
+                        className="self-end sm:self-start px-3 py-1.5 bg-accent text-white hover:bg-blue-600 rounded-md transition-all flex items-center gap-1.5 text-xs font-semibold shadow-sm"
                         title="Maximize Chart"
                         aria-label="Maximize Chart"
                     >
-                        <Maximize2 className="w-4 h-4" />
-                        <span className="sm:hidden">Maximize</span>
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>Max</span>
                     </button>
                 </div>
 
-                {/* Chart Container */}
-                <div className="h-[340px] md:h-[380px] w-full">
+                {/* Chart Container - Extra height for X-axis visibility */}
+                <div className="h-[400px] md:h-[400px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
@@ -265,21 +265,21 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
     const isOverall = filterMode === "OVERALL";
 
     return (
-        <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
+        <div style={{ width: '100%', height: '100%', minHeight: '350px' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={processedData}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 10 }}
+                    margin={{ top: 5, right: 15, left: 0, bottom: 50 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis
                         dataKey="label"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        interval={isOverall ? "preserveStartEnd" : "preserveStartEnd"}
-                        padding={{ left: 5, right: 5 }}
-                        height={40}
+                        axisLine={true}
+                        tickLine={true}
+                        tick={{ fill: '#9ca3af', fontSize: 11 }}
+                        interval={isOverall ? "preserveStartEnd" : 0}
+                        padding={{ left: 10, right: 10 }}
+                        height={45}
                         type={isOverall ? "number" : "category"}
                         domain={isOverall ? ['dataMin', 'dataMax'] : undefined}
                         tickFormatter={(val) => {
