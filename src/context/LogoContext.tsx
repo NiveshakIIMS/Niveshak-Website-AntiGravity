@@ -10,7 +10,7 @@ interface LogoContextType {
 const LogoContext = createContext<LogoContextType | undefined>(undefined);
 
 export function LogoProvider({ children }: { children: ReactNode }) {
-    const [isLogoInNav, setLogoInNav] = useState(true);
+    const [isLogoInNav, setLogoInNav] = useState(false);
 
     return (
         <LogoContext.Provider value={{ isLogoInNav, setLogoInNav }}>

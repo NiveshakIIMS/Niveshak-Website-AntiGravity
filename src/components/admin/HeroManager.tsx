@@ -47,6 +47,8 @@ export default function HeroManager() {
             imageUrl: "/hero_background.png",
             title: "New Headline",
             subtitle: "New Subtitle",
+            tagline: "The Investment and Finance Club of IIM Shillong",
+            description: "Empowering future leaders with financial acumen, market insights, and real-world investment strategies.",
             objectFit: "cover",
             timer: 5
         };
@@ -120,12 +122,33 @@ export default function HeroManager() {
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subtitle</label>
+                                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Badge Text (Rotating)</label>
                                                 <input
                                                     type="text"
                                                     value={editForm.subtitle}
                                                     onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
+                                                    placeholder="e.g., Welcome to Niveshak World"
                                                     className="w-full p-2.5 rounded-lg bg-background border border-input focus:ring-2 focus:ring-blue-500 outline-none text-foreground"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 col-span-2">
+                                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tagline (Sub-header)</label>
+                                                <input
+                                                    type="text"
+                                                    value={editForm.tagline || ""}
+                                                    onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
+                                                    placeholder="The Investment and Finance Club of IIM Shillong"
+                                                    className="w-full p-2.5 rounded-lg bg-background border border-input focus:ring-2 focus:ring-blue-500 outline-none text-foreground"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 col-span-2">
+                                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</label>
+                                                <textarea
+                                                    value={editForm.description || ""}
+                                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                                    placeholder="Empowering future leaders with financial acumen..."
+                                                    rows={2}
+                                                    className="w-full p-2.5 rounded-lg bg-background border border-input focus:ring-2 focus:ring-blue-500 outline-none text-foreground resize-none"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -155,9 +178,14 @@ export default function HeroManager() {
                                     ) : (
                                         <div className="flex flex-col justify-center h-full space-y-2">
                                             <h3 className="text-xl font-bold text-foreground">{slide.title}</h3>
-                                            <p className="text-muted-foreground">{slide.subtitle}</p>
-                                            <div className="flex items-center gap-3 mt-2">
-                                                <span className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs">{slide.subtitle.substring(0, 20)}...</span>
+                                            <p className="text-muted-foreground text-sm">{slide.subtitle}</p>
+                                            {slide.tagline && (
+                                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">📌 {slide.tagline}</p>
+                                            )}
+                                            {slide.description && (
+                                                <p className="text-xs text-muted-foreground italic line-clamp-1">&quot;{slide.description.substring(0, 60)}...&quot;</p>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                 <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">⏱ {slide.timer}s</span>
                                                 <span className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs uppercase">{slide.objectFit}</span>
                                             </div>
