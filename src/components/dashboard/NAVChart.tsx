@@ -368,9 +368,9 @@ const Controls = ({
     filterMode, setFilterMode, theme, availableYears, availableMonths,
     selectedYear, setSelectedYear, selectedMonth, setSelectedMonth
 }: ControlsProps) => (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 mb-4">
         <div
-            className="flex border rounded-lg p-0.5 shadow-sm transition-colors duration-300 flex-shrink-0"
+            className="flex border rounded-lg p-1 shadow-sm transition-colors duration-300 flex-shrink-0"
             style={{
                 backgroundColor: theme === 'dark' ? '#0D1B2A' : '#ffffff',
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
@@ -380,7 +380,7 @@ const Controls = ({
                 <button
                     key={mode}
                     onClick={() => setFilterMode(mode)}
-                    className={`px-2 py-1.5 text-[10px] font-bold rounded-md transition-all ${filterMode === mode
+                    className={`px-3 py-2 text-xs font-bold rounded-md transition-all ${filterMode === mode
                         ? "bg-[#00A8E8] text-white shadow-md"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-navy-800 dark:hover:text-gray-200"
                         }`}
