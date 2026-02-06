@@ -162,27 +162,28 @@ export default function NAVChart({ data }: NAVChartProps) {
             {/* Inline Chart */}
             <div className="relative">
                 {/* Controls and Maximize Button */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-3">
-                    <Controls
-                        filterMode={filterMode}
-                        setFilterMode={setFilterMode}
-                        theme={theme}
-                        availableYears={availableYears}
-                        availableMonths={availableMonths}
-                        selectedYear={selectedYear}
-                        setSelectedYear={setSelectedYear}
-                        selectedMonth={selectedMonth}
-                        setSelectedMonth={setSelectedMonth}
-                    />
-                    <button
-                        onClick={() => setIsExpanded(true)}
-                        className="self-end sm:self-start px-3 py-1.5 bg-accent text-white hover:bg-blue-600 rounded-md transition-all flex items-center gap-1.5 text-xs font-semibold shadow-sm"
-                        title="Maximize Chart"
-                        aria-label="Maximize Chart"
-                    >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        <span>Max</span>
-                    </button>
+                <div className="flex flex-col items-center gap-2 mb-3">
+                    <div className="flex items-center justify-between w-full">
+                        <Controls
+                            filterMode={filterMode}
+                            setFilterMode={setFilterMode}
+                            theme={theme}
+                            availableYears={availableYears}
+                            availableMonths={availableMonths}
+                            selectedYear={selectedYear}
+                            setSelectedYear={setSelectedYear}
+                            selectedMonth={selectedMonth}
+                            setSelectedMonth={setSelectedMonth}
+                        />
+                        <button
+                            onClick={() => setIsExpanded(true)}
+                            className="p-2 bg-accent text-white hover:bg-blue-600 rounded-md transition-all shadow-sm flex-shrink-0"
+                            title="Maximize Chart"
+                            aria-label="Maximize Chart"
+                        >
+                            <Maximize2 className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Chart Container - Extra height for X-axis visibility */}
@@ -367,9 +368,9 @@ const Controls = ({
     filterMode, setFilterMode, theme, availableYears, availableMonths,
     selectedYear, setSelectedYear, selectedMonth, setSelectedMonth
 }: ControlsProps) => (
-    <div className="flex flex-wrap items-center gap-3 mb-6">
+    <div className="flex flex-wrap items-center gap-2">
         <div
-            className="flex border rounded-lg p-1 shadow-sm transition-colors duration-300"
+            className="flex border rounded-lg p-0.5 shadow-sm transition-colors duration-300 flex-shrink-0"
             style={{
                 backgroundColor: theme === 'dark' ? '#0D1B2A' : '#ffffff',
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
@@ -379,7 +380,7 @@ const Controls = ({
                 <button
                     key={mode}
                     onClick={() => setFilterMode(mode)}
-                    className={`px-4 py-2 text-xs font-bold rounded-md transition-all ${filterMode === mode
+                    className={`px-2 py-1.5 text-[10px] font-bold rounded-md transition-all ${filterMode === mode
                         ? "bg-[#00A8E8] text-white shadow-md"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-navy-800 dark:hover:text-gray-200"
                         }`}
