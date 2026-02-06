@@ -162,7 +162,7 @@ export default function NAVChart({ data }: NAVChartProps) {
             {/* Inline Chart */}
             <div className="relative">
                 {/* Controls and Maximize Button */}
-                <div className="flex flex-col items-center gap-2 mb-5">
+                <div className="flex flex-col items-center gap-2 mb-3">
                     <div className="flex items-center justify-between w-full">
                         <Controls
                             filterMode={filterMode}
@@ -186,8 +186,8 @@ export default function NAVChart({ data }: NAVChartProps) {
                     </div>
                 </div>
 
-                {/* Chart Container - Tighter height for minimal X-axis spacing */}
-                <div className="h-[320px] md:h-[350px] w-full">
+                {/* Chart Container - Extra height for X-axis visibility */}
+                <div className="h-[400px] md:h-[400px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
@@ -266,11 +266,11 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
     const isOverall = filterMode === "OVERALL";
 
     return (
-        <div style={{ width: '100%', height: '100%', minHeight: '250px' }}>
+        <div style={{ width: '100%', height: '100%', minHeight: '350px' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={processedData}
-                    margin={{ top: 5, right: 15, left: 0, bottom: 10 }}
+                    margin={{ top: 5, right: 15, left: 0, bottom: 50 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis
@@ -370,7 +370,7 @@ const Controls = ({
 }: ControlsProps) => (
     <div className="flex flex-wrap items-center gap-2">
         <div
-            className="flex border rounded-lg p-1 shadow-sm transition-colors duration-300 flex-shrink-0"
+            className="flex border rounded-lg p-0.5 shadow-sm transition-colors duration-300 flex-shrink-0"
             style={{
                 backgroundColor: theme === 'dark' ? '#0D1B2A' : '#ffffff',
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
@@ -380,7 +380,7 @@ const Controls = ({
                 <button
                     key={mode}
                     onClick={() => setFilterMode(mode)}
-                    className={`px-2.5 py-2 md:px-4 md:py-2.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${filterMode === mode
+                    className={`px-2 py-1.5 text-[10px] font-bold rounded-md transition-all ${filterMode === mode
                         ? "bg-[#00A8E8] text-white shadow-md"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-navy-800 dark:hover:text-gray-200"
                         }`}
