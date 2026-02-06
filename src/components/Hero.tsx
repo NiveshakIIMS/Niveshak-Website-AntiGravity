@@ -75,7 +75,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full min-h-[50vh] h-auto md:aspect-video overflow-hidden flex flex-col items-center justify-center pt-24 pb-12 md:pt-20 md:pb-0 bg-navy-900 transition-colors duration-500">
+        <section id="hero" className="relative w-full min-h-[55vh] md:min-h-0 md:aspect-video overflow-hidden flex flex-col items-center justify-center bg-navy-900 transition-colors duration-500">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -83,18 +83,20 @@ export default function Hero() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 0.8, ease: "easeInOut" }}
                     className="absolute inset-0 z-0"
                 >
                     <Image
                         src={slide.imageUrl}
                         alt="Background"
                         fill
-                        className={`object-${slide.objectFit || 'cover'} object-center opacity-30 dark:opacity-40`}
+                        className="object-contain md:object-cover object-center"
+                        style={{ opacity: 0.4 }}
                         priority
+                        sizes="100vw"
                     />
                     {/* Gradient adapts to theme -> Reverted to always Dark Navy */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-navy-900/50 via-navy-900/20 to-navy-900 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-navy-900/60 via-navy-900/30 to-navy-900 pointer-events-none" />
                 </motion.div>
             </AnimatePresence>
 
@@ -107,22 +109,22 @@ export default function Hero() {
                 >
                     {/* Hero Logo with Scroll Animation */}
                     <motion.div
-                        initial={{ height: "auto", marginBottom: "1.5rem" }}
+                        initial={{ height: "auto", marginBottom: "1rem" }}
                         animate={{
                             height: isLogoInNav ? 0 : "auto",
-                            marginBottom: isLogoInNav ? 0 : "1.5rem",
+                            marginBottom: isLogoInNav ? 0 : "1rem",
                             opacity: isLogoInNav ? 0 : 1
                         }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
                         className="flex items-center justify-center overflow-hidden"
                     >
                         {!isLogoInNav && (
                             <motion.div
                                 layoutId="niveshak-logo"
-                                className="relative w-24 h-24 md:w-52 md:h-52"
-                                initial={{ scale: 0.8, opacity: 0 }}
+                                className="relative w-20 h-20 md:w-44 md:h-44"
+                                initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.5 }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
                             >
                                 <Image src="/logo.png" alt="Niveshak Logo" fill className="object-contain drop-shadow-2xl" priority />
                             </motion.div>
@@ -130,56 +132,55 @@ export default function Hero() {
                     </motion.div>
 
                     <motion.div
-                        initial={{ height: "auto", marginBottom: "1.5rem" }}
+                        initial={{ height: "auto", marginBottom: "1rem" }}
                         animate={{
                             height: isLogoInNav ? 0 : "auto",
-                            marginBottom: isLogoInNav ? 0 : "1.5rem",
+                            marginBottom: isLogoInNav ? 0 : "1rem",
                             opacity: isLogoInNav ? 0 : 1
                         }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
                         className="flex items-center justify-center overflow-hidden"
                     >
                         {!isLogoInNav && (
                             <motion.h1
                                 layoutId="niveshak-title"
-                                className="text-3xl sm:text-4xl md:text-8xl font-extrabold tracking-tighter text-white drop-shadow-2xl uppercase"
+                                className="text-2xl sm:text-3xl md:text-7xl font-extrabold tracking-tighter text-white drop-shadow-2xl uppercase"
                             >
                                 NIVESHAK
                             </motion.h1>
                         )}
                     </motion.div>
+                </motion.div>
 
-                    <motion.div
-                        animate={{ y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeInOut" }}
-                        className={`flex flex-col items-center transition-all duration-1000 ${isLogoInNav ? "md:absolute md:bottom-12 md:left-0 md:right-0 z-20" : "relative"}`}
-                    >
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={slide.id}
-                                initial={{ opacity: 0, y: 10 }} // Reduced motion
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.5 }}
-                                className="flex flex-col items-center"
-                            >
-                                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-200 text-sm font-medium mb-6 shadow-sm">
-                                    <TrendingUp className="w-4 h-4 text-accent" />
-                                    {slide.subtitle || "Mastering the Market"}
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
+                {/* Bottom Content - Subtitle and Description */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                    className="flex flex-col items-center mt-auto">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={slide.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="flex flex-col items-center"
+                        >
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-200 text-xs md:text-sm font-medium mb-4 shadow-sm">
+                                <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent" />
+                                {slide.subtitle || "Mastering the Market"}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
 
-                        <h2 className="text-lg md:text-2xl font-light text-blue-50 mb-8 max-w-4xl mx-auto uppercase tracking-wider px-4 text-center">
-                            The Investment and Finance Club of IIM Shillong
-                        </h2>
+                    <h2 className="text-sm md:text-xl font-light text-blue-50 max-w-3xl mx-auto uppercase tracking-widest px-4 text-center">
+                        The Investment and Finance Club of IIM Shillong
+                    </h2>
 
-                        <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto hidden md:block leading-relaxed">
-                            Empowering future leaders with financial acumen, market insights, and real-world investment strategies.
-                        </p>
-                    </motion.div>
-
-
+                    <p className="text-base text-gray-300 mt-4 max-w-2xl mx-auto hidden md:block leading-relaxed">
+                        Empowering future leaders with financial acumen, market insights, and real-world investment strategies.
+                    </p>
                 </motion.div>
             </div>
         </section>
