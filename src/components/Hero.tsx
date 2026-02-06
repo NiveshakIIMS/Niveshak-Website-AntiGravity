@@ -90,7 +90,7 @@ export default function Hero() {
                         src={slide.imageUrl}
                         alt="Background"
                         fill
-                        className="object-cover object-center"
+                        className="object-contain sm:object-cover object-center"
                         style={{ opacity: 0.5 }}
                         priority
                         sizes="100vw"
