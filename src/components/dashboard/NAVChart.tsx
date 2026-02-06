@@ -186,8 +186,8 @@ export default function NAVChart({ data }: NAVChartProps) {
                     </div>
                 </div>
 
-                {/* Chart Container - Extra height for X-axis visibility */}
-                <div className="h-[400px] md:h-[400px] w-full">
+                {/* Chart Container - Tighter height for minimal X-axis spacing */}
+                <div className="h-[320px] md:h-[350px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
@@ -266,11 +266,11 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
     const isOverall = filterMode === "OVERALL";
 
     return (
-        <div style={{ width: '100%', height: '100%', minHeight: '280px' }}>
+        <div style={{ width: '100%', height: '100%', minHeight: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={processedData}
-                    margin={{ top: 5, right: 15, left: 0, bottom: 20 }}
+                    margin={{ top: 5, right: 15, left: 0, bottom: 10 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis

@@ -75,7 +75,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full min-h-[70vh] md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 pb-20 md:pb-24">
+        <section id="hero" className="relative w-full min-h-[60vh] md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 flex flex-col">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -102,11 +102,11 @@ export default function Hero() {
 
             {/* Main Content Container */}
             <div
-                className="relative z-10 w-full h-full min-h-[60vh] md:min-h-0 md:aspect-video flex flex-col"
+                className="relative z-10 w-full flex-1 flex flex-col"
                 style={{ opacity }}
             >
-                {/* Center Content Area - Logo and Title */}
-                <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 md:pt-16">
+                {/* Center Content Area - Logo and Title - takes only needed space on mobile */}
+                <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-16 md:pt-16 flex-shrink-0">
                     {/* Hero Logo with Scroll Animation - Animates FIRST */}
                     <motion.div
                         initial={{ height: "auto", marginBottom: "1rem" }}
@@ -152,7 +152,7 @@ export default function Hero() {
                         )}
                     </motion.div>
 
-                    {/* Sub-header Content - Always at bottom on mobile, conditional on desktop */}
+                    {/* Sub-header Content - Separate section on mobile at bottom */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{
@@ -160,7 +160,7 @@ export default function Hero() {
                             y: 0,
                         }}
                         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                        className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out absolute bottom-4 left-0 right-0 px-4 md:bottom-8 ${!isLogoInNav ? 'md:relative md:bottom-auto' : ''
+                        className={`flex flex-col items-center text-center max-w-4xl mx-auto px-4 mt-auto py-6 md:py-0 ${isLogoInNav ? 'md:absolute md:bottom-8 md:left-0 md:right-0' : 'md:relative'
                             }`}
                     >
                         <AnimatePresence mode="wait">
