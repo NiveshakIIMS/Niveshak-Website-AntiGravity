@@ -152,7 +152,7 @@ export default function Hero() {
                         )}
                     </motion.div>
 
-                    {/* Sub-header Content - Animates position based on logo state */}
+                    {/* Sub-header Content - Always at bottom on mobile, conditional on desktop */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{
@@ -160,9 +160,7 @@ export default function Hero() {
                             y: 0,
                         }}
                         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                        className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out ${isLogoInNav
-                            ? "absolute bottom-4 md:bottom-8 left-0 right-0 px-4"
-                            : "relative"
+                        className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out absolute bottom-4 left-0 right-0 px-4 md:bottom-8 ${!isLogoInNav ? 'md:relative md:bottom-auto' : ''
                             }`}
                     >
                         <AnimatePresence mode="wait">
