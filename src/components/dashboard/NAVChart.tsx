@@ -175,13 +175,14 @@ export default function NAVChart({ data }: NAVChartProps) {
                     />
                     <button
                         onClick={() => setIsExpanded(true)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-navy-700 rounded-lg transition-colors"
-                        title="Expand View"
+                        className="p-2 text-accent hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-navy-700 rounded-lg transition-colors ml-2 flex-shrink-0"
+                        title="Maximize Chart"
+                        aria-label="Maximize Chart"
                     >
                         <Maximize2 className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="h-[300px] w-full">
+                <div className="h-[320px] md:h-[350px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
@@ -268,9 +269,10 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                         dataKey="label"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        tick={{ fill: '#9ca3af', fontSize: 11 }}
                         interval={isOverall ? "preserveStartEnd" : "preserveStartEnd"}
-                        padding={{ left: 30, right: 30 }}
+                        padding={{ left: 10, right: 10 }}
+                        height={50}
                         type={isOverall ? "number" : "category"}
                         domain={isOverall ? ['dataMin', 'dataMax'] : undefined}
                         tickFormatter={(val) => {

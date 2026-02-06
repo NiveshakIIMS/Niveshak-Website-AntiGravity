@@ -128,8 +128,8 @@ export default function MagazinesSection({
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredMagazines.map((mag) => (
-                        <MagazineCard key={mag.id} mag={mag} />
+                    {filteredMagazines.map((mag, index) => (
+                        <MagazineCard key={mag.id} mag={mag} index={index} />
                     ))}
                 </div>
 
@@ -152,8 +152,11 @@ export default function MagazinesSection({
     );
 }
 
-function MagazineCard({ mag }: { mag: Magazine }) {
+function MagazineCard({ mag, index = 0 }: { mag: Magazine; index?: number }) {
     const [isMobileActive, setIsMobileActive] = useState(false);
+
+    // Priority load first 4 images, lazy load rest
+    const isPriority = index < 4;
 
     return (
         <div
@@ -167,6 +170,9 @@ function MagazineCard({ mag }: { mag: Magazine }) {
                     alt={mag.title}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    priority={isPriority}
+                    loading={isPriority ? undefined : "lazy"}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
             </div>
 
