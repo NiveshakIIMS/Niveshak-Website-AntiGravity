@@ -161,7 +161,8 @@ export default function NAVChart({ data }: NAVChartProps) {
         <>
             {/* Inline Chart */}
             <div className="relative">
-                <div className="flex justify-between items-start mb-2">
+                {/* Controls and Maximize Button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-3">
                     <Controls
                         filterMode={filterMode}
                         setFilterMode={setFilterMode}
@@ -175,14 +176,17 @@ export default function NAVChart({ data }: NAVChartProps) {
                     />
                     <button
                         onClick={() => setIsExpanded(true)}
-                        className="p-2 text-accent hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-navy-700 rounded-lg transition-colors ml-2 flex-shrink-0"
+                        className="self-end sm:self-start p-2 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-sm"
                         title="Maximize Chart"
                         aria-label="Maximize Chart"
                     >
-                        <Maximize2 className="w-5 h-5" />
+                        <Maximize2 className="w-4 h-4" />
+                        <span className="sm:hidden">Maximize</span>
                     </button>
                 </div>
-                <div className="h-[320px] md:h-[350px] w-full">
+
+                {/* Chart Container */}
+                <div className="h-[340px] md:h-[380px] w-full">
                     {mounted ? (
                         <ChartView processedData={processedData} filterMode={filterMode} />
                     ) : (
@@ -263,16 +267,19 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
     return (
         <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={processedData}>
+                <LineChart
+                    data={processedData}
+                    margin={{ top: 10, right: 10, left: -10, bottom: 10 }}
+                >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis
                         dataKey="label"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 11 }}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
                         interval={isOverall ? "preserveStartEnd" : "preserveStartEnd"}
-                        padding={{ left: 10, right: 10 }}
-                        height={50}
+                        padding={{ left: 5, right: 5 }}
+                        height={40}
                         type={isOverall ? "number" : "category"}
                         domain={isOverall ? ['dataMin', 'dataMax'] : undefined}
                         tickFormatter={(val) => {
@@ -302,10 +309,10 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                     <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 12 }}
-                        tickFormatter={(value) => `₹ ${value}`}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        tickFormatter={(value) => `₹${value}`}
                         domain={['auto', 'auto']}
-                        width={50}
+                        width={45}
                     />
                     <Tooltip
                         contentStyle={{
