@@ -1,15 +1,17 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Linkedin, Mail, Copy, Check } from "lucide-react";
+import { Linkedin, Mail, Copy, Check, Award } from "lucide-react";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { dataService, TeamMember } from "@/services/dataService";
 
 interface TeamSectionProps {
     showTitle?: boolean;
+    showHallOfFame?: boolean;
 }
 
-export default function TeamSection({ showTitle = true }: TeamSectionProps) {
+export default function TeamSection({ showTitle = true, showHallOfFame = false }: TeamSectionProps) {
     const [members, setMembers] = useState<TeamMember[]>([]);
 
     useEffect(() => {
@@ -69,6 +71,18 @@ export default function TeamSection({ showTitle = true }: TeamSectionProps) {
                                 <TeamCard key={member.id} member={member} idx={idx} />
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {showHallOfFame && (
+                    <div className="flex justify-center pt-8">
+                        <Link
+                            href="/team/hall-of-fame"
+                            className="inline-flex items-center gap-3 px-8 py-4 bg-accent text-white font-bold text-lg rounded-xl hover:bg-sky-400 shadow-lg shadow-accent/30 hover:shadow-accent/40 hover:-translate-y-1 transition-all duration-300"
+                        >
+                            <Award className="w-6 h-6" />
+                            Hall of Fame
+                        </Link>
                     </div>
                 )}
             </div>

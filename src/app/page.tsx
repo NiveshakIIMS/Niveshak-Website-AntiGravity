@@ -20,7 +20,7 @@ export default async function Home() {
       <Hero />
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />
-        <TeamSection />
+        <TeamSection showHallOfFame={true} />
         <MagazinesSection />
         <EventsSection />
         <NoticesSection />
