@@ -133,6 +133,13 @@ export interface HallOfFameMember {
     displayOrder?: number;
 }
 
+export interface RedemptionCard {
+    id: string;
+    title: string;
+    content: string; // Rich HTML content
+    displayOrder: number;
+}
+
 // --- Defaults (Fallbacks) ---
 
 const DEFAULT_HERO: HeroSlide[] = [{ id: "1", imageUrl: "/hero_background.png", title: "Niveshak Supabase", subtitle: "Connecting...", objectFit: "cover", timer: 5 }];
@@ -617,6 +624,69 @@ export const dataService = {
         const { error } = await supabase.from('hall_of_fame').delete().eq('id', id);
         if (error) {
             console.error("Delete Hall of Fame Member Error", error);
+            throw error;
+        }
+    },
+
+    // --- Redemption Cards ---
+    getRedemptionCards: async (): Promise<RedemptionCard[]> => {
+        const { data, error } = await supabase
+            .from('redemption_cards')
+            .select('*')
+            .order('display_order', { ascending: true });
+        if (error) {
+            console.error("Get Redemption Cards Error", error);
+            return [];
+        }
+        return (data || []).map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            content: d.content,
+            displayOrder: d.display_order
+        }));
+    },
+
+    saveRedemptionCard: async (card: RedemptionCard) => {
+        const row = {
+            id: card.id,
+            title: card.title,
+            content: card.content,
+            display_order: card.displayOrder,
+            updated_at: new Date().toISOString()
+        };
+        const { error } = await supabase.from('redemption_cards').upsert(row, { onConflict: 'id' });
+        if (error) {
+            console.error("Save Redemption Card Error", error);
+            throw error;
+        }
+    },
+
+    deleteRedemptionCard: async (id: string) => {
+        const { error } = await supabase.from('redemption_cards').delete().eq('id', id);
+        if (error) {
+            console.error("Delete Redemption Card Error", error);
+            throw error;
+        }
+    },
+
+    // --- Site Settings (for redeem link, etc.) ---
+    getRedemptionLink: async (): Promise<string> => {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('id', 'redemption_link')
+            .single();
+        if (error || !data) return '';
+        return data.value || '';
+    },
+
+    saveRedemptionLink: async (url: string) => {
+        const { error } = await supabase.from('site_settings').upsert(
+            { id: 'redemption_link', value: url, updated_at: new Date().toISOString() },
+            { onConflict: 'id' }
+        );
+        if (error) {
+            console.error("Save Redemption Link Error", error);
             throw error;
         }
     }

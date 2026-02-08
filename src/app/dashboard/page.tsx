@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import NAVChart from "@/components/dashboard/NAVChart";
-import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight } from "lucide-react";
+import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 export default function Dashboard() {
@@ -153,6 +153,17 @@ export default function Dashboard() {
                                 )}
                             </div>
                         </div>
+                    </div>
+
+                    {/* Learn More Button */}
+                    <div className="flex justify-center pt-4">
+                        <a
+                            href="/dashboard/redemption"
+                            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-500/25 hover:shadow-purple-600/30 hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                            <BookOpen className="w-5 h-5" />
+                            Learn more about redemptions
+                        </a>
                     </div>
                 </div>
             </section>
