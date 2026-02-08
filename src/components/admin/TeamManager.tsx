@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Users, Save, X, Linkedin, Mail } from "lucide-react";
-import { dataService, TeamMember } from "@/services/dataService";
+import { Plus, Trash2, Edit2, Users, Save, X, Linkedin, Mail, Award } from "lucide-react";
+import { dataService, TeamMember, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -56,6 +56,38 @@ export default function TeamManager() {
         };
         setFormData(newMember);
         setIsEditing("new");
+    };
+
+    const handleMoveToHallOfFame = async (member: TeamMember) => {
+        const batch = prompt("Enter the batch for Hall of Fame (e.g., PGP'25):", "PGP'25");
+        if (!batch) return;
+
+        if (confirm(`Move ${member.name} to Hall of Fame as ${batch}?`)) {
+            try {
+                // Create Hall of Fame entry
+                const hofMember: HallOfFameMember = {
+                    id: crypto.randomUUID(),
+                    name: member.name,
+                    role: member.role,
+                    batch: batch,
+                    imageUrl: member.imageUrl,
+                    linkedin: member.linkedin,
+                    email: member.email,
+                    displayOrder: 0
+                };
+                await dataService.saveHallOfFameMember(hofMember);
+
+                // Remove from current team
+                const newMembers = members.filter(m => m.id !== member.id);
+                setMembers(newMembers);
+                await dataService.saveTeam(newMembers);
+
+                alert(`${member.name} has been moved to Hall of Fame (${batch})!`);
+            } catch (err) {
+                console.error("Move to HoF error", err);
+                alert("Failed to move member to Hall of Fame");
+            }
+        }
     };
 
     return (
@@ -178,10 +210,13 @@ export default function TeamManager() {
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => startEdit(member)} className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                                    <button onClick={() => startEdit(member)} className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Edit">
                                         <Edit2 className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => handleDelete(member.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                    <button onClick={() => handleMoveToHallOfFame(member)} className="p-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Move to Hall of Fame">
+                                        <Award className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(member.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>

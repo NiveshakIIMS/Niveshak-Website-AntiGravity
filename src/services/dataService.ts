@@ -122,6 +122,17 @@ export interface Resource {
     parentId?: string | null;
 }
 
+export interface HallOfFameMember {
+    id: string;
+    name: string;
+    role?: string;
+    batch: string; // e.g., "PGP'25", "PGP'24"
+    imageUrl?: string;
+    linkedin?: string;
+    email?: string;
+    displayOrder?: number;
+}
+
 // --- Defaults (Fallbacks) ---
 
 const DEFAULT_HERO: HeroSlide[] = [{ id: "1", imageUrl: "/hero_background.png", title: "Niveshak Supabase", subtitle: "Connecting...", objectFit: "cover", timer: 5 }];
@@ -553,5 +564,60 @@ export const dataService = {
 
     saveResources: async (resources: Resource[]) => {
         console.warn("saveResources is deprecated. Use granular operations.");
+    },
+
+    // --- Hall of Fame ---
+    getHallOfFame: async (): Promise<HallOfFameMember[]> => {
+        const { data, error } = await supabase
+            .from('hall_of_fame')
+            .select('*')
+            .order('batch', { ascending: false })
+            .order('display_order', { ascending: true });
+        if (error) {
+            console.error("Get Hall of Fame Error", error);
+            return [];
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (data || []).map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            role: d.role,
+            batch: d.batch,
+            imageUrl: resolveUrl(d.image_url || '', d.media_key, d.storage_provider),
+            linkedin: d.linkedin,
+            email: d.email,
+            displayOrder: d.display_order
+        }));
+    },
+
+    saveHallOfFameMember: async (member: HallOfFameMember) => {
+        const isR2 = member.imageUrl?.startsWith(R2_DOMAIN);
+        const mediaKey = isR2 && member.imageUrl ? member.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
+        const row = {
+            id: member.id,
+            name: member.name,
+            role: member.role || null,
+            batch: member.batch,
+            image_url: member.imageUrl || null,
+            linkedin: member.linkedin || null,
+            email: member.email || null,
+            display_order: member.displayOrder || 0,
+            storage_provider: isR2 ? 'r2' : 'legacy',
+            media_key: mediaKey,
+            updated_at: new Date().toISOString()
+        };
+        const { error } = await supabase.from('hall_of_fame').upsert(row, { onConflict: 'id' });
+        if (error) {
+            console.error("Save Hall of Fame Member Error", error);
+            throw error;
+        }
+    },
+
+    deleteHallOfFameMember: async (id: string) => {
+        const { error } = await supabase.from('hall_of_fame').delete().eq('id', id);
+        if (error) {
+            console.error("Delete Hall of Fame Member Error", error);
+            throw error;
+        }
     }
 };
