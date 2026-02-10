@@ -43,7 +43,7 @@ export default function Footer() {
                     <div className="lg:col-span-5 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start text-left ml-0 lg:-ml-12">
                         <div className="flex gap-6 shrink-0">
                             <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
-                                <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
+                                <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
                             </a>
                             <a href="/" className="shrink-0 hover:opacity-90 transition-opacity">
                                 <img src="/logo.png" alt="Niveshak" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
