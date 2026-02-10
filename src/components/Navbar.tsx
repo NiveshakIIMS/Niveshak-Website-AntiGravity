@@ -45,78 +45,75 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
 
-                    {/* Left Side: Logo (Always Visible) */}
-                    <div className="flex-1 flex justify-start"> {/* flex-1 to balance */}
-                        <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center">
-                            <Link href="/" className="flex items-center gap-3 group">
-                                {isLogoInNav && (
-                                    <>
-                                        <motion.div
-                                            layoutId="niveshak-logo"
-                                            className="relative w-10 h-10 transform transition-transform group-hover:scale-110"
-                                            transition={{ duration: 0.5 }}
+                    {/* Section 1: IIM Shillong Logo (Left) */}
+                    <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
+                        <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
+                    </a>
+
+                    {/* Section 2: Niveshak Logo (Center) */}
+                    <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center justify-center">
+                        <Link href="/" className="flex items-center gap-3 group">
+                            {isLogoInNav && (
+                                <>
+                                    <motion.div
+                                        layoutId="niveshak-logo"
+                                        className="relative w-10 h-10 transform transition-transform group-hover:scale-110"
+                                        transition={{ duration: 0.5 }}
+                                    >
+                                        <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
+                                    </motion.div>
+                                    <motion.span
+                                        layoutId="niveshak-title"
+                                        className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
+                                        transition={{ duration: 0.5 }}
+                                    >
+                                        NIVESHAK
+                                    </motion.span>
+                                </>
+                            )}
+                        </Link>
+                    </div>
+
+                    {/* Section 3: Right Side (Desktop & Mobile) */}
+                    <div className="flex items-center gap-4">
+                        {/* Desktop Navigation & Actions */}
+                        <div className="hidden md:flex items-center gap-3 lg:gap-4">
+                            {/* Nav Items Container */}
+                            <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm">
+                                {navItems.map((item) => {
+                                    const active = isActive(item.href);
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm whitespace-nowrap ${active
+                                                ? "bg-white text-navy-900 shadow-md scale-105"
+                                                : "text-gray-300 hover:text-white hover:bg-navy-800"
+                                                }`}
                                         >
-                                            <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
-                                        </motion.div>
-                                        <motion.span
-                                            layoutId="niveshak-title"
-                                            className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
-                                            transition={{ duration: 0.5 }}
-                                        >
-                                            NIVESHAK
-                                        </motion.span>
-                                    </>
-                                )}
+                                            {item.name}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                                className="p-2 lg:p-2.5 rounded-full bg-navy-800 text-gray-300 border border-navy-700 hover:bg-navy-700 hover:text-white transition-colors shadow-sm shrink-0"
+                                aria-label="Toggle Theme"
+                            >
+                                {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            </button>
+
+                            {/* Admin Button */}
+                            <Link href="/admin" className="px-4 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap shrink-0">
+                                Admin
                             </Link>
                         </div>
-                    </div>
 
-                    {/* Center: Nav Items + Theme Toggle (Desktop) */}
-                    <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 items-center gap-4">
-                        <div className="flex bg-navy-800/50 p-1.5 rounded-full border border-navy-700/50 backdrop-blur-sm">
-                            {navItems.map((item) => {
-                                const active = isActive(item.href);
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm whitespace-nowrap ${active
-                                            ? "bg-white text-navy-900 shadow-md scale-105"
-                                            : "text-gray-300 hover:text-white hover:bg-navy-800"
-                                            }`}
-                                    >
-                                        {item.name}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-
-                        {/* Theme Toggle (Moved here) */}
-                        <button
-                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                            className="p-2.5 rounded-full bg-navy-800 text-gray-300 border border-navy-700 hover:bg-navy-700 hover:text-white transition-colors shadow-sm"
-                            aria-label="Toggle Theme"
-                        >
-                            {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                        </button>
-                    </div>
-
-                    {/* Right: Actions (Desktop) */}
-                    <div className="hidden md:flex flex-1 justify-end items-center gap-3">
-                        <Link href="/admin" className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap">
-                            Admin
-                        </Link>
-                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform block">
-                            <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
-                        </a>
-                    </div>
-
-                    {/* Mobile Actions & Menu */}
-                    <div className="flex items-center gap-4 md:hidden">
-                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white rounded-full p-0.5 overflow-hidden shadow-sm shrink-0">
-                            <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
-                        </a>
-                        <div className="-mr-2 flex">
+                        {/* Mobile Menu Button */}
+                        <div className="flex items-center md:hidden">
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
                                 type="button"
