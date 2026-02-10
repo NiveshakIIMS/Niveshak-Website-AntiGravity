@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pages:build": "npx @cloudflare/next-on-pages"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
@@ -24,7 +25,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.16.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
