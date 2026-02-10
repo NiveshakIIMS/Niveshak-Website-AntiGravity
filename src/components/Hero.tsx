@@ -182,7 +182,7 @@ export default function Hero() {
                         </AnimatePresence>
 
                         <h2 className="text-base md:text-2xl font-light text-blue-50 uppercase tracking-widest px-4">
-                            {slide.tagline || "The Investment and Finance Club of IIM Shillong"}
+                            {slide.tagline || "The Finance and Investment Club of IIM Shillong"}
                         </h2>
 
                         <p className="text-sm md:text-base text-gray-300 mt-3 md:mt-4 max-w-2xl mx-auto leading-relaxed px-4">

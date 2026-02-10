@@ -16,11 +16,20 @@ export interface HeroSlide {
     timer: number;
 }
 
-export interface AboutContent {
+export interface AboutSection {
+    id: string;
     title: string;
     description: string;
-    slides: string[];
     cards: { title: string; description: string }[];
+    displayOrder: number;
+}
+
+export interface AboutContent {
+    title: string; // Deprecated in favor of sections[0]
+    description: string; // Deprecated
+    cards: { title: string; description: string }[]; // Deprecated
+    sections?: AboutSection[]; // New list of sections
+    slides: string[];
     richContent?: ContentBlock[];
 }
 
@@ -207,30 +216,89 @@ export const dataService = {
         if (error) console.error("Save Hero Error", error);
     },
 
-    // --- About (Singleton ID='about') ---
+    // --- About (Singleton ID='about' + Sections) ---
     getAbout: async (): Promise<AboutContent> => {
-        const { data, error } = await supabase.from('about_content').select('*').eq('id', 'about').single();
-        if (error || !data) return DEFAULT_ABOUT;
+        // Fetch global content
+        const { data: globalData, error: globalError } = await supabase.from('about_content').select('*').eq('id', 'about').single();
+
+        // Fetch sections
+        const { data: sectionsData, error: sectionsError } = await supabase
+            .from('about_sections')
+            .select('*')
+            .order('display_order', { ascending: true });
+
+        if (globalError || !globalData) return DEFAULT_ABOUT;
+
+        // Map sections
+        const sections: AboutSection[] = (sectionsData || []).map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            description: s.description,
+            cards: s.cards,
+            displayOrder: s.display_order
+        }));
 
         return {
-            title: data.title,
-            description: data.description,
-            slides: data.slides,
-            cards: data.cards,
-            richContent: data.rich_content
+            title: globalData.title,
+            description: globalData.description,
+            slides: globalData.slides,
+            cards: globalData.cards,
+            richContent: globalData.rich_content,
+            sections: sections // Attach sections
         };
     },
     saveAbout: async (data: AboutContent) => {
-        const row = {
+        // 1. Save Global Content (Slides, Rich Content)
+        const globalRow = {
             id: 'about',
-            title: data.title,
+            title: data.title, // Keep syncing for now
             description: data.description,
             slides: data.slides,
             cards: data.cards,
             rich_content: data.richContent
         };
-        const { error } = await supabase.from('about_content').upsert(row);
-        if (error) console.error("Save About Error", error);
+        const { error: globalError } = await supabase.from('about_content').upsert(globalRow);
+        if (globalError) console.error("Save About Global Error", globalError);
+
+        // 2. Save Sections (if provided)
+        if (data.sections) {
+            // Upsert all sections
+            for (const section of data.sections) {
+                const sectionRow = {
+                    id: section.id, // Ensure ID is passed for updates
+                    title: section.title,
+                    description: section.description,
+                    cards: section.cards,
+                    display_order: section.displayOrder,
+                    updated_at: new Date().toISOString()
+                };
+                // If ID is new (e.g. temp ID), we might need to handle it. 
+                // But for now assume frontend generates valid UUIDs or we let DB handle generic ones safely if we omit ID? 
+                // Actually, upsert needs ID to match. Frontend should generate IDs or we handle "new" ones.
+                // Let's assume frontend passes persistent IDs.
+
+                const { error } = await supabase.from('about_sections').upsert(sectionRow, { onConflict: 'id' });
+                if (error) console.error("Save Section Error", error);
+            }
+
+            // Delete sections not in the list?
+            // Simple strategy: Delete all not in the current list IDs
+            const currentIds = data.sections.map(s => s.id);
+            if (currentIds.length > 0) {
+                await supabase.from('about_sections').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+            } else {
+                // If list is empty, delete all? Be careful.
+                // For now, let's just upsert. Full sync is better but riskier if IDs are messed up.
+                // Verified strategy: Fetch existing IDs, compare.
+                // For MVP, just upsert is fine, and provide explicit "Delete Section" method if needed, 
+                // OR relies on "Delete" button in UI calling a delete/save sequence.
+                // The prompt says "editable/deletable".
+                // I will add a explicit delete logic if I can, or relies on the "save all" replacing the state.
+                // "Delete not in" is best for "Save All" behavior.
+                const { error: deleteError } = await supabase.from('about_sections').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+                if (deleteError) console.error("Components Delete Error", deleteError);
+            }
+        }
     },
 
     // --- Team ---

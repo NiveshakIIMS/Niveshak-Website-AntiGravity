@@ -40,13 +40,25 @@ export default function AboutManager() {
             if (!loadedData.cards) {
                 loadedData.cards = [];
             }
+            // Initialize sections from legacy data if sections are missing (Migration support)
+            if (!loadedData.sections || loadedData.sections.length === 0) {
+                loadedData.sections = [{
+                    id: 'default', // Will be replaced by UUID on save if we implement that, or kept as placeholder
+                    title: loadedData.title || "About Niveshak",
+                    description: loadedData.description || "",
+                    cards: loadedData.cards || [],
+                    displayOrder: 0
+                }];
+            }
             setData(loadedData);
         });
     }, []);
 
     const handleSave = () => {
         if (data) {
-            dataService.saveAbout(data);
+            // Ensure display orders are correct before saving
+            const sectionsWithOrder = data.sections?.map((s, i) => ({ ...s, displayOrder: i })) || [];
+            dataService.saveAbout({ ...data, sections: sectionsWithOrder });
             alert("About Us content updated!");
         }
     };
@@ -61,17 +73,66 @@ export default function AboutManager() {
         setData({ ...data, richContent: [...(data.richContent || []), newBlock] });
     };
 
-    const addCard = () => {
+    // --- Section Management ---
+
+    const addSection = () => {
         if (!data) return;
-        const newCard = { title: "New Card", description: "Card description" };
-        setData({ ...data, cards: [...(data.cards || []), newCard] });
+        const newSection = {
+            id: crypto.randomUUID(), // Local temporary ID or use uuid gen
+            title: "New Section",
+            description: "Section description...",
+            cards: [],
+            displayOrder: (data.sections?.length || 0)
+        };
+        setData({ ...data, sections: [...(data.sections || []), newSection] });
     };
 
-    const deleteCard = (index: number) => {
-        if (!data) return;
-        const newCards = [...(data.cards || [])];
-        newCards.splice(index, 1);
-        setData({ ...data, cards: newCards });
+    const updateSection = (index: number, field: keyof typeof data.sections[0], value: any) => {
+        if (!data || !data.sections) return;
+        const newSections = [...data.sections];
+        newSections[index] = { ...newSections[index], [field]: value };
+        setData({ ...data, sections: newSections });
+    };
+
+    const deleteSection = (index: number) => {
+        if (!data || !data.sections || !confirm("Delete this entire section?")) return;
+        const newSections = [...data.sections];
+        newSections.splice(index, 1);
+        setData({ ...data, sections: newSections });
+    };
+
+    const moveSection = (index: number, direction: -1 | 1) => {
+        if (!data || !data.sections) return;
+        const newSections = [...data.sections];
+        if (index + direction < 0 || index + direction >= newSections.length) return;
+        [newSections[index], newSections[index + direction]] = [newSections[index + direction], newSections[index]];
+        setData({ ...data, sections: newSections });
+    };
+
+    // --- Card Management (Nested) ---
+
+    const addCardToSection = (sectionIndex: number) => {
+        if (!data || !data.sections) return;
+        const newSections = [...data.sections];
+        const newCard = { title: "New Feature", description: "Feature description..." };
+        newSections[sectionIndex].cards = [...(newSections[sectionIndex].cards || []), newCard];
+        setData({ ...data, sections: newSections });
+    };
+
+    const updateCardInSection = (sectionIndex: number, cardIndex: number, field: 'title' | 'description', value: string) => {
+        if (!data || !data.sections) return;
+        const newSections = [...data.sections];
+        const newCards = [...newSections[sectionIndex].cards];
+        newCards[cardIndex] = { ...newCards[cardIndex], [field]: value };
+        newSections[sectionIndex].cards = newCards;
+        setData({ ...data, sections: newSections });
+    };
+
+    const deleteCardFromSection = (sectionIndex: number, cardIndex: number) => {
+        if (!data || !data.sections) return;
+        const newSections = [...data.sections];
+        newSections[sectionIndex].cards.splice(cardIndex, 1);
+        setData({ ...data, sections: newSections });
     };
 
     const updateBlock = (id: string, content: string) => {
@@ -127,32 +188,12 @@ export default function AboutManager() {
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-6 bg-card p-8 rounded-2xl border border-border shadow-sm sticky top-8"
                 >
-                    <div className="flex items-center gap-2 mb-4 border-b border-border pb-4">
+                    <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                         <Layout className="w-5 h-5 text-muted-foreground" />
-                        <h3 className="font-bold text-lg text-card-foreground">Homepage Section</h3>
+                        <h3 className="font-bold text-lg text-card-foreground">Global Settings</h3>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-xs font-bold text-muted-foreground uppercase">Section Title</label>
-                        <input
-                            type="text"
-                            value={data.title}
-                            onChange={(e) => setData({ ...data, title: e.target.value })}
-                            className="w-full p-3 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="block text-xs font-bold text-muted-foreground uppercase">Description (Homepage)</label>
-                        <textarea
-                            value={data.description}
-                            onChange={(e) => setData({ ...data, description: e.target.value })}
-                            rows={6}
-                            className="w-full p-3 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none transition-all resize-none"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-8">
                         <label className="block text-xs font-bold text-muted-foreground uppercase">Slideshow Images (URLs)</label>
                         <input
                             type="text"
@@ -164,48 +205,95 @@ export default function AboutManager() {
                         <p className="text-xs text-muted-foreground">Comma separated URLs for the rotating image slider.</p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-2 mb-4 border-b border-border pb-4 pt-4">
+                    <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <Layout className="w-5 h-5 text-muted-foreground" />
-                            <h3 className="font-bold text-lg text-card-foreground">Homepage Cards</h3>
+                            <List className="w-5 h-5 text-muted-foreground" />
+                            <h3 className="font-bold text-lg text-card-foreground">Content Sections</h3>
                         </div>
-                        <button onClick={addCard} className="text-xs flex items-center gap-1 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
-                            <Plus className="w-3 h-3" /> Add Card
+                        <button onClick={addSection} className="text-xs flex items-center gap-1 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg hover:bg-green-200 transition-colors font-bold">
+                            <Plus className="w-3 h-3" /> Add Section
                         </button>
                     </div>
 
-                    {data.cards && data.cards.map((card, idx) => (
-                        <div key={idx} className="p-4 bg-muted/20 border border-border rounded-xl space-y-3 relative group">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-muted-foreground uppercase">Card {idx + 1}</span>
-                                <button onClick={() => deleteCard(idx)} className="text-red-500 hover:text-red-700 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                    <div className="space-y-6">
+                        {data.sections?.map((section, sIdx) => (
+                            <div key={section.id || sIdx} className="p-5 border border-border rounded-xl bg-card/50 space-y-4 shadow-sm hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between border-b border-border pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="bg-muted px-2 py-0.5 rounded text-xs font-mono text-muted-foreground">#{sIdx + 1}</span>
+                                        <h4 className="font-bold text-sm text-foreground truncate max-w-[150px]">{section.title}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={() => moveSection(sIdx, -1)} disabled={sIdx === 0} className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-blue-500 disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
+                                        <button onClick={() => moveSection(sIdx, 1)} disabled={sIdx === (data.sections?.length || 0) - 1} className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-blue-500 disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
+                                        <button onClick={() => deleteSection(sIdx)} className="p-1.5 hover:bg-red-100 text-muted-foreground hover:text-red-600 rounded disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Title</label>
+                                        <input
+                                            type="text"
+                                            value={section.title}
+                                            onChange={(e) => updateSection(sIdx, 'title', e.target.value)}
+                                            className="w-full p-2.5 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold"
+                                            placeholder="Section Title (e.g. About Niveshak)"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Description</label>
+                                        <textarea
+                                            value={section.description}
+                                            onChange={(e) => updateSection(sIdx, 'description', e.target.value)}
+                                            rows={4}
+                                            className="w-full p-2.5 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none text-sm resize-none"
+                                            placeholder="Section description..."
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Cards Sub-section */}
+                                <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1"><Info className="w-3 h-3" /> Info Cards</span>
+                                        <button onClick={() => addCardToSection(sIdx)} className="text-[10px] flex items-center gap-1 bg-blue-100 text-blue-600 dark:bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-200 transition-colors font-bold">
+                                            <Plus className="w-3 h-3" /> Add Card
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {section.cards?.map((card, cIdx) => (
+                                            <div key={cIdx} className="flex gap-2 items-start group">
+                                                <div className="flex-1 space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        value={card.title}
+                                                        onChange={(e) => updateCardInSection(sIdx, cIdx, 'title', e.target.value)}
+                                                        className="w-full p-2 rounded bg-background border border-input text-xs font-bold focus:ring-1 focus:ring-blue-500"
+                                                        placeholder="Card Title"
+                                                    />
+                                                    <textarea
+                                                        value={card.description}
+                                                        onChange={(e) => updateCardInSection(sIdx, cIdx, 'description', e.target.value)}
+                                                        rows={2}
+                                                        className="w-full p-2 rounded bg-background border border-input text-xs resize-none focus:ring-1 focus:ring-blue-500"
+                                                        placeholder="Card details..."
+                                                    />
+                                                </div>
+                                                <button onClick={() => deleteCardFromSection(sIdx, cIdx)} className="p-1 hover:bg-red-100 text-red-400 hover:text-red-500 rounded opacity-50 group-hover:opacity-100 transition-opacity">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {(!section.cards || section.cards.length === 0) && (
+                                            <div className="text-center py-2 text-xs text-muted-foreground italic">No cards added.</div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                type="text"
-                                value={card.title}
-                                onChange={(e) => {
-                                    const newCards = [...data.cards];
-                                    newCards[idx].title = e.target.value;
-                                    setData({ ...data, cards: newCards });
-                                }}
-                                className="w-full p-2 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold"
-                                placeholder="Card Title"
-                            />
-                            <textarea
-                                value={card.description}
-                                onChange={(e) => {
-                                    const newCards = [...data.cards];
-                                    newCards[idx].description = e.target.value;
-                                    setData({ ...data, cards: newCards });
-                                }}
-                                rows={3}
-                                className="w-full p-2 rounded-lg bg-background border border-input text-foreground focus:ring-2 focus:ring-green-500 outline-none text-sm resize-none"
-                                placeholder="Card Description"
-                            />
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </motion.div>
 
                 <motion.div

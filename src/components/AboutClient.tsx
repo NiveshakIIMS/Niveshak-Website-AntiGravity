@@ -32,55 +32,72 @@ export default function AboutClient({ data }: AboutClientProps) {
 
     return (
         <>
-            {/* Header */}
-            <section className="pt-32 pb-12 px-4 bg-background border-b border-border transition-colors">
-                <div className="max-w-7xl mx-auto text-center">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-5xl font-bold text-foreground mb-4"
-                    >
-                        {renderTitle(data.title)}
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-xl text-muted-foreground max-w-2xl mx-auto"
-                    >
-                        {data.description}
-                    </motion.p>
-                </div>
-            </section>
+            {(data.sections && data.sections.length > 0 ? data.sections : [{
+                id: 'default',
+                title: data.title || "About Niveshak",
+                description: data.description || "",
+                cards: data.cards || [],
+                displayOrder: 0
+            }]).map((section, sIdx) => {
+                const sectionFeatures = section.cards ? section.cards.map((card, idx) => ({
+                    icon: icons[idx % icons.length] || <Target className="w-8 h-8 text-blue-400" />,
+                    title: card.title,
+                    description: card.description
+                })) : [];
 
-            {/* Content Grid */}
-            <section className="py-20 px-4">
-                <div className="max-w-7xl mx-auto text-center">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-12">
-                        Shaping <span className="text-accent">Future Leaders</span>
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {features.map((feature, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: idx * 0.2 }}
-                                className="p-8 rounded-2xl bg-card border border-border shadow-xl hover:shadow-2xl transition-all"
-                            >
-                                <div className="mb-6 p-4 rounded-full bg-muted w-fit mx-auto">
-                                    {feature.icon}
+                return (
+                    <div key={section.id || sIdx} className="bg-background transition-colors border-b border-border last:border-0">
+                        {/* Section Header */}
+                        <section className="pt-32 pb-12 px-4">
+                            <div className="max-w-7xl mx-auto text-center">
+                                <motion.h1
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-4xl md:text-5xl font-bold text-foreground mb-4"
+                                >
+                                    {renderTitle(section.title)}
+                                </motion.h1>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="text-xl text-muted-foreground max-w-2xl mx-auto"
+                                >
+                                    {section.description}
+                                </motion.p>
+                            </div>
+                        </section>
+
+                        {/* Section Cards */}
+                        {sectionFeatures.length > 0 && (
+                            <section className="pb-20 px-4">
+                                <div className="max-w-7xl mx-auto text-center">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        {sectionFeatures.map((feature, idx) => (
+                                            <motion.div
+                                                key={idx}
+                                                initial={{ opacity: 0, y: 30 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ delay: idx * 0.2 }}
+                                                className="p-8 rounded-2xl bg-card border border-border shadow-xl hover:shadow-2xl transition-all"
+                                            >
+                                                <div className="mb-6 p-4 rounded-full bg-muted w-fit mx-auto">
+                                                    {feature.icon}
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-card-foreground mb-4">{feature.title}</h3>
+                                                <p className="text-muted-foreground leading-relaxed">
+                                                    {feature.description}
+                                                </p>
+                                            </motion.div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <h3 className="text-2xl font-bold text-card-foreground mb-4">{feature.title}</h3>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    {feature.description}
-                                </p>
-                            </motion.div>
-                        ))}
+                            </section>
+                        )}
                     </div>
-                </div>
-            </section>
+                );
+            })}
 
             {/* Dynamic Rich Content Section */}
             {data.richContent && data.richContent.length > 0 && (
