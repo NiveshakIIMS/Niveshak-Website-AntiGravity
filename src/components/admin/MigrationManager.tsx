@@ -211,7 +211,7 @@ export default function MigrationManager() {
                 <div className="p-6 bg-card border border-border rounded-xl">
                     <h4 className="font-bold mb-2">Instructions</h4>
                     <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                        <li>Ensure <code>R2_ACCESS_KEY_ID</code> and other secrets are set in Vercel.</li>
+                        <li>Ensure <code>R2_ACCESS_KEY_ID</code> and other secrets are set in Cloudflare Pages.</li>
                         <li>This tool only moves images stored as Base64 strings.</li>
                         <li>It will automatically update your site to point to the new URLs.</li>
                     </ul>
