@@ -17,7 +17,7 @@ export default async function Resources() {
                         <span className="text-accent">Resources</span>
                     </h1>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        A curated library of financial models, research reports, and educational materials from Niveshak.
+                        A curated library of educational materials and reports from Niveshak.
                     </p>
                 </div>
             </section>
