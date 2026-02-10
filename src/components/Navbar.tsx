@@ -106,6 +106,9 @@ export default function Navbar() {
                         <Link href="/admin" className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap">
                             Admin
                         </Link>
+                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform block">
+                            <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
+                        </a>
                     </div>
 
                     {/* Mobile Menu Button */}
