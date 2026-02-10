@@ -6,6 +6,7 @@ import { dataService, Notice } from "@/services/dataService";
 import { motion, AnimatePresence } from "framer-motion";
 import MediaInput from "./MediaInput";
 import TimePicker from "./TimePicker";
+import { formatDateIndian } from "@/lib/dateUtils";
 
 export default function NoticesManager() {
     const [notices, setNotices] = useState<Notice[]>([]);
@@ -108,7 +109,7 @@ export default function NoticesManager() {
                                             }`}>
                                             {notice.category}
                                         </span>
-                                        <span className="text-xs text-muted-foreground">{notice.date}</span>
+                                        <span className="text-xs text-muted-foreground">{formatDateIndian(notice.date)}</span>
                                     </div>
                                     <h4 className="font-bold text-foreground truncate">{notice.title}</h4>
                                     <p className="text-sm text-muted-foreground truncate">{notice.content}</p>
@@ -187,7 +188,7 @@ export default function NoticesManager() {
                                             <TimePicker
                                                 value={form.time || ""}
                                                 onChange={(val) => setForm({ ...form, time: val })}
-                                                use12HourFormat={false} // Persist as HH:mm for Notices
+                                                use12HourFormat={true} // Persist as 12h format
                                             />
                                         </div>
                                     </div>

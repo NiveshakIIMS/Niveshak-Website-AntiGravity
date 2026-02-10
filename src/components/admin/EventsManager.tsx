@@ -6,6 +6,7 @@ import { Plus, Trash2, Calendar, BookOpen, Save, X, Download } from "lucide-reac
 import { dataService, Event } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import TimePicker from "./TimePicker";
+import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function EventsManager() {
@@ -64,7 +65,7 @@ export default function EventsManager() {
 
                 <AnimatePresence>
                     {isEditing && eventForm && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <motion.div initial={{ opacity: 0, height: 0, overflow: "hidden" }} animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }}>
                             <div className="bg-card p-6 rounded-2xl border border-border shadow-xl grid gap-4 border-l-4 border-l-blue-500">
                                 <h4 className="font-bold text-foreground mb-2">Event Editor</h4>
 
@@ -85,8 +86,8 @@ export default function EventsManager() {
                                 </div>
 
                                 {/* --- Toggle: Event Time --- */}
-                                <div className="border border-border rounded-xl overflow-hidden">
-                                    <div className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer" onClick={() => {
+                                <div className="border border-border rounded-xl">
+                                    <div className={`flex items-center gap-3 p-3 bg-muted/30 cursor-pointer ${eventForm.showTime ? 'rounded-t-xl' : 'rounded-xl'} transition-all`} onClick={() => {
                                         const next = !eventForm.showTime;
                                         setEventForm({ ...eventForm, showTime: next, ...(!next ? { time: "", location: "" } : {}) });
                                     }}>
@@ -114,8 +115,8 @@ export default function EventsManager() {
                                 <input placeholder="Registration Link (e.g., Google Form URL)" value={eventForm.registration_link || ""} onChange={e => setEventForm({ ...eventForm, registration_link: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none w-full" />
 
                                 {/* --- Toggle: Deadline --- */}
-                                <div className="border border-border rounded-xl overflow-hidden">
-                                    <div className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer" onClick={() => {
+                                <div className="border border-border rounded-xl">
+                                    <div className={`flex items-center gap-3 p-3 bg-muted/30 cursor-pointer ${eventForm.showDeadline ? 'rounded-t-xl' : 'rounded-xl'} transition-all`} onClick={() => {
                                         const next = !eventForm.showDeadline;
                                         setEventForm({ ...eventForm, showDeadline: next, ...(!next ? { deadline: "" } : {}) });
                                     }}>
@@ -186,7 +187,7 @@ export default function EventsManager() {
                                             <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${event.type === "Live" ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground"}`}>{event.type}</span>
                                         </div>
                                         <p className="text-sm text-muted-foreground flex gap-3 mt-1">
-                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {event.date}</span>
+                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDateIndian(event.date)}</span>
                                             <span className="flex items-center gap-1"><X className="w-3 h-3 rotate-45" /> {event.time}</span>
                                         </p>
                                     </div>

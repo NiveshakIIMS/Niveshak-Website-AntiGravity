@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Resource } from "@/services/dataService";
 import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List } from "lucide-react";
@@ -182,7 +183,11 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                 )}
 
                 {/* Content */}
-                <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-3"}>
+                <div className={viewMode === 'grid'
+                    ? (filteredResources.length < 3
+                        ? "flex flex-wrap justify-center gap-6"
+                        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6")
+                    : "space-y-3"}>
                     <AnimatePresence mode="popLayout">
                         {filteredResources.map((resource) => (
                             <motion.div
@@ -193,7 +198,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className={
                                     viewMode === 'grid'
-                                        ? `group bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all ${resource.type === 'folder' ? 'border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-900/10' : 'border-border'}`
+                                        ? `group bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all ${resource.type === 'folder' ? 'border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-900/10' : 'border-border'} ${filteredResources.length < 3 ? 'w-full md:w-[350px]' : ''}`
                                         : `group flex items-center gap-4 p-4 bg-card border rounded-xl hover:shadow-md transition-all ${resource.type === 'folder' ? 'border-blue-200 bg-blue-50/30' : 'border-border'}`
                                 }
                                 onClick={() => !isHomepage && resource.type === 'folder' && setCurrentFolderId(resource.id)}
@@ -229,7 +234,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                                     }`}>
                                                     {resource.type}
                                                 </span>
-                                                <span className="text-xs text-muted-foreground">{resource.date}</span>
+                                                <span className="text-xs text-muted-foreground">{formatDateIndian(resource.date)}</span>
                                             </div>
                                             <h3 className="font-bold text-lg mb-1 line-clamp-1">{resource.title}</h3>
                                             <p className="text-sm text-muted-foreground line-clamp-2">{resource.description || "No description"}</p>
@@ -246,7 +251,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                             <p className="text-xs text-muted-foreground truncate">{resource.description}</p>
                                         </div>
                                         <div className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
-                                            {resource.date}
+                                            {formatDateIndian(resource.date)}
                                         </div>
                                         {resource.type !== 'folder' && (
                                             <a href={resource.url} target="_blank" rel="noreferrer" className="p-2 hover:bg-muted rounded-full text-blue-600" onClick={e => e.stopPropagation()}>

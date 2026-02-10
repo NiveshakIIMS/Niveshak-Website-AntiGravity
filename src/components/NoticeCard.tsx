@@ -117,7 +117,11 @@ export default function NoticeCard({ notice, idx }: NoticeCardProps) {
                         {notice.time && (
                             <>
                                 <span className="w-1 h-1 rounded-full bg-border" />
-                                <span>{new Date(`1970-01-01T${notice.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                                <span>
+                                    {notice.time.match(/^\d{1,2}:\d{2}$/)
+                                        ? new Date(`1970-01-01T${notice.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                                        : notice.time}
+                                </span>
                             </>
                         )}
                     </div>

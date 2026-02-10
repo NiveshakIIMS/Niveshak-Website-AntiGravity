@@ -24,7 +24,7 @@ export default function EventsSection() {
                     // Priority 2: Date Ascending (Nearest first)
                     return new Date(a.date).getTime() - new Date(b.date).getTime();
                 })
-                .slice(0, 2); // Max 2 events
+                .slice(0, 4); // Max 4 events
 
             setEvents(eventsToShow);
         };
@@ -43,9 +43,11 @@ export default function EventsSection() {
                 {events.length === 0 ? (
                     <div className="text-center text-muted-foreground">No upcoming events scheduled. Stay tuned!</div>
                 ) : (
-                    <div className={`${events.length === 1 ? 'flex justify-center' : 'grid grid-cols-1 md:grid-cols-2 justify-items-center'} gap-8 max-w-5xl mx-auto`}>
+                    <div className={`${events.length < 3 ? 'flex flex-wrap justify-center' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 justify-items-center'} gap-8 max-w-5xl mx-auto`}>
                         {events.map((event) => (
-                            <EventCard key={event.id} event={event} />
+                            <div key={event.id} className={events.length < 3 ? "w-full max-w-md" : "w-full max-w-md"}>
+                                <EventCard event={event} />
+                            </div>
                         ))}
                     </div>
                 )}

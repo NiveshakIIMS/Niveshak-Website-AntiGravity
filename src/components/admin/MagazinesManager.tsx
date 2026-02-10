@@ -71,7 +71,7 @@ export default function MagazinesManager() {
 
                 <AnimatePresence>
                     {isEditing && magForm && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <motion.div initial={{ opacity: 0, height: 0, overflow: "hidden" }} animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }}>
                             <div className="bg-card p-6 rounded-2xl border border-border shadow-xl grid gap-4 border-l-4 border-l-orange-500">
                                 <h4 className="font-bold text-foreground mb-2">Editor</h4>
                                 <div className="grid grid-cols-2 gap-4">

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { dataService, Resource } from "@/services/dataService";
 import { uploadService } from "@/services/uploadService";
 import MediaInput from "./MediaInput";
+import { formatDateIndian } from "@/lib/dateUtils";
 
 export default function ResourcesManager() {
     const [resources, setResources] = useState<Resource[]>([]);
@@ -225,7 +226,7 @@ export default function ResourcesManager() {
                                             <span className="text-[10px] uppercase font-bold tracking-wider opacity-70 border border-border px-1.5 py-0.5 rounded-md">
                                                 {resource.type}
                                             </span>
-                                            {resource.type !== 'folder' && <span className="text-xs text-muted-foreground">{resource.date}</span>}
+                                            {resource.type !== 'folder' && <span className="text-xs text-muted-foreground">{formatDateIndian(resource.date)}</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -296,7 +297,7 @@ export default function ResourcesManager() {
                                             <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">Date</label>
                                             <input
                                                 type="date"
-                                                value={currentResource.date}
+                                                value={formatDateIndian(currentResource.date)}
                                                 onChange={e => setCurrentResource({ ...currentResource, date: e.target.value })}
                                                 className="w-full p-2 border border-input rounded-lg bg-background"
                                             />

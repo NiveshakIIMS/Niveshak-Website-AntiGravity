@@ -6,6 +6,7 @@ import { Plus, Trash2, TrendingUp, Save, BarChart3 } from "lucide-react";
 import { dataService, NAVData } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
+import { formatDateIndian } from "@/lib/dateUtils";
 import * as XLSX from "xlsx";
 
 export default function NIFManager() {
@@ -475,7 +476,7 @@ export default function NIFManager() {
                                     <p className="font-bold text-foreground text-sm">
                                         {new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                     </p>
-                                    <span className="text-xs text-muted-foreground">{d.date}</span>
+                                    <span className="text-xs text-muted-foreground">{formatDateIndian(d.date)}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="font-mono text-blue-600 dark:text-blue-400 font-bold text-lg">₹ {d.value}</span>
@@ -514,7 +515,7 @@ export default function NIFManager() {
                                                     <p className="font-bold text-foreground">
                                                         {new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </p>
-                                                    <span className="text-xs text-muted-foreground">{d.date}</span>
+                                                    <span className="text-xs text-muted-foreground">{formatDateIndian(d.date)}</span>
                                                 </td>
                                                 <td className="p-4">
                                                     <span className="font-mono text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-900/10 px-2 py-1 rounded-md">

@@ -58,9 +58,11 @@ export default function NoticesSection() {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className={notices.length < 3
+                    ? "flex flex-wrap justify-center gap-6"
+                    : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"}>
                     {notices.map((notice, idx) => (
-                        <div key={notice.id} className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] min-w-[280px]">
+                        <div key={notice.id} className={notices.length < 3 ? "w-full max-w-sm min-w-[280px]" : "w-full"}>
                             <NoticeCard notice={notice} idx={idx} />
                         </div>
                     ))}
