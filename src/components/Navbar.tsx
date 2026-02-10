@@ -47,7 +47,7 @@ export default function Navbar() {
 
                     {/* Section 1: IIM Shillong Logo (Left) */}
                     <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
-                        <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
+                        <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
                     </a>
 
                     {/* Section 2: Niveshak Logo (Center) */}
