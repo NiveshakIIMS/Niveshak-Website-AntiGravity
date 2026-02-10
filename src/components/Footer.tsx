@@ -38,15 +38,18 @@ export default function Footer() {
     return (
         <footer className="bg-navy-900 text-gray-300 py-12 border-t border-white/10 relative z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Brand */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 items-start">
-                    <div className="lg:col-span-5 flex gap-6 items-start text-left -ml-4 lg:-ml-12">
-                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
-                            <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-28 h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
-                        </a>
-                        <a href="/" className="shrink-0 hover:opacity-90 transition-opacity">
-                            <img src="/logo.png" alt="Niveshak" className="w-28 h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
-                        </a>
-                        <div className="flex flex-col gap-4 pt-1.5 pl-2">
+                    <div className="lg:col-span-5 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start text-left ml-0 lg:-ml-12">
+                        <div className="flex gap-6 shrink-0">
+                            <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
+                                <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
+                            </a>
+                            <a href="/" className="shrink-0 hover:opacity-90 transition-opacity">
+                                <img src="/logo.png" alt="Niveshak" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
+                            </a>
+                        </div>
+                        <div className="flex flex-col gap-4 pt-0 lg:pt-1.5 pl-0 lg:pl-2">
                             <h3 className="text-lg font-semibold text-white uppercase tracking-wide leading-none">Niveshak</h3>
                             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
                                 The Investment & Finance Club of IIM Shillong. Democratizing financial knowledge since 2008.
@@ -109,6 +112,6 @@ export default function Footer() {
                     &copy; {new Date().getFullYear()} Niveshak, IIM Shillong. All rights reserved.
                 </div>
             </div>
-        </footer>
+        </footer >
     );
 }
