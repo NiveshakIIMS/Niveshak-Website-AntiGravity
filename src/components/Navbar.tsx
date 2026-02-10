@@ -111,16 +111,21 @@ export default function Navbar() {
                         </a>
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="-mr-2 flex md:hidden">
-                        <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            type="button"
-                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-800 focus:outline-none"
-                        >
-                            <span className="sr-only">Open main menu</span>
-                            {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
-                        </button>
+                    {/* Mobile Actions & Menu */}
+                    <div className="flex items-center gap-4 md:hidden">
+                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white rounded-full p-0.5 overflow-hidden shadow-sm shrink-0">
+                            <img src="/IIM Shillong Logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
+                        </a>
+                        <div className="-mr-2 flex">
+                            <button
+                                onClick={() => setIsOpen(!isOpen)}
+                                type="button"
+                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-800 focus:outline-none"
+                            >
+                                <span className="sr-only">Open main menu</span>
+                                {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
