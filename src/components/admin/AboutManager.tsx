@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Save, FileText, Layout, Info, Plus, Trash2, Type, Image as ImageIcon, AlignLeft, ArrowUp, ArrowDown, Maximize2, X, Check, List } from "lucide-react";
-import { dataService, AboutContent, ContentBlock } from "@/services/dataService";
+import { dataService, AboutContent, ContentBlock, AboutSection } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from 'next/dynamic';
@@ -87,7 +87,7 @@ export default function AboutManager() {
         setData({ ...data, sections: [...(data.sections || []), newSection] });
     };
 
-    const updateSection = (index: number, field: keyof typeof data.sections[0], value: any) => {
+    const updateSection = (index: number, field: keyof AboutSection, value: any) => {
         if (!data || !data.sections) return;
         const newSections = [...data.sections];
         newSections[index] = { ...newSections[index], [field]: value };
