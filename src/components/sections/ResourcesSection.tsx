@@ -111,15 +111,16 @@ export default function ResourcesSection({ resources: initialResources, showTitl
 
                 {/* Toolbar (Only for Full Page) */}
                 {!isHomepage && (
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-card p-4 rounded-2xl border border-border shadow-sm">
-                        {/* Breadcrumbs / Search */}
-                        <div className="flex items-center gap-4 flex-1 w-full md:w-auto overflow-x-auto">
+                    <div className="max-w-5xl mx-auto bg-card p-3 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row items-center gap-4">
+
+                        {/* 1. Breadcrumbs (Left) */}
+                        <div className="w-full md:w-auto flex items-center gap-4 overflow-x-auto no-scrollbar flex-shrink-0">
                             {searchQuery ? (
-                                <button onClick={() => setSearchQuery("")} className="flex items-center gap-2 text-blue-600 font-bold">
+                                <button onClick={() => setSearchQuery("")} className="flex items-center gap-2 text-blue-600 font-bold whitespace-nowrap">
                                     <span className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">Clear Search</span>
                                 </button>
                             ) : (
-                                <div className="flex items-center gap-2 text-sm text-foreground">
+                                <div className="flex items-center gap-2 text-sm text-foreground whitespace-nowrap">
                                     <button
                                         onClick={() => setCurrentFolderId(null)}
                                         className={`hover:text-blue-500 font-medium ${currentFolderId === null ? 'font-bold' : ''}`}
@@ -141,19 +142,22 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                             )}
                         </div>
 
-                        {/* Controls */}
-                        <div className="flex gap-2 items-center flex-shrink-0">
-                            <div className="relative">
+                        {/* 2. Search (Center) */}
+                        <div className="w-full md:flex-1 flex justify-center order-2 md:order-none">
+                            <div className="relative w-full max-w-md">
                                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                 <input
                                     type="text"
-                                    placeholder="Search..."
+                                    placeholder="Search resources..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="pl-9 pr-4 py-2 text-sm bg-muted rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-40 md:w-60"
+                                    className="w-full pl-9 pr-4 py-2 text-sm bg-muted rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
                             </div>
-                            <div className="h-6 w-px bg-border mx-2" />
+                        </div>
+
+                        {/* 3. Controls (Right) */}
+                        <div className="w-full md:w-auto flex items-center justify-between md:justify-end gap-3 order-3 md:order-none">
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -162,6 +166,9 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                 <option value="date">Newest First</option>
                                 <option value="name">A-Z</option>
                             </select>
+
+                            <div className="h-4 w-px bg-border hidden md:block" />
+
                             <div className="bg-muted rounded-lg p-1 flex gap-1">
                                 <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>
                                     <Grid className="w-4 h-4" />
@@ -194,7 +201,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                 {/* Grid View */}
                                 {viewMode === 'grid' ? (
                                     <>
-                                        <div className="aspect-[2/1] bg-muted relative overflow-hidden">
+                                        <div className="aspect-[2/1] bg-muted relative overflow-hidden isolate">
                                             {resource.coverImage ? (
                                                 <img src={resource.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
                                             ) : (
@@ -205,10 +212,10 @@ export default function ResourcesSection({ resources: initialResources, showTitl
                                             )}
 
                                             {resource.type !== 'folder' && (
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                <div className="absolute inset-0 bg-black/60 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px] z-10">
                                                     <a
                                                         href={resource.url} target="_blank" rel="noreferrer"
-                                                        className="px-6 py-2 bg-white text-black rounded-full font-bold text-sm transform translate-y-2 group-hover:translate-y-0 transition-all hover:bg-white/90"
+                                                        className="px-6 py-2 bg-white text-black rounded-full font-bold text-sm transform translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all hover:bg-white/90"
                                                         onClick={e => e.stopPropagation()}
                                                     >
                                                         {resource.type === 'file' ? 'Download' : 'Open Link'}

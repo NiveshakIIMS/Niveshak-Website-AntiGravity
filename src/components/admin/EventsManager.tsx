@@ -67,6 +67,8 @@ export default function EventsManager() {
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                             <div className="bg-card p-6 rounded-2xl border border-border shadow-xl grid gap-4 border-l-4 border-l-blue-500">
                                 <h4 className="font-bold text-foreground mb-2">Event Editor</h4>
+
+                                {/* Title + Type */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <input placeholder="Event Title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
                                     <select value={eventForm.type} onChange={e => setEventForm({ ...eventForm, type: e.target.value as any })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none">
@@ -75,15 +77,62 @@ export default function EventsManager() {
                                         <option value="Past">Past</option>
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+
+                                {/* Event Date (always required) */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-sm font-medium text-muted-foreground">Event Date</label>
                                     <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
-                                    <TimePicker
-                                        value={eventForm.time || ""}
-                                        onChange={(val) => setEventForm({ ...eventForm, time: val })}
-                                        use12HourFormat={true} // Persist as hh:mm AM/PM for Events
-                                    />
                                 </div>
-                                <input placeholder="Location" value={eventForm.location} onChange={e => setEventForm({ ...eventForm, location: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
+
+                                {/* --- Toggle: Event Time --- */}
+                                <div className="border border-border rounded-xl overflow-hidden">
+                                    <div className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer" onClick={() => {
+                                        const next = !eventForm.showTime;
+                                        setEventForm({ ...eventForm, showTime: next, ...(!next ? { time: "", location: "" } : {}) });
+                                    }}>
+                                        <input type="checkbox" className="w-5 h-5 accent-blue-500 pointer-events-none" checked={!!eventForm.showTime} readOnly />
+                                        <label className="text-sm font-medium text-foreground cursor-pointer select-none">Enable Event Time & Location</label>
+                                    </div>
+                                    {eventForm.showTime && (
+                                        <div className="p-4 space-y-3 border-t border-border">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <TimePicker
+                                                    value={eventForm.time || ""}
+                                                    onChange={(val) => setEventForm({ ...eventForm, time: val })}
+                                                    use12HourFormat={true}
+                                                />
+                                                <input placeholder="Location" value={eventForm.location} onChange={e => setEventForm({ ...eventForm, location: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <textarea placeholder="Event Description (What's this event about?)" value={eventForm.description || ""} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none w-full h-24 resize-none" />
+
+                                {/* Registration Link */}
+                                <input placeholder="Registration Link (e.g., Google Form URL)" value={eventForm.registration_link || ""} onChange={e => setEventForm({ ...eventForm, registration_link: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none w-full" />
+
+                                {/* --- Toggle: Deadline --- */}
+                                <div className="border border-border rounded-xl overflow-hidden">
+                                    <div className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer" onClick={() => {
+                                        const next = !eventForm.showDeadline;
+                                        setEventForm({ ...eventForm, showDeadline: next, ...(!next ? { deadline: "" } : {}) });
+                                    }}>
+                                        <input type="checkbox" className="w-5 h-5 accent-blue-500 pointer-events-none" checked={!!eventForm.showDeadline} readOnly />
+                                        <label className="text-sm font-medium text-foreground cursor-pointer select-none">Enable Registration Deadline</label>
+                                    </div>
+                                    {eventForm.showDeadline && (
+                                        <div className="p-4 border-t border-border">
+                                            <input
+                                                type="datetime-local"
+                                                value={eventForm.deadline || ""}
+                                                onChange={e => setEventForm({ ...eventForm, deadline: e.target.value })}
+                                                className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Image and Orientation */}
                                 <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
@@ -104,14 +153,15 @@ export default function EventsManager() {
                                         <option value="square">Square</option>
                                     </select>
                                 </div>
-                                {eventForm.isOnline && (
-                                    <input placeholder="Meeting Link" value={eventForm.meetingLink || ""} onChange={e => setEventForm({ ...eventForm, meetingLink: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
-                                )}
 
+                                {/* Online Event */}
                                 <div className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
                                     <input type="checkbox" className="w-5 h-5 accent-blue-500" checked={eventForm.isOnline} onChange={e => setEventForm({ ...eventForm, isOnline: e.target.checked })} />
                                     <label className="text-sm font-medium text-foreground">Is Online Event?</label>
                                 </div>
+                                {eventForm.isOnline && (
+                                    <input placeholder="Meeting Link" value={eventForm.meetingLink || ""} onChange={e => setEventForm({ ...eventForm, meetingLink: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
+                                )}
 
                                 <div className="flex gap-3 pt-2">
                                     <button onClick={saveEvent} className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save Event</button>

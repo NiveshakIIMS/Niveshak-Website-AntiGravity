@@ -46,7 +46,7 @@ export default function NIFManager() {
         return cagr.toFixed(2); // 2 decimal places
     };
 
-    // Auto-calculate CAGR effect
+    // 1. Auto-calculate CAGR
     useEffect(() => {
         if (metrics.isAutoReturn && data.length >= 2) {
             const cagr = calculateCAGR(data);
@@ -56,7 +56,28 @@ export default function NIFManager() {
                 dataService.saveNIFMetrics(newMetrics);
             }
         }
-    }, [data, metrics.isAutoReturn, metrics.annualizedReturn]); // Refined deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, metrics.isAutoReturn]);
+
+    // 2. Auto-calculate Total AUM
+    useEffect(() => {
+        if (metrics.fundUnits && data.length > 0) {
+            // Sort to get latest
+            const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const latestNAV = sorted[0].value;
+            const units = parseFloat(metrics.fundUnits);
+
+            if (!isNaN(units) && !isNaN(latestNAV)) {
+                const calculatedAUM = Math.round(units * latestNAV).toString();
+                if (calculatedAUM !== metrics.totalAUM) {
+                    const newMetrics = { ...metrics, totalAUM: calculatedAUM };
+                    setMetrics(newMetrics);
+                    dataService.saveNIFMetrics(newMetrics);
+                }
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, metrics.fundUnits]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

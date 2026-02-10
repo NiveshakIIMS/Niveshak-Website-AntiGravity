@@ -68,6 +68,11 @@ export interface Event {
     imageUrl: string;
     orientation?: "landscape" | "portrait" | "square";
     meetingLink?: string;
+    registration_link?: string;
+    description?: string;
+    deadline?: string; // ISO date string for registration deadline
+    showTime?: boolean; // Toggle: show event time on card
+    showDeadline?: boolean; // Toggle: show deadline countdown on card
     isOnline: boolean;
 }
 
@@ -343,12 +348,17 @@ export const dataService = {
                 id: d.id,
                 title: d.title,
                 date: d.date,
-                time: d.time,
-                location: d.location,
-                type: calculatedType, // Use calculated type
+                time: d.time || "",
+                location: d.location || "",
+                type: calculatedType,
                 imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
                 orientation: d.orientation,
                 meetingLink: d.meeting_link,
+                registration_link: d.registration_link,
+                description: d.description,
+                deadline: d.deadline,
+                showTime: d.showTime ?? true,
+                showDeadline: d.showDeadline ?? false,
                 isOnline: d.is_online
             };
         });
@@ -368,6 +378,11 @@ export const dataService = {
                 image_url: e.imageUrl,
                 orientation: e.orientation,
                 meeting_link: e.meetingLink,
+                registration_link: e.registration_link || null,
+                description: e.description || null,
+                deadline: e.deadline || null,
+                "showTime": e.showTime ?? true,
+                "showDeadline": e.showDeadline ?? false,
                 is_online: e.isOnline,
                 storage_provider: isR2 ? 'r2' : 'legacy',
                 media_key: mediaKey
