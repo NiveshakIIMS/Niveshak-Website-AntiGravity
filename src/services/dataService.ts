@@ -10,7 +10,7 @@ export interface HeroSlide {
     imageUrl: string;
     title: string;
     subtitle: string;
-    tagline?: string;  // "The Investment and Finance Club of IIM Shillong"
+    tagline?: string;  // "The Finance and Investment Club of IIM Shillong"
     description?: string;  // "Empowering future leaders..."
     objectFit: "cover" | "contain";
     timer: number;

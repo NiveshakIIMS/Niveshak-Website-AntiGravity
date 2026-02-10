@@ -70,7 +70,7 @@ export default function Hero() {
         imageUrl: "/hero_background.png",
         objectFit: "cover",
         subtitle: "The Finance Club of IIM Shillong",
-        tagline: "The Investment and Finance Club of IIM Shillong",
+        tagline: "The Finance and Investment Club of IIM Shillong",
         description: "Empowering future leaders with financial acumen, market insights, and real-world investment strategies."
     };
 

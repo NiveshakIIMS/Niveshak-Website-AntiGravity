@@ -47,7 +47,7 @@ export default function HeroManager() {
             imageUrl: "/hero_background.png",
             title: "New Headline",
             subtitle: "New Subtitle",
-            tagline: "The Investment and Finance Club of IIM Shillong",
+            tagline: "The Finance and Investment Club of IIM Shillong",
             description: "Empowering future leaders with financial acumen, market insights, and real-world investment strategies.",
             objectFit: "cover",
             timer: 5
@@ -137,7 +137,7 @@ export default function HeroManager() {
                                                     type="text"
                                                     value={editForm.tagline || ""}
                                                     onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
-                                                    placeholder="The Investment and Finance Club of IIM Shillong"
+                                                    placeholder="The Finance and Investment Club of IIM Shillong"
                                                     className="w-full p-2.5 rounded-lg bg-background border border-input focus:ring-2 focus:ring-blue-500 outline-none text-foreground"
                                                 />
                                             </div>

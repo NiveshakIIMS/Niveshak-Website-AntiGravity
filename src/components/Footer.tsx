@@ -52,7 +52,7 @@ export default function Footer() {
                         <div className="flex flex-col gap-4 pt-0 lg:pt-1.5 pl-0 lg:pl-2">
                             <h3 className="text-lg font-semibold text-white uppercase tracking-wide leading-none">Niveshak</h3>
                             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-                                The Investment & Finance Club of IIM Shillong. Democratizing financial knowledge since 2008.
+                                The Finance and Investment Club of IIM Shillong. Democratizing financial knowledge since 2008.
                             </p>
                         </div>
                     </div>
