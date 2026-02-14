@@ -131,18 +131,7 @@ export default function EventCard({ event }: EventCardProps) {
                         <Maximize2 className="w-4 h-4" />
                     </button>
 
-                    {/* Register Overlay */}
-                    {event.registration_link && event.type !== "Past" && (
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                            <a
-                                href={event.registration_link} target="_blank" rel="noreferrer"
-                                className="px-6 py-2 bg-white text-black rounded-full font-bold text-sm transform translate-y-2 group-hover:translate-y-0 transition-all hover:bg-white/90"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                Register Now
-                            </a>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Content Body */}
@@ -200,6 +189,21 @@ export default function EventCard({ event }: EventCardProps) {
                                     type={deadlineCountdown.type}
                                     icon={<Timer className="w-3 h-3" />}
                                 />
+                            </div>
+                        )}
+
+                        {/* Static Register Button */}
+                        {event.registration_link && event.type !== "Past" && (
+                            <div className="pt-3 border-t border-border/50">
+                                <a
+                                    href={event.registration_link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    Register Now
+                                </a>
                             </div>
                         )}
                     </div>
