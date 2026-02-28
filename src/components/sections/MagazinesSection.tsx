@@ -183,33 +183,50 @@ function MagazineCard({ mag, index = 0 }: { mag: Magazine; index?: number }) {
                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{mag.issueMonth} {mag.issueYear}</p>
                 </div>
 
-                <div className="mt-auto relative h-12 w-full">
-                    {/* Default State: Read Issue Button */}
-                    <div
-                        className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isMobileActive ? 'opacity-0 pointer-events-none' : 'opacity-100 group-hover:opacity-0 group-hover:pointer-events-none'}`}
-                    >
-                        <button
-                            onClick={() => setIsMobileActive(true)}
-                            className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-navy-900 dark:bg-accent text-white font-semibold text-sm shadow-md"
-                        >
-                            <BookOpen className="w-4 h-4" /> Read Issue
-                        </button>
-                    </div>
-
-                    {/* Hover/Active State: Expanded Options */}
-                    <div
-                        className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ${isMobileActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'}`}
-                    >
+                <div className="mt-auto relative w-full pt-2">
+                    {/* Mobile View: side-by-side buttons permanently visible */}
+                    <div className="flex md:hidden items-center justify-center gap-2 w-full mt-2">
                         {mag.flipUrl && (
-                            <a href={mag.flipUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-colors" title="Read as Flipbook">
-                                <BookOpen className="w-4 h-4" /> Flipbook
+                            <a href={mag.flipUrl} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-colors" title="Read as Flipbook">
+                                <BookOpen className="w-3.5 h-3.5" /> Flipbook
                             </a>
                         )}
                         {mag.pdfUrl && (
-                            <a href={mag.pdfUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-gray-800 text-white text-xs font-bold shadow-sm hover:bg-gray-900 transition-colors" title="View PDF">
-                                <FileText className="w-4 h-4" /> PDF
+                            <a href={mag.pdfUrl} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg bg-gray-800 text-white text-xs font-bold shadow-sm hover:bg-gray-900 transition-colors" title="View PDF">
+                                <FileText className="w-3.5 h-3.5" /> PDF
                             </a>
                         )}
+                    </div>
+
+                    {/* Desktop View: Hover Interaction */}
+                    <div className="hidden md:block relative h-12 w-full">
+                        {/* Default State: Read Issue Button */}
+                        <div
+                            className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isMobileActive ? 'opacity-0 pointer-events-none' : 'opacity-100 group-hover:opacity-0 group-hover:pointer-events-none'}`}
+                        >
+                            <button
+                                onClick={() => setIsMobileActive(true)}
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-navy-900 dark:bg-accent text-white font-semibold text-sm shadow-md"
+                            >
+                                <BookOpen className="w-4 h-4" /> Read Issue
+                            </button>
+                        </div>
+
+                        {/* Hover/Active State: Expanded Options */}
+                        <div
+                            className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ${isMobileActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'}`}
+                        >
+                            {mag.flipUrl && (
+                                <a href={mag.flipUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-colors" title="Read as Flipbook">
+                                    <BookOpen className="w-4 h-4" /> Flipbook
+                                </a>
+                            )}
+                            {mag.pdfUrl && (
+                                <a href={mag.pdfUrl} target="_blank" className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg bg-gray-800 text-white text-xs font-bold shadow-sm hover:bg-gray-900 transition-colors" title="View PDF">
+                                    <FileText className="w-4 h-4" /> PDF
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

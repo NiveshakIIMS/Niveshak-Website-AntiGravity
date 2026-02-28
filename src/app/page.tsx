@@ -14,6 +14,7 @@ export const revalidate = 60; // Revalidate homepage every 60s
 export default async function Home() {
   const aboutData = await dataService.getAbout();
   const recentResources = await dataService.getResources();
+  const magazines = await dataService.getMagazines();
 
   return (
     <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -21,7 +22,7 @@ export default async function Home() {
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />
         <TeamSection showHallOfFame={true} />
-        <MagazinesSection limit={4} showFilters={false} showViewAll={true} />
+        <MagazinesSection limit={4} showFilters={false} showViewAll={true} initialMagazines={magazines} />
         <EventsSection />
         <NoticesSection />
         <NAVSection />
