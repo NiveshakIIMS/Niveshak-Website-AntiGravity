@@ -21,7 +21,7 @@ export default async function Home() {
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />
         <TeamSection showHallOfFame={true} />
-        <MagazinesSection />
+        <MagazinesSection limit={4} showFilters={false} showViewAll={true} />
         <EventsSection />
         <NoticesSection />
         <NAVSection />
