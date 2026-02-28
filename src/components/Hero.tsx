@@ -14,6 +14,11 @@ export default function Hero() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const { isLogoInNav, setLogoInNav } = useLogo();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         // Load Slides
@@ -75,7 +80,7 @@ export default function Hero() {
     };
 
     return (
-        <section id="hero" className="relative w-full aspect-video md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 pb-20 md:pb-24">
+        <section id="hero" suppressHydrationWarning className="relative w-full aspect-video md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 pb-20 md:pb-24">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -111,14 +116,14 @@ export default function Hero() {
                     <motion.div
                         initial={{ height: "auto", marginBottom: "1rem" }}
                         animate={{
-                            height: isLogoInNav ? 0 : "auto",
-                            marginBottom: isLogoInNav ? 0 : "1rem",
-                            opacity: isLogoInNav ? 0 : 1
+                            height: (isMounted && isLogoInNav) ? 0 : "auto",
+                            marginBottom: (isMounted && isLogoInNav) ? 0 : "1rem",
+                            opacity: (isMounted && isLogoInNav) ? 0 : 1
                         }}
                         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                         className="flex items-center justify-center overflow-hidden"
                     >
-                        {!isLogoInNav && (
+                        {(!isMounted || !isLogoInNav) && (
                             <motion.div
                                 layoutId="niveshak-logo"
                                 className="relative w-20 h-20 md:w-40 md:h-40"
@@ -135,14 +140,14 @@ export default function Hero() {
                     <motion.div
                         initial={{ height: "auto", marginBottom: "1.5rem" }}
                         animate={{
-                            height: isLogoInNav ? 0 : "auto",
-                            marginBottom: isLogoInNav ? 0 : "1.5rem",
-                            opacity: isLogoInNav ? 0 : 1
+                            height: (isMounted && isLogoInNav) ? 0 : "auto",
+                            marginBottom: (isMounted && isLogoInNav) ? 0 : "1.5rem",
+                            opacity: (isMounted && isLogoInNav) ? 0 : 1
                         }}
                         transition={{ duration: 0.4, delay: 0.05, ease: [0.4, 0, 0.2, 1] }}
                         className="flex items-center justify-center overflow-hidden"
                     >
-                        {!isLogoInNav && (
+                        {(!isMounted || !isLogoInNav) && (
                             <motion.h1
                                 layoutId="niveshak-title"
                                 className="text-3xl sm:text-4xl md:text-7xl font-extrabold tracking-tighter text-white drop-shadow-2xl uppercase"
@@ -155,12 +160,9 @@ export default function Hero() {
                     {/* Sub-header Content - Animates position based on logo state */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                        }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                        className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out ${isLogoInNav
+                        className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out ${(isMounted && isLogoInNav)
                             ? "absolute bottom-4 md:bottom-8 left-0 right-0 px-4"
                             : "relative"
                             }`}
@@ -192,7 +194,7 @@ export default function Hero() {
                 </div>
 
                 {/* Spacer for when content is relative (not logo in nav) */}
-                {!isLogoInNav && <div className="h-8 md:h-12" />}
+                {(!isMounted || !isLogoInNav) && <div className="h-8 md:h-12" />}
             </div>
         </section>
     );
