@@ -2,16 +2,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Award, X, Linkedin, Mail } from "lucide-react";
+import { Plus, Trash2, Edit2, Award, X, Linkedin, Mail, UploadCloud, Loader2 } from "lucide-react";
 import { dataService, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import * as XLSX from "xlsx";
+import { uploadService } from "@/services/uploadService";
 
 export default function HallOfFameManager() {
     const [members, setMembers] = useState<HallOfFameMember[]>([]);
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState<HallOfFameMember | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isUploadingExcel, setIsUploadingExcel] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState("");
 
     useEffect(() => {
         loadMembers();
@@ -69,6 +73,104 @@ export default function HallOfFameManager() {
         setIsEditing("new");
     };
 
+    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingExcel(true);
+        setUploadStatus("Reading Excel file...");
+
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+            let addedCount = 0;
+            let skippedCount = 0;
+
+            for (let i = 0; i < json.length; i++) {
+                const row = json[i];
+                const name = row["Enter your name"]?.toString().trim();
+                const batch = row["Enter your Batch"]?.toString().trim();
+
+                if (!name || !batch) continue;
+
+                // 1. Deduplication check
+                const isDuplicate = members.some(
+                    m => m.name.toLowerCase() === name.toLowerCase() && m.batch.toLowerCase() === batch.toLowerCase()
+                );
+
+                if (isDuplicate) {
+                    skippedCount++;
+                    continue;
+                }
+
+                setUploadStatus(`Processing ${name} (${i + 1}/${json.length})...`);
+
+                // 2. Read Permissions
+                const emailRaw = row["Enter your EMAIL ID"]?.toString().trim() || "";
+                const emailPerm = row["Do you want your email ID to be disclosed in your profile in the hall of fame?"]?.toString().trim().toLowerCase() === "yes";
+                const email = emailPerm ? emailRaw : "";
+
+                const linkedinRaw = row["LinkedIn Link of your profile"]?.toString().trim() || "";
+                const linkedinPerm = row["Do you want your linkedin link to be disclosed in your profile in the hall of fame?"]?.toString().trim().toLowerCase() === "yes";
+                const linkedin = linkedinPerm ? linkedinRaw : "";
+
+                // 3. Process Image
+                const gdriveUrl = row["Upload your Profile Picture"]?.toString().trim() || "";
+                let finalImageUrl = "/avatar_placeholder.png";
+
+                if (gdriveUrl) {
+                    // Extract ID
+                    const idMatch = gdriveUrl.match(/(?:id=|v\/|d\/)([a-zA-Z0-9_-]{25,})/);
+                    const fileId = idMatch ? idMatch[1] : null;
+
+                    if (fileId) {
+                        try {
+                            const proxyRes = await fetch(`/api/fetch-image?id=${fileId}`);
+                            if (proxyRes.ok) {
+                                const blob = await proxyRes.blob();
+                                const imgFile = new File([blob], `profile_${fileId}.jpg`, { type: blob.type || "image/jpeg" });
+                                const filename = `hall_of_fame/${Date.now()}_${fileId}.jpg`;
+                                finalImageUrl = await uploadService.uploadFile(imgFile, filename);
+                            }
+                        } catch (imgErr) {
+                            console.error(`Failed to fetch/upload image for ${name}`, imgErr);
+                        }
+                    }
+                }
+
+                // 4. Save Member
+                const newMember: HallOfFameMember = {
+                    id: crypto.randomUUID(),
+                    name,
+                    batch,
+                    role: "", // Default empty
+                    email,
+                    linkedin,
+                    imageUrl: finalImageUrl,
+                    displayOrder: 0
+                };
+
+                await dataService.saveHallOfFameMember(newMember);
+                addedCount++;
+            }
+
+            setUploadStatus(`Done! Added ${addedCount}, Skipped ${skippedCount} duplicates.`);
+            await loadMembers();
+            setTimeout(() => setUploadStatus(""), 3000);
+        } catch (err) {
+            console.error("Excel processing error", err);
+            setUploadStatus("Error processing Excel file.");
+            setTimeout(() => setUploadStatus(""), 3000);
+        } finally {
+            setIsUploadingExcel(false);
+            if (e.target) e.target.value = ''; // Reset file input
+        }
+    };
+
     // Group by batch
     const groupedByBatch = members.reduce((acc, m) => {
         const batch = m.batch || "Unknown";
@@ -96,10 +198,24 @@ export default function HallOfFameManager() {
                     </h2>
                     <p className="text-muted-foreground mt-1">Manage alumni profiles from previous batches.</p>
                 </div>
-                <button onClick={startNew} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all hover:-translate-y-0.5">
-                    <Plus className="w-5 h-5" /> Add Alumni
-                </button>
+                <div className="flex gap-3">
+                    <label className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer transition-all">
+                        {isUploadingExcel ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+                        <span className="font-medium whitespace-nowrap">Import Excel</span>
+                        <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleExcelUpload} disabled={isUploadingExcel} />
+                    </label>
+                    <button onClick={startNew} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all hover:-translate-y-0.5 whitespace-nowrap">
+                        <Plus className="w-5 h-5" /> Add Alumni
+                    </button>
+                </div>
             </div>
+
+            {/* Upload Status Toast */}
+            {uploadStatus && (
+                <div className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 p-4 rounded-lg font-medium border border-blue-200 dark:border-blue-800">
+                    {uploadStatus}
+                </div>
+            )}
 
             {/* Modal Form */}
             <AnimatePresence>
