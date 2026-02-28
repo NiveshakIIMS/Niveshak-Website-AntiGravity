@@ -3,6 +3,7 @@ import MagazinesSection from "@/components/sections/MagazinesSection";
 import { dataService } from "@/services/dataService";
 
 export const dynamic = 'force-dynamic'; // Prevent stale cache from hiding new entries
+export const runtime = 'edge'; // Required for Cloudflare Pages when using dynamic routes
 
 export default async function Magazines() {
     const magazines = await dataService.getMagazines();
