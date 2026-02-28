@@ -85,17 +85,24 @@ export default function HallOfFameManager() {
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+            const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
             let addedCount = 0;
             let skippedCount = 0;
 
-            for (let i = 0; i < json.length; i++) {
-                const row = json[i];
-                const name = row["Enter your name"]?.toString().trim();
-                const batch = row["Enter your Batch"]?.toString().trim();
+            // Start from 1 to skip the header row
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
 
-                if (!name || !batch) continue;
+                // If the row is empty or doesn't have at least a name, skip
+                if (!row || row.length === 0) continue;
+
+                const name = row[0]?.toString().trim();
+                const batch = row[1]?.toString().trim();
+
+                if (!name || !batch) {
+                    continue;
+                }
 
                 // 1. Deduplication check
                 const isDuplicate = members.some(
@@ -107,19 +114,22 @@ export default function HallOfFameManager() {
                     continue;
                 }
 
-                setUploadStatus(`Processing ${name} (${i + 1}/${json.length})...`);
+                setUploadStatus(`Processing ${name} (${i}/${rows.length - 1})...`);
 
-                // 2. Read Permissions
-                const emailRaw = row["Enter your EMAIL ID"]?.toString().trim() || "";
-                const emailPerm = row["Do you want your email ID to be disclosed in your profile in the hall of fame?"]?.toString().trim().toLowerCase() === "yes";
+                // 2. Read Permissions based on fixed indices
+                // 0: Name, 1: Batch, 2: Email, 3: Email Perm, 4: LinkedIn, 5: LinkedIn Perm, 6: Profile Pic
+                const emailRaw = row[2]?.toString().trim() || "";
+                const emailPermStr = row[3]?.toString().trim().toLowerCase() || "";
+                const emailPerm = emailPermStr === "yes";
                 const email = emailPerm ? emailRaw : "";
 
-                const linkedinRaw = row["LinkedIn Link of your profile"]?.toString().trim() || "";
-                const linkedinPerm = row["Do you want your linkedin link to be disclosed in your profile in the hall of fame?"]?.toString().trim().toLowerCase() === "yes";
+                const linkedinRaw = row[4]?.toString().trim() || "";
+                const linkedinPermStr = row[5]?.toString().trim().toLowerCase() || "";
+                const linkedinPerm = linkedinPermStr === "yes";
                 const linkedin = linkedinPerm ? linkedinRaw : "";
 
                 // 3. Process Image
-                const gdriveUrl = row["Upload your Profile Picture"]?.toString().trim() || "";
+                const gdriveUrl = row[6]?.toString().trim() || "";
                 let finalImageUrl = "/avatar_placeholder.png";
 
                 if (gdriveUrl) {
