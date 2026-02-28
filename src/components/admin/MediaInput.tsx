@@ -22,6 +22,7 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
     const [aspect, setAspect] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [originalAspect, setOriginalAspect] = useState<number | null>(null);
 
     const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
         setCroppedAreaPixels(croppedAreaPixels);
@@ -33,7 +34,17 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
 
         const reader = new FileReader();
         reader.onload = () => {
-            setCroppingSrc(reader.result as string);
+            const src = reader.result as string;
+            setCroppingSrc(src);
+
+            // Calculate original aspect ratio
+            const img = new globalThis.Image();
+            img.onload = () => {
+                const imgAspect = img.width / img.height;
+                setOriginalAspect(imgAspect);
+                setAspect(imgAspect); // default to original
+            };
+            img.src = src;
         };
         reader.readAsDataURL(file);
     };
@@ -121,6 +132,27 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
         }
     };
 
+    const handleUploadOriginal = async () => {
+        if (!croppingSrc) return;
+        try {
+            setIsProcessing(true);
+            const blob = uploadService.base64ToBlob(croppingSrc);
+            const file = new File([blob], `original_${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
+
+            const filename = `${folder}/${Date.now()}_original.jpg`;
+            const publicUrl = await uploadService.uploadFile(file, filename);
+
+            onChange(publicUrl);
+            setCroppingSrc(null);
+            setMode("link"); // Switch back to view mode
+        } catch (error) {
+            console.error(error);
+            alert("Failed to upload image. Please check your connection and secrets.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <div className="space-y-2">
             {label && <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</label>}
@@ -158,8 +190,8 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                         <div className="p-3 bg-muted rounded-full group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors mb-2">
                             <Upload className="w-6 h-6 text-muted-foreground group-hover:text-blue-600" />
                         </div>
-                        <span className="text-sm font-medium text-foreground">Click to Upload Device Image</span>
-                        <span className="text-xs text-muted-foreground mt-1">Images will be cropped to square/preference</span>
+                        <span className="text-sm font-medium text-foreground">Click to Upload Image</span>
+                        <span className="text-xs text-muted-foreground mt-1">Images can be cropped or uploaded in original size</span>
                     </label>
                 </>
             )}
@@ -202,9 +234,10 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                         <div className="p-6 bg-card border-t border-border space-y-4">
                             {/* Aspect Ratio Selector */}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase">Aspect Ratio</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase">Crop Aspect Ratio</label>
                                 <div className="flex flex-wrap gap-2">
                                     {[
+                                        { label: "Original", value: originalAspect || 1 },
                                         { label: "16:9", value: 16 / 9 },
                                         { label: "5:4", value: 5 / 4 },
                                         { label: "1:1", value: 1 },
@@ -239,20 +272,32 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button
-                                    onClick={() => setCroppingSrc(null)}
-                                    className="px-5 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveCrop}
-                                    disabled={isProcessing}
-                                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 flex items-center gap-2"
-                                >
-                                    {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Check className="w-4 h-4" /> Save & Upload</>}
-                                </button>
+                            <div className="flex justify-between items-center pt-2">
+                                <div>
+                                    <button
+                                        onClick={handleUploadOriginal}
+                                        disabled={isProcessing}
+                                        className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100/50 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors shadow-sm"
+                                        title="Skip cropping and upload the image in its original size."
+                                    >
+                                        {isProcessing ? "Uploading..." : "Upload Original Size"}
+                                    </button>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setCroppingSrc(null)}
+                                        className="px-5 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleSaveCrop}
+                                        disabled={isProcessing}
+                                        className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 flex items-center gap-2"
+                                    >
+                                        {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Check className="w-4 h-4" /> Save Crop</>}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
