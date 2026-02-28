@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Menu, LayoutDashboard } from "lucide-react";
 import AdminSidebar from "./AdminSidebar";
 import HeroManager from "./HeroManager";
 import AboutManager from "./AboutManager";
@@ -27,6 +27,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
     const [activeTab, setActiveTab] = useState("hero");
     const [showMFA, setShowMFA] = useState(false);
     const [isMFAEnabled, setIsMFAEnabled] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         const checkMFA = async () => {
@@ -49,6 +50,35 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
         alert("Two-Factor Authentication Enabled Successfully!");
     };
 
+    const handleDisableMFA = async () => {
+        if (!confirm("Are you sure you want to disable Two-Factor Authentication? This decreases your account security.")) return;
+
+        try {
+            const { data, error } = await supabase.auth.mfa.listFactors();
+            if (error) throw error;
+
+            const totpFactor = data.totp[0];
+            if (!totpFactor) {
+                setIsMFAEnabled(false);
+                setShowMFA(false);
+                return;
+            }
+
+            const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+                factorId: totpFactor.id
+            });
+
+            if (unenrollError) throw unenrollError;
+
+            setIsMFAEnabled(false);
+            setShowMFA(false);
+            alert("Two-Factor Authentication has been successfully disabled.");
+        } catch (error: any) {
+            console.error("Error disabling MFA:", error);
+            alert(`Failed to disable 2FA: ${error.message || "Unknown error."}`);
+        }
+    };
+
     const renderContent = () => {
         switch (activeTab) {
             case "hero": return <HeroManager />;
@@ -68,34 +98,53 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
     };
 
     return (
-        <div className="flex h-screen bg-muted/20 overflow-hidden pt-16">
-            <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+        <div className="flex h-screen bg-muted/20 overflow-hidden md:pt-16">
+            <AdminSidebar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                onLogout={handleLogout}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+            />
 
-            <main className="flex-1 overflow-y-auto relative p-8">
+            <main className="flex-1 overflow-y-auto relative w-full flex flex-col pt-16 md:pt-0">
                 <div className="absolute inset-0 bg-grid-slate-200/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-50/[0.05] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none" />
 
-                <div className="flex justify-end mb-6">
-                    <button
-                        onClick={() => setShowMFA(true)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-sm border ${isMFAEnabled ? "bg-green-100/50 border-green-200 text-green-700 hover:bg-green-100" : "bg-white border-border text-foreground hover:bg-muted"}`}
-                    >
-                        <ShieldCheck className={`w-4 h-4 ${isMFAEnabled ? "text-green-600" : "text-muted-foreground"}`} />
-                        {isMFAEnabled ? "2FA Active" : "Setup 2FA"}
+                {/* Mobile Header overlay */}
+                <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-card/80 backdrop-blur-md border-b border-border shadow-sm flex items-center justify-between p-4 px-6 h-16">
+                    <h2 className="font-bold text-lg flex items-center gap-2 text-foreground">
+                        <LayoutDashboard className="w-5 h-5 text-blue-600" />
+                        Admin
+                    </h2>
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-muted rounded-xl text-foreground active:scale-95 transition-transform">
+                        <Menu className="w-5 h-5" />
                     </button>
                 </div>
 
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.98 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="max-w-6xl mx-auto"
-                >
-                    <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden ring-1 ring-gray-900/5">
-                        {renderContent()}
+                <div className="p-4 md:p-8 flex-1">
+                    <div className="flex justify-end mb-6">
+                        <button
+                            onClick={() => setShowMFA(true)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-sm border ${isMFAEnabled ? "bg-green-100/50 border-green-200 text-green-700 hover:bg-green-100" : "bg-white border-border text-foreground hover:bg-muted"}`}
+                        >
+                            <ShieldCheck className={`w-4 h-4 ${isMFAEnabled ? "text-green-600" : "text-muted-foreground"}`} />
+                            {isMFAEnabled ? "2FA Active" : "Setup 2FA"}
+                        </button>
                     </div>
-                </motion.div>
+
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="max-w-6xl mx-auto"
+                    >
+                        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden ring-1 ring-gray-900/5">
+                            {renderContent()}
+                        </div>
+                    </motion.div>
+                </div>
             </main>
 
             {/* MFA Modal */}
@@ -109,9 +158,12 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold mb-2">2FA is Enabled</h3>
-                                    <p className="text-muted-foreground">Your account is secured. You can generate limited backup codes or disable it currently only via Supabase dashboard if you get locked out.</p>
+                                    <p className="text-muted-foreground text-sm">Your account is secured. If you wish to disable it, click the button below.</p>
                                 </div>
-                                <button onClick={() => setShowMFA(false)} className="px-6 py-2 bg-muted hover:bg-muted/80 rounded-lg font-medium">Close</button>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={handleDisableMFA} className="px-6 py-2.5 bg-red-100/50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl font-medium transition-colors">Disable 2FA</button>
+                                    <button onClick={() => setShowMFA(false)} className="px-6 py-2.5 bg-muted hover:bg-muted/80 text-foreground rounded-xl font-medium transition-colors">Close</button>
+                                </div>
                             </div>
                         ) : (
                             <MFAEnrollment
