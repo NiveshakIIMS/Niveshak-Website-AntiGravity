@@ -17,7 +17,7 @@ export default async function Home() {
   const magazines = await dataService.getMagazines();
 
   return (
-    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div suppressHydrationWarning className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Hero />
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />
@@ -29,6 +29,6 @@ export default async function Home() {
         <ResourcesSection resources={recentResources} limit={3} bgColor="bg-muted/10" />
       </div>
       <Footer />
-    </main>
+    </div>
   );
 }
