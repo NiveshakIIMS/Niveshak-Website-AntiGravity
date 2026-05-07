@@ -7,10 +7,23 @@ import Link from "next/link";
 import { dataService, Notice } from "@/services/dataService";
 import NoticeCard from "../NoticeCard";
 
-export default function NoticesSection() {
-    const [notices, setNotices] = useState<Notice[]>([]);
+interface NoticesSectionProps {
+    initialNotices?: Notice[];
+}
+
+export default function NoticesSection({ initialNotices = [] }: NoticesSectionProps) {
+    const [notices, setNotices] = useState<Notice[]>(() => {
+        if (initialNotices.length === 0) return [];
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return initialNotices.filter(n => {
+            const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
+            return checkDate >= now;
+        }).slice(0, 4);
+    });
 
     useEffect(() => {
+        if (initialNotices.length > 0) return;
         dataService.getNotices().then(data => {
             const now = new Date();
             now.setHours(0, 0, 0, 0);

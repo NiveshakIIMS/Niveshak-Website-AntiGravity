@@ -5,12 +5,26 @@ import { dataService, Event } from "@/services/dataService";
 import EventCard from "@/components/EventCard";
 import { ArrowRight } from "lucide-react";
 
-export default function EventsSection() {
-    const [events, setEvents] = useState<Event[]>([]);
+interface EventsSectionProps {
+    initialEvents?: Event[];
+}
+
+export default function EventsSection({ initialEvents = [] }: EventsSectionProps) {
+    const [events, setEvents] = useState<Event[]>(() => {
+        if (initialEvents.length === 0) return [];
+        return initialEvents
+            .filter(e => e.type !== "Past")
+            .sort((a, b) => {
+                if (a.type === "Live" && b.type !== "Live") return -1;
+                if (a.type !== "Live" && b.type === "Live") return 1;
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+            })
+            .slice(0, 4);
+    });
 
     useEffect(() => {
+        if (initialEvents.length > 0) return;
         const loadEvents = async () => {
-            // Sort by date upcoming
             const allEvents = await dataService.getEvents();
             // Simple logic: Show all (or filter by date if needed)
             // User Request: "homepage events... only difference is... past events would also show" (Wait, user said homepage matches events page EXCEPT events page shows past too. So homepage needs to HIDE past.)

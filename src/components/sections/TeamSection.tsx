@@ -9,14 +9,17 @@ import { dataService, TeamMember } from "@/services/dataService";
 interface TeamSectionProps {
     showTitle?: boolean;
     showHallOfFame?: boolean;
+    initialMembers?: TeamMember[];
 }
 
-export default function TeamSection({ showTitle = true, showHallOfFame = false }: TeamSectionProps) {
-    const [members, setMembers] = useState<TeamMember[]>([]);
+export default function TeamSection({ showTitle = true, showHallOfFame = false, initialMembers = [] }: TeamSectionProps) {
+    const [members, setMembers] = useState<TeamMember[]>(initialMembers);
 
     useEffect(() => {
-        dataService.getTeam().then(setMembers);
-    }, []);
+        if (initialMembers.length === 0) {
+            dataService.getTeam().then(setMembers);
+        }
+    }, [initialMembers.length]);
 
     const facultyMembers = members.filter(m => m.category === "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));
     const studentMembers = members.filter(m => m.category !== "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));

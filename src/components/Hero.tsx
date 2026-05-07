@@ -9,9 +9,13 @@ import { dataService, HeroSlide } from "@/services/dataService";
 
 import { useLogo } from "@/context/LogoContext";
 
-export default function Hero() {
+interface HeroProps {
+    initialSlides?: HeroSlide[];
+}
+
+export default function Hero({ initialSlides = [] }: HeroProps) {
     const [opacity, setOpacity] = useState(1);
-    const [slides, setSlides] = useState<HeroSlide[]>([]);
+    const [slides, setSlides] = useState<HeroSlide[]>(initialSlides);
     const [currentSlide, setCurrentSlide] = useState(0);
     const { isLogoInNav, setLogoInNav } = useLogo();
     const [isMounted, setIsMounted] = useState(false);
@@ -21,12 +25,13 @@ export default function Hero() {
     }, []);
 
     useEffect(() => {
-        // Load Slides
-        const loadSlides = async () => {
-            const loadedSlides = await dataService.getHeroSlides();
-            setSlides(loadedSlides);
-        };
-        loadSlides();
+        if (initialSlides.length === 0) {
+            const loadSlides = async () => {
+                const loadedSlides = await dataService.getHeroSlides();
+                setSlides(loadedSlides);
+            };
+            loadSlides();
+        }
 
         const handleScroll = () => {
             const scrollY = window.scrollY;
@@ -98,6 +103,7 @@ export default function Hero() {
                         className="object-contain md:object-cover object-center"
                         style={{ opacity: 0.5 }}
                         priority
+                        unoptimized={true}
                         sizes="100vw"
                     />
                     {/* Gradient overlay */}
@@ -131,7 +137,7 @@ export default function Hero() {
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                             >
-                                <Image src="/logo.png" alt="Niveshak Logo" fill className="object-contain drop-shadow-2xl" priority />
+                                <Image src="/logo.png" alt="Niveshak Logo" fill className="object-contain drop-shadow-2xl" priority unoptimized={true} />
                             </motion.div>
                         )}
                     </motion.div>

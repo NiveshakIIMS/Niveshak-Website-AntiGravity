@@ -97,13 +97,37 @@ export default function Navbar() {
                                 })}
                             </div>
 
-                            {/* Theme Toggle */}
+                            {/* Theme Toggle (Neumorphic Pill) */}
                             <button
                                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                                className="p-2 lg:p-2.5 rounded-full bg-navy-800 text-gray-300 border border-navy-700 hover:bg-navy-700 hover:text-white transition-colors shadow-sm shrink-0"
+                                className="relative flex items-center w-[90px] lg:w-[104px] h-[34px] lg:h-[40px] rounded-full bg-navy-900/90 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50"
                                 aria-label="Toggle Theme"
+                                style={{ justifyContent: theme === 'light' ? 'flex-start' : 'flex-end' }}
                             >
-                                {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                                {/* Text Background */}
+                                <div className="absolute inset-0 flex items-center justify-between px-2.5 lg:px-3.5 pointer-events-none">
+                                    <span className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'dark' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>DARK</span>
+                                    <span className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'light' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>LIGHT</span>
+                                </div>
+                                
+                                {/* Thumb */}
+                                <motion.div
+                                    layout
+                                    className="relative z-10 flex items-center justify-center h-full aspect-square rounded-full bg-navy-800 shadow-[0_3px_6px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_1px_rgba(0,0,0,0.2)] text-gray-200 border border-navy-700"
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={theme}
+                                            initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
+                                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                            exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {theme === 'light' ? <Sun className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-white" /> : <Moon className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-300" />}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </motion.div>
                             </button>
 
                             {/* Admin Button */}
@@ -160,14 +184,36 @@ export default function Navbar() {
                                 Admin Login
                             </Link>
                             <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     setTheme(theme === 'light' ? 'dark' : 'light');
-                                    setIsOpen(false);
                                 }}
-                                className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between"
+                                className="w-full px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between"
                             >
-                                <span>Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode</span>
-                                {theme === 'light' ? <Moon className="w-4 h-4 ml-2" /> : <Sun className="w-4 h-4 ml-2" />}
+                                <span>Theme Preference</span>
+                                <div className="relative flex items-center w-[104px] h-[40px] rounded-full bg-navy-900 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50" style={{ justifyContent: theme === 'light' ? 'flex-start' : 'flex-end' }}>
+                                    <div className="absolute inset-0 flex items-center justify-between px-3.5 pointer-events-none">
+                                        <span className={`text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'dark' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>DARK</span>
+                                        <span className={`text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'light' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>LIGHT</span>
+                                    </div>
+                                    <motion.div
+                                        layout
+                                        className="relative z-10 flex items-center justify-center h-full aspect-square rounded-full bg-navy-800 shadow-[0_3px_6px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_1px_rgba(0,0,0,0.2)] text-gray-200 border border-navy-700"
+                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    >
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={theme}
+                                                initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
+                                                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                                exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                {theme === 'light' ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-blue-300" />}
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    </motion.div>
+                                </div>
                             </button>
                         </div>
                     </motion.div>

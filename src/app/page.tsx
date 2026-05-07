@@ -12,20 +12,28 @@ import { dataService } from "@/services/dataService";
 export const revalidate = 60; // Revalidate homepage every 60s
 
 export default async function Home() {
-  const aboutData = await dataService.getAbout();
-  const recentResources = await dataService.getResources();
-  const magazines = await dataService.getMagazines();
+  const [aboutData, recentResources, magazines, teamMembers, events, notices, navData, nifMetrics, heroSlides] = await Promise.all([
+    dataService.getAbout(),
+    dataService.getResources(),
+    dataService.getMagazines(),
+    dataService.getTeam(),
+    dataService.getEvents(),
+    dataService.getNotices(),
+    dataService.getNAVData(),
+    dataService.getNIFMetrics(),
+    dataService.getHeroSlides()
+  ]);
 
   return (
     <div suppressHydrationWarning className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Hero />
+      <Hero initialSlides={heroSlides} />
       <div className="space-y-0">
         <AboutSection initialData={aboutData} />
-        <TeamSection showHallOfFame={true} />
+        <TeamSection showHallOfFame={true} initialMembers={teamMembers} />
         <MagazinesSection limit={4} showFilters={false} showViewAll={true} initialMagazines={magazines} />
-        <EventsSection />
-        <NoticesSection />
-        <NAVSection />
+        <EventsSection initialEvents={events} />
+        <NoticesSection initialNotices={notices} />
+        <NAVSection initialNAVData={navData} initialMetrics={nifMetrics} />
         <ResourcesSection resources={recentResources} limit={3} bgColor="bg-muted/10" />
       </div>
       <Footer />

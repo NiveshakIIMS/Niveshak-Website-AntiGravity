@@ -173,6 +173,7 @@ function MagazineCard({ mag, index = 0 }: { mag: Magazine; index?: number }) {
                     priority={isPriority}
                     loading={isPriority ? undefined : "lazy"}
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    unoptimized={true}
                 />
             </div>
 

@@ -6,23 +6,38 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 
-export default function NAVSection() {
-    const [latestNAV, setLatestNAV] = useState<NAVData | null>(null);
-    const [metrics, setMetrics] = useState<NIFMetrics | null>(null);
+interface NAVSectionProps {
+    initialNAVData?: NAVData[];
+    initialMetrics?: NIFMetrics | null;
+}
+
+export default function NAVSection({ initialNAVData = [], initialMetrics = null }: NAVSectionProps) {
+    const [latestNAV, setLatestNAV] = useState<NAVData | null>(() => {
+        if (initialNAVData.length > 0) {
+            const sorted = [...initialNAVData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            return sorted[0];
+        }
+        return null;
+    });
+    const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
 
     useEffect(() => {
+        if (initialNAVData.length > 0 && initialMetrics) return;
         const loadData = async () => {
-            const navData = await dataService.getNAVData();
-            if (navData && navData.length > 0) {
-                // Sort by date descending and pick the first
-                const sorted = [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                setLatestNAV(sorted[0]);
+            if (initialNAVData.length === 0) {
+                const navData = await dataService.getNAVData();
+                if (navData && navData.length > 0) {
+                    const sorted = [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    setLatestNAV(sorted[0]);
+                }
             }
-            const metricsData = await dataService.getNIFMetrics();
-            setMetrics(metricsData);
+            if (!initialMetrics) {
+                const metricsData = await dataService.getNIFMetrics();
+                setMetrics(metricsData);
+            }
         };
         loadData();
-    }, []);
+    }, [initialNAVData.length, initialMetrics]);
 
     if (!latestNAV) return null;
 

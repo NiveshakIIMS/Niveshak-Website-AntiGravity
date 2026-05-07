@@ -46,31 +46,26 @@ export default function AboutClient({ data }: AboutClientProps) {
                 })) : [];
 
                 return (
-                    <div key={section.id || sIdx} className="bg-background transition-colors border-b border-border last:border-0">
+                    <div key={section.id || sIdx} className="bg-background transition-colors">
                         {/* Section Header */}
-                        <section className="pt-32 pb-12 px-4">
-                            <div className="max-w-7xl mx-auto text-center">
-                                <motion.h1
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-4xl md:text-5xl font-bold text-foreground mb-4"
-                                >
+                        <section className={`${sIdx === 0 ? "pt-24" : "pt-8"} px-4`}>
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="max-w-4xl mx-auto text-center bg-card border border-border/50 p-8 md:p-12 rounded-3xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 mb-12"
+                            >
+                                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
                                     {renderTitle(section.title)}
-                                </motion.h1>
-                                <motion.p
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.2 }}
-                                    className="text-xl text-muted-foreground max-w-2xl mx-auto"
-                                >
+                                </h1>
+                                <div className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed whitespace-pre-wrap text-justify md:text-center">
                                     {section.description}
-                                </motion.p>
-                            </div>
+                                </div>
+                            </motion.div>
                         </section>
 
                         {/* Section Cards */}
                         {sectionFeatures.length > 0 && (
-                            <section className="pb-20 px-4">
+                            <section className="pb-16 px-4">
                                 <div className="max-w-7xl mx-auto text-center">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {sectionFeatures.map((feature, idx) => (
@@ -121,7 +116,7 @@ export default function AboutClient({ data }: AboutClientProps) {
                                         <h2 className="text-3xl font-bold text-foreground mb-6 text-center">{block.content}</h2>
                                     )}
                                     {block.type === "paragraph" && (
-                                        <div className="bg-card border border-border/50 p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
+                                        <div className="bg-card border border-border/50 p-8 md:p-12 rounded-3xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
                                             <div className="text-lg text-muted-foreground leading-relaxed w-full max-w-none mx-auto break-words [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-foreground [&>h2]:mb-3 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:marker:text-accent [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4" dangerouslySetInnerHTML={{ __html: block.content }} />
                                         </div>
                                     )}

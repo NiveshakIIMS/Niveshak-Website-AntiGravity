@@ -34,7 +34,7 @@ export default function AboutSection({ initialData }: AboutSectionProps) {
     };
 
     return (
-        <section id="about" className="pt-32 pb-20 px-4 bg-background transition-colors space-y-32">
+        <section id="about" className="pt-32 pb-20 px-4 bg-background transition-colors space-y-12">
             {(content.sections && content.sections.length > 0 ? content.sections : [{
                 id: 'default',
                 title: content.title || "About Niveshak",
@@ -49,13 +49,21 @@ export default function AboutSection({ initialData }: AboutSectionProps) {
                 })) : [];
 
                 return (
-                    <div key={section.id || sIdx} className="max-w-6xl mx-auto text-center">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
-                            {renderTitle(section.title || "About Us")}
-                        </h2>
-                        <div className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12 space-y-4">
-                            <p>{section.description}</p>
-                        </div>
+                    <div key={section.id || sIdx} className="max-w-5xl mx-auto text-center px-4">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5 }}
+                            className="bg-card border border-border/50 p-8 md:p-12 rounded-3xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 mb-12"
+                        >
+                            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+                                {renderTitle(section.title || "About Us")}
+                            </h2>
+                            <div className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto whitespace-pre-wrap text-justify md:text-center">
+                                {section.description}
+                            </div>
+                        </motion.div>
 
                         {sectionFeatures.length > 0 && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
