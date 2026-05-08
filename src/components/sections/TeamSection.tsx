@@ -111,8 +111,8 @@ function TeamCard({ member, idx, className = "" }: { member: TeamMember; idx: nu
                     />
                 </div>
 
-                <div className="h-11 w-full flex items-center justify-center mb-1">
-                    <h3 className="text-base font-bold text-card-foreground text-center break-words leading-tight line-clamp-2">
+                <div className="min-h-[44px] w-full flex items-center justify-center mb-1">
+                    <h3 className="text-base font-bold text-card-foreground text-center break-words leading-tight">
                         {member.name}
                     </h3>
                 </div>
