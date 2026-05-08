@@ -85,7 +85,7 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
     };
 
     return (
-        <section id="hero" suppressHydrationWarning className="relative w-full flex flex-col md:block min-h-screen md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 pb-12 md:pb-24 pt-20 md:pt-0">
+        <section id="hero" suppressHydrationWarning className="relative w-full flex flex-col md:block md:min-h-[85vh] lg:min-h-0 lg:aspect-video bg-navy-900 transition-colors duration-500 pt-20 md:pt-0 pb-12 md:pb-24">
             {/* Background Image / Gradient */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -94,30 +94,29 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="relative w-full aspect-[4/3] md:aspect-auto md:absolute md:inset-0 z-0 shrink-0 mt-[-80px] md:mt-0"
+                    className="relative w-full aspect-video md:absolute md:inset-0 z-0"
                 >
                     <Image
                         src={slide.imageUrl}
                         alt="Background"
                         fill
-                        className="object-cover object-center"
-                        style={{ opacity: 0.5 }}
+                        className="object-cover object-center opacity-100 md:opacity-50"
                         priority
                         unoptimized={true}
                         sizes="100vw"
                     />
                     {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-navy-900/40 via-navy-900/10 to-navy-900 md:to-navy-900/80 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-navy-900/10 via-transparent to-navy-900/40 md:from-navy-900/40 md:via-navy-900/20 md:to-navy-900/80 pointer-events-none" />
                 </motion.div>
             </AnimatePresence>
 
             {/* Main Content Container */}
             <div
-                className="relative z-10 w-full flex-1 flex flex-col md:h-full md:min-h-0 md:aspect-video bg-navy-900 md:bg-transparent"
+                className="relative z-10 w-full flex-1 flex flex-col md:h-full md:aspect-video pb-8 md:pb-0"
                 style={{ opacity }}
             >
                 {/* Center Content Area - Logo and Title */}
-                <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-8 md:pt-16">
+                <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-6 md:pt-16">
                     {/* Hero Logo with Scroll Animation - Animates FIRST */}
                     <motion.div
                         initial={{ height: "auto", marginBottom: "1rem" }}
@@ -169,8 +168,8 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
                         className={`flex flex-col items-center text-center max-w-4xl mx-auto transition-all duration-700 ease-in-out ${(isMounted && isLogoInNav)
-                            ? "relative md:absolute md:bottom-8 left-0 right-0 px-4 mt-8 md:mt-0"
-                            : "relative mt-8 md:mt-0"
+                            ? "relative mt-4 md:mt-0 md:absolute md:bottom-8 left-0 right-0 px-4"
+                            : "relative"
                             }`}
                     >
                         <AnimatePresence mode="wait">
