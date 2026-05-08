@@ -117,7 +117,7 @@ export default function AboutClient({ data }: AboutClientProps) {
                                     )}
                                     {block.type === "paragraph" && (
                                         <div className="bg-card border border-border/50 p-8 md:p-12 rounded-3xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                                            <div className="text-lg text-muted-foreground leading-relaxed w-full max-w-none mx-auto break-words [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-foreground [&>h2]:mb-3 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:marker:text-accent [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                            <div className="text-lg text-muted-foreground leading-relaxed w-full max-w-none mx-auto break-words [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-foreground [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-foreground [&>h2]:mb-3 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:marker:text-accent [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4" dangerouslySetInnerHTML={{ __html: block.content.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ') }} />
                                         </div>
                                     )}
                                     {block.type === "image" && (
