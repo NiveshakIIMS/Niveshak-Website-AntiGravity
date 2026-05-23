@@ -6,7 +6,7 @@ import { Award } from "lucide-react";
 
 import { dataService } from "@/services/dataService";
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function Team() {
     const members = await dataService.getTeam();

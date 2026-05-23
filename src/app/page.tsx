@@ -9,7 +9,7 @@ import NoticesSection from "@/components/sections/NoticesSection";
 import Footer from "@/components/Footer";
 import { dataService } from "@/services/dataService";
 
-export const revalidate = 60; // Revalidate homepage every 60s
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [aboutData, recentResources, magazines, teamMembers, events, notices, navData, nifMetrics, heroSlides] = await Promise.all([

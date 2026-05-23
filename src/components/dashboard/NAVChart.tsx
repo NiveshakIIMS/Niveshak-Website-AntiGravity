@@ -122,9 +122,8 @@ export default function NAVChart({ data }: NAVChartProps) {
 
     // Default to OVERALL
     const [filterMode, setFilterMode] = useState<FilterMode>("OVERALL");
-
-    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-    const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
+    const [selectedYear, setSelectedYear] = useState<string>("2026");
+    const [selectedMonth, setSelectedMonth] = useState<string>("January");
 
     const availableYears = useMemo(() => {
         const years = new Set(data.map(d => new Date(d.date).getFullYear().toString()));
@@ -145,7 +144,11 @@ export default function NAVChart({ data }: NAVChartProps) {
 
     // Client-side mounted check for Portal
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        setMounted(true);
+        setSelectedYear(new Date().getFullYear().toString());
+        setSelectedMonth(new Date().toLocaleString('en-US', { month: 'long' }));
+    }, []);
 
     // Lock body scroll when expanded
     useEffect(() => {

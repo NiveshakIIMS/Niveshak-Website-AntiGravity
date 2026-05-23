@@ -47,10 +47,8 @@ export default function NoticesSection({ initialNotices = [] }: NoticesSectionPr
                     <h2 className="text-3xl font-bold text-foreground mb-4">Notice <span className="text-accent">Board</span></h2>
                     <p className="text-muted-foreground">No new notices at the moment. Check back later!</p>
                     <div className="mt-6">
-                        <Link href="/notices">
-                            <button className="px-6 py-2 rounded-full border border-border hover:bg-muted font-medium transition-all">
-                                View Archive
-                            </button>
+                        <Link href="/notices" className="inline-block px-6 py-2 rounded-full border border-border hover:bg-muted font-medium transition-all">
+                            View Archive
                         </Link>
                     </div>
                 </div>

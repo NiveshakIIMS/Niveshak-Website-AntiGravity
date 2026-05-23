@@ -5,6 +5,7 @@ import { Clock, MapPin, Video, Calendar, Hourglass, Maximize2, ExternalLink, X, 
 import { Event } from "@/services/dataService";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatDateSafe, formatDateFullSafe, formatTimeSafe, getShortMonthName, getShortWeekdayName } from "@/lib/dateUtils";
 
 interface EventCardProps {
     event: Event;
@@ -89,17 +90,15 @@ export default function EventCard({ event }: EventCardProps) {
 
     // --- Format time ---
     const formattedTime = event.showTime && event.time
-        ? (event.time.match(/^\d{1,2}:\d{2}$/)
-            ? new Date(`2000-01-01T${event.time}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase()
-            : event.time)
+        ? formatTimeSafe(event.time)
         : null;
 
     // --- Format date with year ---
     const day = eventDate.getDate();
     const ordinal = getOrdinal(day);
-    const month = eventDate.toLocaleString("default", { month: "short" });
+    const month = getShortMonthName(eventDate.getMonth());
     const year = eventDate.getFullYear();
-    const weekday = eventDate.toLocaleString("default", { weekday: "short" });
+    const weekday = getShortWeekdayName(eventDate.getDay());
 
     return (
         <>
@@ -246,7 +245,7 @@ export default function EventCard({ event }: EventCardProps) {
                                     <div className="flex flex-wrap gap-4 text-white/90 text-sm font-medium">
                                         <span className="flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-blue-400" />
-                                            {eventDate.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                                            {formatDateFullSafe(eventDate)}
                                         </span>
                                         {formattedTime && (
                                             <span className="flex items-center gap-2">
@@ -261,7 +260,7 @@ export default function EventCard({ event }: EventCardProps) {
                                     </div>
                                     {deadlineDate && (
                                         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-red-600/90 text-white text-xs font-bold rounded-full backdrop-blur-sm">
-                                            <Timer className="w-3 h-3" /> Deadline: {deadlineDate.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                                            <Timer className="w-3 h-3" /> Deadline: {`${getShortMonthName(deadlineDate.getMonth())} ${deadlineDate.getDate()}, ${formatTimeSafe(`${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`)}`}
                                         </div>
                                     )}
                                 </div>

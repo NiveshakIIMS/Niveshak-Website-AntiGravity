@@ -98,9 +98,12 @@ export default function Navbar() {
                             </div>
 
                             {/* Theme Toggle (Neumorphic Pill) */}
-                            <button
+                            <div
                                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                                className="relative flex items-center w-[90px] lg:w-[104px] h-[34px] lg:h-[40px] rounded-full bg-navy-900/90 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50"
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setTheme(theme === 'light' ? 'dark' : 'light'); }}
+                                tabIndex={0}
+                                role="button"
+                                className="relative flex items-center w-[90px] lg:w-[104px] h-[34px] lg:h-[40px] rounded-full bg-navy-900/90 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50 cursor-pointer"
                                 aria-label="Toggle Theme"
                                 style={{ justifyContent: theme === 'light' ? 'flex-start' : 'flex-end' }}
                             >
@@ -128,7 +131,7 @@ export default function Navbar() {
                                         </motion.div>
                                     </AnimatePresence>
                                 </motion.div>
-                            </button>
+                            </div>
 
                             {/* Admin Button */}
                             <Link href="/admin" className="px-4 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap shrink-0">
@@ -183,12 +186,20 @@ export default function Navbar() {
                             <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800">
                                 Admin Login
                             </Link>
-                            <button
+                            <div
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setTheme(theme === 'light' ? 'dark' : 'light');
                                 }}
-                                className="w-full px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.stopPropagation();
+                                        setTheme(theme === 'light' ? 'dark' : 'light');
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                className="w-full px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between cursor-pointer"
                             >
                                 <span>Theme Preference</span>
                                 <div className="relative flex items-center w-[104px] h-[40px] rounded-full bg-navy-900 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50" style={{ justifyContent: theme === 'light' ? 'flex-start' : 'flex-end' }}>
@@ -214,7 +225,7 @@ export default function Navbar() {
                                         </AnimatePresence>
                                     </motion.div>
                                 </div>
-                            </button>
+                            </div>
                         </div>
                     </motion.div>
                 )}

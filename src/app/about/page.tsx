@@ -2,7 +2,7 @@ import Footer from "@/components/Footer";
 import AboutClient from "@/components/AboutClient";
 import { dataService } from "@/services/dataService";
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamic = 'force-dynamic';
 
 export default async function About() {
     const data = await dataService.getAbout();

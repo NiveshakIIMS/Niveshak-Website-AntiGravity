@@ -7,6 +7,7 @@ import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import NAVChart from "@/components/dashboard/NAVChart";
 import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { formatDateSafe } from "@/lib/dateUtils";
 
 interface DashboardClientProps {
     initialNAVData?: NAVData[];
@@ -64,7 +65,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Total AUM</p>
                                 {latestNAV && (
                                     <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
-                                        <span>For {new Date(latestNAV.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                        <span>For {formatDateSafe(latestNAV.date)}</span>
                                     </div>
                                 )}
                             </div>
@@ -83,12 +84,11 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Current NAV</p>
                                 {latestNAV && (
                                     <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
-                                        <span>For {new Date(latestNAV.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                        <span>For {formatDateSafe(latestNAV.date)}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
-
                         {/* Returns Card */}
                         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">

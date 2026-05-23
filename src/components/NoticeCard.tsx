@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Link2, Clock, Calendar, AlertCircle, Megaphone, Bell } from "lucide-react";
 import { Notice } from "@/services/dataService";
 import { useState, useEffect } from "react";
+import { formatDateSafe, formatTimeSafe } from "@/lib/dateUtils";
 
 interface NoticeCardProps {
     notice: Notice;
@@ -109,19 +110,14 @@ export default function NoticeCard({ notice, idx }: NoticeCardProps) {
                     {notice.content}
                 </p>
 
-                {/* Footer: Date & Link */}
                 <div className="mt-auto pt-4 border-t border-border/50 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                         <Calendar className="w-3.5 h-3.5" />
-                        {new Date(notice.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        {formatDateSafe(notice.date)}
                         {notice.time && (
                             <>
                                 <span className="w-1 h-1 rounded-full bg-border" />
-                                <span>
-                                    {notice.time.match(/^\d{1,2}:\d{2}$/)
-                                        ? new Date(`1970-01-01T${notice.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-                                        : notice.time}
-                                </span>
+                                <span>{formatTimeSafe(notice.time)}</span>
                             </>
                         )}
                     </div>

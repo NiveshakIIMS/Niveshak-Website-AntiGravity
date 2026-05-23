@@ -5,6 +5,7 @@ import { TrendingUp, Calendar, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
+import { formatDateSafe } from "@/lib/dateUtils";
 
 interface NAVSectionProps {
     initialNAVData?: NAVData[];
@@ -87,7 +88,7 @@ export default function NAVSection({ initialNAVData = [], initialMetrics = null 
                         <div className="flex flex-col items-center gap-2">
                             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                                 <Calendar className="w-4 h-4" />
-                                {new Date(latestNAV.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                {formatDateSafe(latestNAV.date)}
                             </div>
 
                             <div className="flex items-center gap-2 text-sm mt-1">
