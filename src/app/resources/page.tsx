@@ -3,6 +3,7 @@ import ResourcesSection from "@/components/sections/ResourcesSection";
 import { dataService } from "@/services/dataService";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default async function Resources() {
     // Fetch all resources

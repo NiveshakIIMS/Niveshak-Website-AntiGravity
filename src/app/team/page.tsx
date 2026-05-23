@@ -7,6 +7,7 @@ import { Award } from "lucide-react";
 import { dataService } from "@/services/dataService";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default async function Team() {
     const members = await dataService.getTeam();

@@ -2,6 +2,7 @@ import { dataService } from "@/services/dataService";
 import EventsClient from "./EventsClient";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default async function EventsPage() {
     const events = await dataService.getEvents();

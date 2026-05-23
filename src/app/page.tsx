@@ -11,6 +11,7 @@ import { dataService } from "@/services/dataService";
 import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default async function Home() {
   await headers(); // Force dynamic render
