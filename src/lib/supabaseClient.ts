@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -26,7 +25,11 @@ export const supabaseDynamic = createClient(supabaseUrl, supabaseKey, {
     },
     global: {
         fetch: (url, options) => {
-            return fetch(url, {
+            // Append timestamp to URL to bust any CDN or Next.js fetch caches
+            const urlString = typeof url === 'string' ? url : url.toString();
+            const separator = urlString.includes('?') ? '&' : '?';
+            const cacheBusterUrl = `${urlString}${separator}cb=${Date.now()}`;
+            return fetch(cacheBusterUrl, {
                 ...options,
                 cache: 'no-store',
             });

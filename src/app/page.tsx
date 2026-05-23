@@ -8,10 +8,12 @@ import ResourcesSection from "@/components/sections/ResourcesSection";
 import NoticesSection from "@/components/sections/NoticesSection";
 import Footer from "@/components/Footer";
 import { dataService } from "@/services/dataService";
+import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  await headers(); // Force dynamic render
   const [aboutData, recentResources, magazines, teamMembers, events, notices, navData, nifMetrics, heroSlides] = await Promise.all([
     dataService.getAbout(),
     dataService.getResources(),
