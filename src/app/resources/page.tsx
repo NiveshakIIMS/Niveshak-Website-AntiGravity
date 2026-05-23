@@ -1,14 +1,9 @@
 import Footer from "@/components/Footer";
 import ResourcesSection from "@/components/sections/ResourcesSection";
-import { dataService } from "@/services/dataService";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const dynamic = 'force-static';
 
-export default async function Resources() {
-    // Fetch all resources
-    const resources = await dataService.getResources();
-
+export default function Resources() {
     return (
         <main className="min-h-screen bg-background">
             {/* Header Section */}
@@ -26,7 +21,6 @@ export default async function Resources() {
             {/* Resources Grid */}
             <div className="max-w-7xl mx-auto">
                 <ResourcesSection
-                    resources={resources}
                     showTitle={false}
                     bgColor="bg-transparent"
                 />

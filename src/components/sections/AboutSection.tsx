@@ -1,16 +1,31 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen, Info, ArrowRight } from "lucide-react";
-import { AboutContent } from "@/services/dataService";
+import { AboutContent, dataService } from "@/services/dataService";
 
 interface AboutSectionProps {
-    initialData: AboutContent;
+    initialData?: AboutContent;
 }
 
 export default function AboutSection({ initialData }: AboutSectionProps) {
-    const content = initialData;
+    const [content, setContent] = useState<AboutContent | null>(initialData || null);
+    const [loading, setLoading] = useState(!initialData);
+
+    useEffect(() => {
+        if (!initialData) {
+            dataService.getAbout().then(data => {
+                setContent(data);
+                setLoading(false);
+            });
+        }
+    }, [initialData]);
+
+    if (loading || !content) {
+        return null; // Or skeleton loader
+    }
 
     // Default Icons for the 3 cards
     const icons = [

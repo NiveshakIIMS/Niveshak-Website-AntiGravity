@@ -1,11 +1,7 @@
-import { dataService } from "@/services/dataService";
 import EventsClient from "./EventsClient";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const dynamic = 'force-static';
 
-export default async function EventsPage() {
-    const events = await dataService.getEvents();
-
-    return <EventsClient initialEvents={events} />;
+export default function EventsPage() {
+    return <EventsClient />;
 }

@@ -1,13 +1,9 @@
 import Footer from "@/components/Footer";
 import MagazinesSection from "@/components/sections/MagazinesSection";
-import { dataService } from "@/services/dataService";
 
-export const dynamic = 'force-dynamic'; // Prevent stale cache from hiding new entries
-export const runtime = 'edge'; // Required for Cloudflare Pages when using dynamic routes
+export const dynamic = 'force-static';
 
-export default async function Magazines() {
-    const magazines = await dataService.getMagazines();
-
+export default function Magazines() {
     return (
         <main className="min-h-screen bg-background">
             <section className="pt-32 pb-12 px-4 bg-background border-b border-border transition-colors">
@@ -20,7 +16,7 @@ export default async function Magazines() {
             </section>
 
             <div className="max-w-7xl mx-auto">
-                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" initialMagazines={magazines} />
+                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" />
             </div>
             <Footer />
         </main>

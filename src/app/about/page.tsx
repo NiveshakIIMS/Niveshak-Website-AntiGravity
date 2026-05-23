@@ -1,16 +1,12 @@
 import Footer from "@/components/Footer";
 import AboutClient from "@/components/AboutClient";
-import { dataService } from "@/services/dataService";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const dynamic = 'force-static';
 
-export default async function About() {
-    const data = await dataService.getAbout();
-
+export default function About() {
     return (
         <main className="min-h-screen bg-background">
-            <AboutClient data={data} />
+            <AboutClient />
             <Footer />
         </main>
     );

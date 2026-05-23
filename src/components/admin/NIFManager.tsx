@@ -7,7 +7,6 @@ import { dataService, NAVData } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
-import * as XLSX from "xlsx";
 
 export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
@@ -87,6 +86,7 @@ export default function NIFManager() {
         const reader = new FileReader();
         reader.onload = async (evt) => {
             try {
+                const XLSX = await import("xlsx");
                 const bstr = evt.target?.result;
                 const wb = XLSX.read(bstr, { type: 'binary', cellDates: false });
                 const wsname = wb.SheetNames[0];
