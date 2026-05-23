@@ -25,8 +25,16 @@ export const supabaseDynamic = createClient(supabaseUrl, supabaseKey, {
     },
     global: {
         fetch: (url, options) => {
-            // Append timestamp to URL to bust any CDN or Next.js fetch caches
-            const urlString = typeof url === 'string' ? url : url.toString();
+            // Safely resolve the URL string
+            let urlString = '';
+            if (typeof url === 'string') {
+                urlString = url;
+            } else if (url && typeof url === 'object' && 'url' in url) {
+                urlString = (url as any).url;
+            } else {
+                urlString = String(url);
+            }
+            
             const separator = urlString.includes('?') ? '&' : '?';
             const cacheBusterUrl = `${urlString}${separator}cb=${Date.now()}`;
             return fetch(cacheBusterUrl, {
