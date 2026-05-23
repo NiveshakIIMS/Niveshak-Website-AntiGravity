@@ -1,6 +1,6 @@
 
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, supabaseDynamic } from "@/lib/supabaseClient";
 import { R2_DOMAIN } from "@/lib/constants";
 
 // --- Types ---
@@ -462,7 +462,7 @@ export const dataService = {
 
     // --- NIF ---
     getNAVData: async (): Promise<NAVData[]> => {
-        const { data, error } = await supabase.from('nav_data').select('*').order('date', { ascending: true });
+        const { data, error } = await supabaseDynamic.from('nav_data').select('*').order('date', { ascending: true });
         if (error || !data) return [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return data.map((d: any) => ({
@@ -472,17 +472,17 @@ export const dataService = {
         }));
     },
     saveNAVData: async (data: NAVData[]) => {
-        await supabase.from('nav_data').delete().neq('id', '0');
+        await supabaseDynamic.from('nav_data').delete().neq('id', '0');
         const rows = data.map(d => ({
             id: d.id,
             date: d.date,
             value: d.value
         }));
-        await supabase.from('nav_data').insert(rows);
+        await supabaseDynamic.from('nav_data').insert(rows);
     },
 
     getNIFMetrics: async (): Promise<NIFMetrics> => {
-        const { data, error } = await supabase.from('nif_metrics').select('*').eq('id', 'metrics').single();
+        const { data, error } = await supabaseDynamic.from('nif_metrics').select('*').eq('id', 'metrics').single();
         if (error || !data) return DEFAULT_NIF;
         return {
             annualizedReturn: data.annualized_return,
@@ -503,7 +503,7 @@ export const dataService = {
             is_auto_return: data.isAutoReturn, // Save to DB
             asset_allocation: data.assetAllocation
         };
-        await supabase.from('nif_metrics').upsert(row);
+        await supabaseDynamic.from('nif_metrics').upsert(row);
     },
 
     // --- Site Settings (Socials) ---
