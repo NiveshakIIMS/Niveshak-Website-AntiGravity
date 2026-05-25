@@ -2,8 +2,7 @@ import Footer from "@/components/Footer";
 import MagazinesSection from "@/components/sections/MagazinesSection";
 import { dataService } from "@/services/dataService";
 
-export const dynamic = 'force-dynamic'; // Prevent stale cache from hiding new entries
-export const runtime = 'edge'; // Required for Cloudflare Pages when using dynamic routes
+export const revalidate = 60; // Revalidate every 60 seconds
 
 export default async function Magazines() {
     const magazines = await dataService.getMagazines();

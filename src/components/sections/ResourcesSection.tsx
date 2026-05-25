@@ -32,7 +32,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
         }
 
         // Folder Mode
-        let items = initialResources.filter(r => {
+        const items = initialResources.filter(r => {
             // Match parent
             const matchesParent = (r.parentId || null) === currentFolderId;
             // Search override: If searching, search EVERYTHING (flat)
