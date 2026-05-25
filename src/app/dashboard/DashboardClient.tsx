@@ -19,19 +19,20 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
     const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
 
     useEffect(() => {
-        if (initialNAVData.length > 0 && initialMetrics) return;
         const load = async () => {
-            if (initialNAVData.length === 0) {
-                const nav = await dataService.getNAVData();
-                setNavData(nav);
-            }
-            if (!initialMetrics) {
-                const met = await dataService.getNIFMetrics();
-                setMetrics(met);
+            try {
+                const [nav, met] = await Promise.all([
+                    dataService.getNAVData(),
+                    dataService.getNIFMetrics()
+                ]);
+                if (nav && nav.length > 0) setNavData(nav);
+                if (met) setMetrics(met);
+            } catch (err) {
+                console.error("Failed to load fresh dashboard data:", err);
             }
         };
         load();
-    }, [initialNAVData.length, initialMetrics]);
+    }, []);
 
     const latestNAV = navData.length > 0 ? navData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
 

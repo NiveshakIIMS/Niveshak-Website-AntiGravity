@@ -23,22 +23,25 @@ export default function NAVSection({ initialNAVData = [], initialMetrics = null 
     const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
 
     useEffect(() => {
-        if (initialNAVData.length > 0 && initialMetrics) return;
         const loadData = async () => {
-            if (initialNAVData.length === 0) {
-                const navData = await dataService.getNAVData();
+            try {
+                const [navData, metricsData] = await Promise.all([
+                    dataService.getNAVData(),
+                    dataService.getNIFMetrics()
+                ]);
                 if (navData && navData.length > 0) {
                     const sorted = [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                     setLatestNAV(sorted[0]);
                 }
-            }
-            if (!initialMetrics) {
-                const metricsData = await dataService.getNIFMetrics();
-                setMetrics(metricsData);
+                if (metricsData) {
+                    setMetrics(metricsData);
+                }
+            } catch (err) {
+                console.error("Failed to load fresh NAV Section data:", err);
             }
         };
         loadData();
-    }, [initialNAVData.length, initialMetrics]);
+    }, []);
 
     if (!latestNAV) return null;
 
