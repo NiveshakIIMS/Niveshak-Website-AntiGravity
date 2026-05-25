@@ -1,6 +1,6 @@
 
 
-import { supabase, supabaseDynamic } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { R2_DOMAIN } from "@/lib/constants";
 
 // --- Types ---
@@ -462,7 +462,7 @@ export const dataService = {
 
     // --- NIF ---
     getNAVData: async (): Promise<NAVData[]> => {
-        const { data, error } = await supabaseDynamic.from('nav_data').select('*').order('date', { ascending: true });
+        const { data, error } = await supabase.from('nav_data').select('*').order('date', { ascending: true });
         if (error || !data) return [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return data.map((d: any) => ({
@@ -472,17 +472,43 @@ export const dataService = {
         }));
     },
     saveNAVData: async (data: NAVData[]) => {
-        await supabaseDynamic.from('nav_data').delete().neq('id', '0');
-        const rows = data.map(d => ({
-            id: d.id,
-            date: d.date,
-            value: d.value
-        }));
-        await supabaseDynamic.from('nav_data').insert(rows);
+        const currentIds = data.map(d => d.id).filter(Boolean);
+        if (currentIds.length > 0) {
+            const { error: deleteError } = await supabase
+                .from('nav_data')
+                .delete()
+                .not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+            if (deleteError) {
+                console.error("Delete NAV Error", deleteError);
+                throw deleteError;
+            }
+        } else {
+            const { error: deleteError } = await supabase
+                .from('nav_data')
+                .delete()
+                .neq('id', '0');
+            if (deleteError) {
+                console.error("Delete All NAV Error", deleteError);
+                throw deleteError;
+            }
+        }
+
+        if (data.length > 0) {
+            const rows = data.map(d => ({
+                id: d.id,
+                date: d.date,
+                value: d.value
+            }));
+            const { error: insertError } = await supabase.from('nav_data').upsert(rows);
+            if (insertError) {
+                console.error("Save NAV Insert/Upsert Error", insertError);
+                throw insertError;
+            }
+        }
     },
 
     getNIFMetrics: async (): Promise<NIFMetrics> => {
-        const { data, error } = await supabaseDynamic.from('nif_metrics').select('*').eq('id', 'metrics').single();
+        const { data, error } = await supabase.from('nif_metrics').select('*').eq('id', 'metrics').single();
         if (error || !data) return DEFAULT_NIF;
         return {
             annualizedReturn: data.annualized_return,
@@ -503,7 +529,11 @@ export const dataService = {
             is_auto_return: data.isAutoReturn, // Save to DB
             asset_allocation: data.assetAllocation
         };
-        await supabaseDynamic.from('nif_metrics').upsert(row);
+        const { error } = await supabase.from('nif_metrics').upsert(row);
+        if (error) {
+            console.error("Save NIF Metrics Error", error);
+            throw error;
+        }
     },
 
     // --- Site Settings (Socials) ---

@@ -1,7 +1,10 @@
+import { dataService } from "@/services/dataService";
 import NoticesClient from "./NoticesClient";
 
-export const dynamic = 'force-static';
+export const revalidate = 60; // Revalidate every 60s
 
-export default function NoticesPage() {
-    return <NoticesClient />;
+export default async function NoticesPage() {
+    const notices = await dataService.getNotices();
+
+    return <NoticesClient initialNotices={notices} />;
 }

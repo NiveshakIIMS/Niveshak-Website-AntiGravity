@@ -1,11 +1,16 @@
+
 import Footer from "@/components/Footer";
 import TeamSection from "@/components/sections/TeamSection";
 import Link from "next/link";
 import { Award } from "lucide-react";
 
-export const dynamic = 'force-static';
+import { dataService } from "@/services/dataService";
 
-export default function Team() {
+export const revalidate = 60;
+
+export default async function Team() {
+    const members = await dataService.getTeam();
+
     return (
         <main className="min-h-screen bg-background text-foreground">
             <section className="pt-32 pb-12 px-4 bg-background border-b border-border transition-colors">
@@ -18,7 +23,7 @@ export default function Team() {
             </section>
 
             <section>
-                <TeamSection showTitle={false} />
+                <TeamSection showTitle={false} initialMembers={members} />
             </section>
 
             {/* Hall of Fame Button */}

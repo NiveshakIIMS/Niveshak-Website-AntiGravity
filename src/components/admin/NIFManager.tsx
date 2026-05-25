@@ -7,6 +7,7 @@ import { dataService, NAVData } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
+import * as XLSX from "xlsx";
 
 export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
@@ -46,6 +47,18 @@ export default function NIFManager() {
         return cagr.toFixed(2); // 2 decimal places
     };
 
+    const updateMetricsStateAndDb = async (newMetrics: any) => {
+        const oldMetrics = metrics;
+        setMetrics(newMetrics);
+        try {
+            await dataService.saveNIFMetrics(newMetrics);
+        } catch (error: any) {
+            console.error("Save NIF Metrics Error:", error);
+            alert(`Failed to save changes: ${error.message || "Unknown error"}`);
+            setMetrics(oldMetrics);
+        }
+    };
+
     // 1. Auto-calculate CAGR
     useEffect(() => {
         if (metrics.isAutoReturn && data.length >= 2) {
@@ -53,7 +66,9 @@ export default function NIFManager() {
             if (cagr !== metrics.annualizedReturn) {
                 const newMetrics = { ...metrics, annualizedReturn: cagr };
                 setMetrics(newMetrics);
-                dataService.saveNIFMetrics(newMetrics);
+                dataService.saveNIFMetrics(newMetrics).catch(err => {
+                    console.error("Auto-save CAGR error:", err);
+                });
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,7 +87,9 @@ export default function NIFManager() {
                 if (calculatedAUM !== metrics.totalAUM) {
                     const newMetrics = { ...metrics, totalAUM: calculatedAUM };
                     setMetrics(newMetrics);
-                    dataService.saveNIFMetrics(newMetrics);
+                    dataService.saveNIFMetrics(newMetrics).catch(err => {
+                        console.error("Auto-save AUM error:", err);
+                    });
                 }
             }
         }
@@ -86,7 +103,6 @@ export default function NIFManager() {
         const reader = new FileReader();
         reader.onload = async (evt) => {
             try {
-                const XLSX = await import("xlsx");
                 const bstr = evt.target?.result;
                 const wb = XLSX.read(bstr, { type: 'binary', cellDates: false });
                 const wsname = wb.SheetNames[0];
@@ -159,9 +175,14 @@ export default function NIFManager() {
                 // Convert back to array and sort
                 const newData = Array.from(dataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                setData(newData);
-                await dataService.saveNAVData(newData);
-                alert(`Upload Complete!\nAdded: ${addedCount}\nUpdated: ${updatedCount}`);
+                try {
+                    await dataService.saveNAVData(newData);
+                    setData(newData);
+                    alert(`Upload Complete!\nAdded: ${addedCount}\nUpdated: ${updatedCount}`);
+                } catch (error: any) {
+                    console.error("Excel Upload Save Error:", error);
+                    alert(`Failed to save uploaded data: ${error.message || "Unknown error"}`);
+                }
 
                 // Clear input
                 e.target.value = "";
@@ -190,15 +211,27 @@ export default function NIFManager() {
             newData = [...data, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         }
 
-        setData(newData);
-        await dataService.saveNAVData(newData);
-        setNewEntry({ date: "", value: "" });
+        try {
+            await dataService.saveNAVData(newData);
+            setData(newData);
+            setNewEntry({ date: "", value: "" });
+        } catch (error: any) {
+            console.error("Add Entry Save Error:", error);
+            alert(`Failed to save data point: ${error.message || "Unknown error"}`);
+        }
     };
 
     const deleteEntry = async (id: string) => {
         const newData = data.filter(d => d.id !== id);
+        const oldData = data;
         setData(newData);
-        await dataService.saveNAVData(newData);
+        try {
+            await dataService.saveNAVData(newData);
+        } catch (error: any) {
+            console.error("Delete Entry Save Error:", error);
+            alert(`Failed to delete entry: ${error.message || "Unknown error"}`);
+            setData(oldData);
+        }
     };
 
     const [isMaximized, setIsMaximized] = useState(false);
@@ -210,8 +243,15 @@ export default function NIFManager() {
     const deleteAll = async () => {
         if (!confirm("Are you sure you want to DELETE ALL historical data? This cannot be undone.")) return;
         if (!confirm("Please confirm again. DELETE ALL?")) return;
+        const oldData = data;
         setData([]);
-        await dataService.saveNAVData([]);
+        try {
+            await dataService.saveNAVData([]);
+        } catch (error: any) {
+            console.error("Delete All Save Error:", error);
+            alert(`Failed to clear historical data: ${error.message || "Unknown error"}`);
+            setData(oldData);
+        }
     };
 
     return (
@@ -310,8 +350,7 @@ export default function NIFManager() {
                                             }
 
                                             const newMetrics = { ...metrics, fundUnits: units, totalAUM: newAUM };
-                                            setMetrics(newMetrics);
-                                            await dataService.saveNIFMetrics(newMetrics);
+                                            await updateMetricsStateAndDb(newMetrics);
                                         }}
                                         className="w-full p-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-purple-500 outline-none transition-all font-mono text-foreground"
                                         placeholder="Enter total units..."
@@ -347,8 +386,7 @@ export default function NIFManager() {
                                                         newReturn = calculateCAGR(data);
                                                     }
                                                     const newMetrics = { ...metrics, isAutoReturn: isAuto, annualizedReturn: newReturn };
-                                                    setMetrics(newMetrics);
-                                                    await dataService.saveNIFMetrics(newMetrics);
+                                                    await updateMetricsStateAndDb(newMetrics);
                                                 }}
                                                 className="accent-blue-600 w-3 h-3"
                                             />
@@ -361,8 +399,7 @@ export default function NIFManager() {
                                         value={metrics.annualizedReturn}
                                         onChange={async e => {
                                             const newMetrics = { ...metrics, annualizedReturn: e.target.value };
-                                            setMetrics(newMetrics);
-                                            await dataService.saveNIFMetrics(newMetrics);
+                                            await updateMetricsStateAndDb(newMetrics);
                                         }}
                                         className={`w-full p-3 border border-input rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-mono text-foreground ${metrics.isAutoReturn ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-70' : 'bg-background'}`}
                                         placeholder="12.5"
@@ -391,8 +428,7 @@ export default function NIFManager() {
                                                 const newAlloc = [...metrics.assetAllocation];
                                                 newAlloc[idx].color = e.target.value;
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                                setMetrics(newMetrics);
-                                                await dataService.saveNIFMetrics(newMetrics);
+                                                await updateMetricsStateAndDb(newMetrics);
                                             }}
                                             className="w-10 h-10 p-1 rounded cursor-pointer bg-transparent"
                                         />
@@ -403,8 +439,7 @@ export default function NIFManager() {
                                                 const newAlloc = [...metrics.assetAllocation];
                                                 newAlloc[idx].name = e.target.value;
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                                setMetrics(newMetrics);
-                                                await dataService.saveNIFMetrics(newMetrics);
+                                                await updateMetricsStateAndDb(newMetrics);
                                             }}
                                             className="flex-1 p-2 border border-input rounded-lg bg-background text-sm"
                                             placeholder="Category"
@@ -416,8 +451,7 @@ export default function NIFManager() {
                                                 const newAlloc = [...metrics.assetAllocation];
                                                 newAlloc[idx].value = parseFloat(e.target.value);
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                                setMetrics(newMetrics);
-                                                await dataService.saveNIFMetrics(newMetrics);
+                                                await updateMetricsStateAndDb(newMetrics);
                                             }}
                                             className="w-20 p-2 border border-input rounded-lg bg-background text-sm"
                                             placeholder="%"
@@ -426,8 +460,7 @@ export default function NIFManager() {
                                             onClick={async () => {
                                                 const newAlloc = metrics.assetAllocation.filter((_: any, i: number) => i !== idx);
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                                setMetrics(newMetrics);
-                                                await dataService.saveNIFMetrics(newMetrics);
+                                                await updateMetricsStateAndDb(newMetrics);
                                             }}
                                             className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                                         >
@@ -439,8 +472,7 @@ export default function NIFManager() {
                                     onClick={async () => {
                                         const newAlloc = [...(metrics.assetAllocation || []), { name: "New Asset", value: 0, color: "#000000" }];
                                         const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                        setMetrics(newMetrics);
-                                        await dataService.saveNIFMetrics(newMetrics);
+                                        await updateMetricsStateAndDb(newMetrics);
                                     }}
                                     className="w-full py-2 border-2 border-dashed border-gray-200 dark:border-navy-700 rounded-xl text-gray-400 font-bold hover:border-purple-500 hover:text-purple-500 transition-colors flex items-center justify-center gap-2"
                                 >

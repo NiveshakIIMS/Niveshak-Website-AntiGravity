@@ -7,21 +7,34 @@ import NAVSection from "@/components/sections/NAVSection";
 import ResourcesSection from "@/components/sections/ResourcesSection";
 import NoticesSection from "@/components/sections/NoticesSection";
 import Footer from "@/components/Footer";
+import { dataService } from "@/services/dataService";
 
-export const dynamic = 'force-static';
+export const revalidate = 60; // Revalidate homepage every 60s
 
-export default function Home() {
+export default async function Home() {
+  const [aboutData, recentResources, magazines, teamMembers, events, notices, navData, nifMetrics, heroSlides] = await Promise.all([
+    dataService.getAbout(),
+    dataService.getResources(),
+    dataService.getMagazines(),
+    dataService.getTeam(),
+    dataService.getEvents(),
+    dataService.getNotices(),
+    dataService.getNAVData(),
+    dataService.getNIFMetrics(),
+    dataService.getHeroSlides()
+  ]);
+
   return (
     <div suppressHydrationWarning className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Hero />
+      <Hero initialSlides={heroSlides} />
       <div className="space-y-0">
-        <AboutSection />
-        <TeamSection showHallOfFame={true} />
-        <MagazinesSection limit={4} showFilters={false} showViewAll={true} />
-        <EventsSection />
-        <NoticesSection />
-        <NAVSection />
-        <ResourcesSection limit={3} bgColor="bg-muted/10" />
+        <AboutSection initialData={aboutData} />
+        <TeamSection showHallOfFame={true} initialMembers={teamMembers} />
+        <MagazinesSection limit={4} showFilters={false} showViewAll={true} initialMagazines={magazines} />
+        <EventsSection initialEvents={events} />
+        <NoticesSection initialNotices={notices} />
+        <NAVSection initialNAVData={navData} initialMetrics={nifMetrics} />
+        <ResourcesSection resources={recentResources} limit={3} bgColor="bg-muted/10" />
       </div>
       <Footer />
     </div>

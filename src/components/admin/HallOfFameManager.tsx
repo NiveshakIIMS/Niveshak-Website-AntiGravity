@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit2, Award, X, Linkedin, Mail, UploadCloud, Loader2 } f
 import { dataService, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import * as XLSX from "xlsx";
 import { uploadService } from "@/services/uploadService";
 
 export default function HallOfFameManager() {
@@ -80,7 +81,6 @@ export default function HallOfFameManager() {
         setUploadStatus("Reading Excel file...");
 
         try {
-            const XLSX = await import("xlsx");
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];

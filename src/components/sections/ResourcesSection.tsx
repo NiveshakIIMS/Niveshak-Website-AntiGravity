@@ -1,33 +1,19 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
-import { Resource, dataService } from "@/services/dataService";
-import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List, Loader2 } from "lucide-react";
+import { Resource } from "@/services/dataService";
+import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List } from "lucide-react";
 
 interface ResourcesSectionProps {
-    resources?: Resource[];
+    resources: Resource[];
     showTitle?: boolean;
     limit?: number;
     bgColor?: string;
 }
 
-export default function ResourcesSection({ resources: initialResources = [], showTitle = true, limit, bgColor = "bg-muted/30" }: ResourcesSectionProps) {
-    const [resources, setResources] = useState<Resource[]>(initialResources);
-    const [loading, setLoading] = useState(initialResources.length === 0);
-
-    useEffect(() => {
-        if (initialResources.length === 0) {
-            dataService.getResources().then(data => {
-                setResources(data);
-                setLoading(false);
-            });
-        } else {
-            setLoading(false);
-        }
-    }, [initialResources]);
-
+export default function ResourcesSection({ resources: initialResources, showTitle = true, limit, bgColor = "bg-muted/30" }: ResourcesSectionProps) {
     // State
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -40,13 +26,13 @@ export default function ResourcesSection({ resources: initialResources = [], sho
     const filteredResources = useMemo(() => {
         if (isHomepage) {
             // Flatten and just take top X recent files/links
-            return resources
+            return initialResources
                 .filter(r => r.type !== 'folder')
                 .slice(0, limit);
         }
 
         // Folder Mode
-        let items = resources.filter(r => {
+        let items = initialResources.filter(r => {
             // Match parent
             const matchesParent = (r.parentId || null) === currentFolderId;
             // Search override: If searching, search EVERYTHING (flat)
@@ -70,7 +56,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
         });
 
         return items;
-    }, [resources, currentFolderId, limit, isHomepage, sortBy, searchQuery]);
+    }, [initialResources, currentFolderId, limit, isHomepage, sortBy, searchQuery]);
 
     // Breadcrumbs Logic
     const breadcrumbs = useMemo(() => {
@@ -81,7 +67,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
         let depth = 0;
         // Limit depth to prevent potential infinite loops
         while (curr && depth < 20) {
-            const folder = resources.find(r => r.id === curr);
+            const folder = initialResources.find(r => r.id === curr);
             if (folder) {
                 crumbs.unshift({ id: folder.id, title: folder.title });
                 curr = folder.parentId || null;
@@ -91,17 +77,9 @@ export default function ResourcesSection({ resources: initialResources = [], sho
             }
         }
         return crumbs;
-    }, [currentFolderId, resources, isHomepage]);
+    }, [currentFolderId, initialResources, isHomepage]);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20 bg-background">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-            </div>
-        );
-    }
-
-    if (!resources.length) {
+    if (!initialResources.length) {
         return (
             <section className={`py-20 px-4 ${bgColor}`}>
                 <div className="max-w-7xl mx-auto text-center">

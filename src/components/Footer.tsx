@@ -7,10 +7,8 @@ import { dataService, SocialLink } from "@/services/dataService";
 
 export default function Footer() {
     const [links, setLinks] = useState<SocialLink[]>([]);
-    const [currentYear, setCurrentYear] = useState<number>(2026);
 
     useEffect(() => {
-        setCurrentYear(new Date().getFullYear());
         dataService.getSiteSettings().then(settings => {
             if (settings.socialLinks) {
                 setLinks(settings.socialLinks.filter(l => l.isActive));
@@ -111,7 +109,7 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-gray-500">
-                    &copy; {currentYear} Niveshak, IIM Shillong. All rights reserved.
+                    &copy; {new Date().getFullYear()} Niveshak, IIM Shillong. All rights reserved.
                 </div>
             </div>
         </footer >

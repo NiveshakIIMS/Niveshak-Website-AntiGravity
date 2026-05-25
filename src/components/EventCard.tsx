@@ -5,7 +5,7 @@ import { Clock, MapPin, Video, Calendar, Hourglass, Maximize2, ExternalLink, X, 
 import { Event } from "@/services/dataService";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatDateSafe, formatDateFullSafe, formatTimeSafe, getShortMonthName, getShortWeekdayName } from "@/lib/dateUtils";
+import { getUTCDateInfo, formatTimeUTC } from "@/lib/dateUtils";
 
 interface EventCardProps {
     event: Event;
@@ -62,6 +62,11 @@ function CountdownBadge({ label, type, icon }: { label: string; type: string; ic
 
 export default function EventCard({ event }: EventCardProps) {
     const [isMaximized, setIsMaximized] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const eventDate = new Date(event.date);
     const deadlineDate = event.showDeadline && event.deadline ? new Date(event.deadline) : null;
@@ -89,16 +94,15 @@ export default function EventCard({ event }: EventCardProps) {
     if (isSquare) aspectRatioClass = "aspect-square";
 
     // --- Format time ---
-    const formattedTime = event.showTime && event.time
-        ? formatTimeSafe(event.time)
-        : null;
+    const formattedTime = event.showTime && event.time ? formatTimeUTC(event.time).toLowerCase() : null;
 
     // --- Format date with year ---
-    const day = eventDate.getDate();
-    const ordinal = getOrdinal(day);
-    const month = getShortMonthName(eventDate.getMonth());
-    const year = eventDate.getFullYear();
-    const weekday = getShortWeekdayName(eventDate.getDay());
+    const dateInfo = getUTCDateInfo(event.date);
+    const day = dateInfo.day;
+    const ordinal = dateInfo.ordinal;
+    const month = dateInfo.monthShort;
+    const year = dateInfo.year;
+    const weekday = dateInfo.weekdayShort;
 
     return (
         <>
@@ -170,15 +174,19 @@ export default function EventCard({ event }: EventCardProps) {
                             </div>
 
                             {/* Event Date Countdown */}
-                            <CountdownBadge
-                                label={eventCountdown.label}
-                                type={eventCountdown.type}
-                                icon={<Hourglass className="w-3 h-3" />}
-                            />
+                            {isMounted ? (
+                                <CountdownBadge
+                                    label={eventCountdown.label}
+                                    type={eventCountdown.type}
+                                    icon={<Hourglass className="w-3 h-3" />}
+                                />
+                            ) : (
+                                <div className="h-6 w-20 bg-muted/40 rounded-full animate-pulse" />
+                            )}
                         </div>
 
                         {/* Separate Deadline Countdown (only if toggle enabled & deadline set) */}
-                        {deadlineCountdown && (
+                        {isMounted && deadlineCountdown && (
                             <div className="flex items-center justify-between gap-4 pt-2 border-t border-dashed border-border/40">
                                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                                     <Timer className="w-3 h-3" /> Reg. Deadline
@@ -245,7 +253,7 @@ export default function EventCard({ event }: EventCardProps) {
                                     <div className="flex flex-wrap gap-4 text-white/90 text-sm font-medium">
                                         <span className="flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-blue-400" />
-                                            {formatDateFullSafe(eventDate)}
+                                            {`${dateInfo.weekdayLong}, ${dateInfo.monthLong} ${dateInfo.day}, ${dateInfo.year}`}
                                         </span>
                                         {formattedTime && (
                                             <span className="flex items-center gap-2">
@@ -258,9 +266,9 @@ export default function EventCard({ event }: EventCardProps) {
                                             </span>
                                         )}
                                     </div>
-                                    {deadlineDate && (
+                                    {isMounted && deadlineDate && (
                                         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-red-600/90 text-white text-xs font-bold rounded-full backdrop-blur-sm">
-                                            <Timer className="w-3 h-3" /> Deadline: {`${getShortMonthName(deadlineDate.getMonth())} ${deadlineDate.getDate()}, ${formatTimeSafe(`${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`)}`}
+                                            <Timer className="w-3 h-3" /> Deadline: {deadlineDate.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                                         </div>
                                     )}
                                 </div>

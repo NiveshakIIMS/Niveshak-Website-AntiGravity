@@ -1,39 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Target, Users, BookOpen, Loader2 } from "lucide-react";
-import { AboutContent, dataService } from "@/services/dataService";
+import { Target, Users, BookOpen } from "lucide-react";
+import { AboutContent } from "@/services/dataService";
 
 interface AboutClientProps {
-    data?: AboutContent;
+    data: AboutContent;
 }
 
-export default function AboutClient({ data: initialData }: AboutClientProps) {
-    const [data, setData] = useState<AboutContent | null>(initialData || null);
-    const [loading, setLoading] = useState(!initialData);
-
-    useEffect(() => {
-        if (initialData) return;
-        dataService.getAbout().then((res) => {
-            setData(res);
-            setLoading(false);
-        });
-    }, [initialData]);
-
+export default function AboutClient({ data }: AboutClientProps) {
     const icons = [
         <Target key="target" className="w-8 h-8 text-blue-400" />,
         <Users key="users" className="w-8 h-8 text-blue-400" />,
         <BookOpen key="book" className="w-8 h-8 text-blue-400" />
     ];
-
-    if (loading || !data) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-            </div>
-        );
-    }
 
     const features = data?.cards ? data.cards.map((card, idx) => ({
         icon: icons[idx] || <Target className="w-8 h-8 text-blue-400" />,
