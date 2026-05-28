@@ -183,6 +183,8 @@ export const dataService = {
             imageUrl: resolveUrl(d.image_url, d.media_key, d.storage_provider),
             title: d.title,
             subtitle: d.subtitle,
+            tagline: d.tagline,
+            description: d.description,
             objectFit: d.object_fit,
             timer: d.timer
         }));
@@ -190,7 +192,6 @@ export const dataService = {
     saveHeroSlides: async (slides: HeroSlide[]) => {
         // Full replace logic can be complex in SQL. Simple strategy: Upsert all. 
         // Note: This doesn't delete removed slides. For verify simple app, we can Delete All then Insert All transactionally or just Upsert.
-        // Let's trying "Delete not in list" or just simple upsert for now.
         // Better: Delete all rows and re-insert? A bit heavy but clean for "List Management".
 
         // Strategy: Delete All -> Insert All (Cleanest for re-ordering)
@@ -205,6 +206,8 @@ export const dataService = {
                 image_url: s.imageUrl,
                 title: s.title,
                 subtitle: s.subtitle,
+                tagline: s.tagline || "",
+                description: s.description || "",
                 object_fit: s.objectFit,
                 timer: s.timer,
                 storage_provider: isR2 ? 'r2' : 'legacy',

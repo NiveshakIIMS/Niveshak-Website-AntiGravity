@@ -189,28 +189,34 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
                             }`}
                     >
                         <AnimatePresence mode="wait">
-                            <motion.div
-                                key={slide.id}
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.4, ease: "easeOut" }}
-                                className="flex flex-col items-center"
-                            >
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-200 text-xs md:text-sm font-medium mb-4 shadow-sm">
-                                    <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent" />
-                                    {slide.subtitle || "Mastering the Market"}
-                                </div>
-                            </motion.div>
+                            {slide.subtitle !== "" && (
+                                <motion.div
+                                    key={slide.id}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.4, ease: "easeOut" }}
+                                    className="flex flex-col items-center"
+                                >
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-200 text-xs md:text-sm font-medium mb-4 shadow-sm">
+                                        <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent" />
+                                        {slide.subtitle || "Mastering the Market"}
+                                    </div>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
 
-                        <h2 className="text-base md:text-2xl font-light text-blue-50 uppercase tracking-widest px-4">
-                            {slide.tagline || "The Finance and Investment Club of IIM Shillong"}
-                        </h2>
+                        {slide.tagline !== "" && (
+                            <h2 className="text-base md:text-2xl font-light text-blue-50 uppercase tracking-widest px-4">
+                                {slide.tagline || "The Finance and Investment Club of IIM Shillong"}
+                            </h2>
+                        )}
 
-                        <p className="text-sm md:text-base text-gray-300 mt-3 md:mt-4 max-w-2xl mx-auto leading-relaxed px-4">
-                            {slide.description || "Empowering future leaders with financial acumen, market insights, and real-world investment strategies."}
-                        </p>
+                        {slide.description !== "" && (
+                            <p className="text-sm md:text-base text-gray-300 mt-3 md:mt-4 max-w-2xl mx-auto leading-relaxed px-4">
+                                {slide.description || "Empowering future leaders with financial acumen, market insights, and real-world investment strategies."}
+                            </p>
+                        )}
                     </motion.div>
                 </div>
 
