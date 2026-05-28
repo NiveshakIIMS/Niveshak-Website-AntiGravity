@@ -26,13 +26,17 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
     }, []);
 
     useEffect(() => {
-        if (initialSlides.length === 0) {
-            const loadSlides = async () => {
+        const loadSlides = async () => {
+            try {
                 const loadedSlides = await dataService.getHeroSlides();
-                setSlides(loadedSlides);
-            };
-            loadSlides();
-        }
+                if (loadedSlides && loadedSlides.length > 0) {
+                    setSlides(loadedSlides);
+                }
+            } catch (err) {
+                console.error("Failed to load slides on client:", err);
+            }
+        };
+        loadSlides();
 
         const handleScroll = () => {
             const scrollY = window.scrollY;
