@@ -84,7 +84,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <div className="p-3 bg-accent/10 w-fit rounded-xl mb-4">
                                     <Activity className="w-6 h-6 text-accent" />
                                 </div>
-                                <h3 className="text-3xl font-bold text-foreground">₹ {latestNAV?.value.toFixed(2) || "0.00"}</h3>
+                                <h3 className="text-3xl font-bold text-foreground">₹ {latestNAV?.value.toFixed(1) || "0.0"}</h3>
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Current NAV</p>
                                 {latestNAV && (
                                     <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">

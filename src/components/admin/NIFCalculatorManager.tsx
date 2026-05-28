@@ -93,7 +93,7 @@ export default function NIFCalculatorManager() {
         }
 
         const yearNum = parseInt(selectedYear);
-        const navNum = parseFloat(navValue);
+        const navNum = Math.round(parseFloat(navValue) * 10000) / 10000;
 
         if (isNaN(yearNum) || yearNum < 2000) {
             setError("Please enter a valid investment year.");

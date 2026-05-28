@@ -39,7 +39,7 @@ export default function NIFManager() {
         const startDate = new Date(start.date);
         const endDate = new Date(end.date);
         const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const years = days / 365.25;
+        const years = days / 365;
 
         if (years <= 0) return "0";
 
@@ -155,7 +155,7 @@ export default function NIFManager() {
                         continue;
                     }
 
-                    const numVal = parseFloat(val);
+                    const numVal = Math.round(parseFloat(val) * 10000) / 10000;
                     if (isNaN(numVal)) continue;
 
                     if (dataMap.has(dateStr)) {
@@ -197,16 +197,17 @@ export default function NIFManager() {
 
     const addEntry = async () => {
         if (!newEntry.date || !newEntry.value) return;
+        const valRounded = Math.round(parseFloat(newEntry.value) * 10000) / 10000;
         const entry: NAVData = {
             id: Date.now().toString(),
             date: newEntry.date,
-            value: parseFloat(newEntry.value)
+            value: valRounded
         };
         // Check duplication
         const existsRef = data.find(d => d.date === newEntry.date);
         let newData;
         if (existsRef) {
-            newData = data.map(d => d.date === newEntry.date ? { ...d, value: parseFloat(newEntry.value) } : d);
+            newData = data.map(d => d.date === newEntry.date ? { ...d, value: valRounded } : d);
         } else {
             newData = [...data, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         }

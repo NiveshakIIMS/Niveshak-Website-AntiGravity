@@ -81,7 +81,7 @@ export default function NAVSection({ initialNAVData = [], initialMetrics = null 
 
                         {/* 2. Amount */}
                         <div className="text-5xl md:text-6xl font-mono font-bold text-foreground tracking-tighter">
-                            ₹ {latestNAV.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            ₹ {latestNAV.value.toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                         </div>
 
                         {/* Decorative Line */}

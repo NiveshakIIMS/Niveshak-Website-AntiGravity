@@ -126,7 +126,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                         month: 'short',
                         year: 'numeric'
                     });
-                    warning = `NAV was not recorded on ${new Date(customTargetDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Used closest available NAV (₹${closestEntry.value.toFixed(2)}) from ${formattedClosest}.`;
+                    warning = `NAV was not recorded on ${new Date(customTargetDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Used closest available NAV (₹${closestEntry.value.toFixed(1)}) from ${formattedClosest}.`;
                 } else {
                     // Fallback to closest overall if none on or before
                     const sortedNavs = [...navData].sort((a, b) => Math.abs(new Date(a.date).getTime() - targetTime) - Math.abs(new Date(b.date).getTime() - targetTime));
@@ -155,7 +155,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         const startDate = new Date(yearConfig.investmentDate);
         const endDate = new Date(finalTargetDate);
         const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const years = days / 365.25;
+        const years = days / 365;
 
         if (years > 0 && yearConfig.navValue > 0) {
             xirr = (Math.pow(finalTargetNav / yearConfig.navValue, 1 / years) - 1) * 100;
@@ -333,12 +333,12 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                             
                                             {/* Invested Amount Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-accent/5 hover:shadow-2xl hover:shadow-accent/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
                                                 <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    <Activity className="w-20 h-20 text-accent opacity-5 group-hover:scale-105 transition-transform" />
+                                                    <Activity className="w-20 h-20 text-accent opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <div className="p-2.5 bg-accent/10 w-fit rounded-xl mb-4">
+                                                    <div className="p-2.5 bg-accent/15 border border-accent/30 w-fit rounded-xl mb-4 shadow-sm shadow-accent/10">
                                                         <span className="text-lg font-bold text-accent">₹</span>
                                                     </div>
                                                     <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
@@ -349,13 +349,13 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                             </div>
 
                                             {/* Total Current Amount Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
                                                 <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    <ArrowUpRight className="w-20 h-20 text-blue-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                    <ArrowUpRight className="w-20 h-20 text-blue-600 opacity-20 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300" />
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <div className="p-2.5 bg-blue-500/10 w-fit rounded-xl mb-4">
-                                                        <ArrowUpRight className="w-5 h-5 text-blue-500" />
+                                                    <div className="p-2.5 bg-blue-500/15 border border-blue-500/30 w-fit rounded-xl mb-4 shadow-sm shadow-blue-500/10">
+                                                        <ArrowUpRight className="w-5 h-5 text-blue-500 stroke-[3]" />
                                                     </div>
                                                     <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
                                                         {formatCurrency(calcResults.currentAmount)}
@@ -365,20 +365,20 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                             </div>
 
                                             {/* Gains Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                            <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.gainsAmount >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
                                                 <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
                                                     {calcResults.gainsAmount >= 0 ? (
-                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                     ) : (
-                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
                                                     )}
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 ${calcResults.gainsAmount >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.gainsAmount >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
                                                         {calcResults.gainsAmount >= 0 ? (
-                                                            <TrendingUp className="w-5 h-5 text-green-500" />
+                                                            <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
                                                         ) : (
-                                                            <TrendingDown className="w-5 h-5 text-red-500" />
+                                                            <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
                                                         )}
                                                     </div>
                                                     <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.gainsAmount >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -389,20 +389,20 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                             </div>
 
                                             {/* XIRR Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                            <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.xirr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
                                                 <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
                                                     {calcResults.xirr >= 0 ? (
-                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                     ) : (
-                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
                                                     )}
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 ${calcResults.xirr >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.xirr >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
                                                         {calcResults.xirr >= 0 ? (
-                                                            <TrendingUp className="w-5 h-5 text-green-500" />
+                                                            <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
                                                         ) : (
-                                                            <TrendingDown className="w-5 h-5 text-red-500" />
+                                                            <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
                                                         )}
                                                     </div>
                                                     <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.xirr >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -435,7 +435,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     </div>
                                                     <div className="flex justify-between font-medium">
                                                         <span>NAV:</span>
-                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(1)}</span>
                                                     </div>
                                                 </div>
 
@@ -453,14 +453,14 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     </div>
                                                     <div className="flex justify-between font-medium">
                                                         <span>NAV:</span>
-                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(4)}</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(1)}</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="text-[11px] text-muted-foreground leading-relaxed">
                                                 * Invested Amount is calculated as <code>Units × Investment NAV</code>. Total Amount is calculated as <code>Units × Target NAV</code>. 
-                                                XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365.25 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
+                                                XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
                                             </div>
                                         </div>
 
