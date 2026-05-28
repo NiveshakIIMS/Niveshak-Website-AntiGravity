@@ -1,0 +1,478 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { dataService, NAVData, NIFInvestment } from "@/services/dataService";
+import Footer from "@/components/Footer";
+import Link from "next/link";
+import { ArrowLeft, Calculator, TrendingUp, TrendingDown, ArrowUpRight, Activity, Calendar, Info, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface CalculatorClientProps {
+    initialNAVData?: NAVData[];
+    initialInvestments?: NIFInvestment[];
+}
+
+export default function CalculatorClient({ initialNAVData = [], initialInvestments = [] }: CalculatorClientProps) {
+    const [navData, setNavData] = useState<NAVData[]>(initialNAVData);
+    const [investments, setInvestments] = useState<NIFInvestment[]>(initialInvestments);
+
+    // Inputs
+    const [unitsHeld, setUnitsHeld] = useState<string>("");
+    const [selectedYear, setSelectedYear] = useState<string>("");
+    const [useCustomDate, setUseCustomDate] = useState<boolean>(false);
+    const [customTargetDate, setCustomTargetDate] = useState<string>("");
+
+    // Outputs
+    const [calcResults, setCalcResults] = useState<{
+        investedAmount: number;
+        currentAmount: number;
+        gainsAmount: number;
+        xirr: number;
+        investmentDate: string;
+        investmentNav: number;
+        targetDate: string;
+        targetNav: number;
+        isValid: boolean;
+        warning?: string;
+    } | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const [navs, invs] = await Promise.all([
+                    dataService.getNAVData(),
+                    dataService.getNIFInvestments()
+                ]);
+                if (navs && navs.length > 0) setNavData(navs);
+                if (invs && invs.length > 0) setInvestments(invs);
+            } catch (err) {
+                console.error("Failed to load fresh calculator data:", err);
+            }
+        };
+        load();
+    }, []);
+
+    // Get latest available NAV
+    const latestNAV = navData.length > 0 
+        ? [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] 
+        : null;
+
+    // Trigger calculation when inputs change
+    useEffect(() => {
+        if (!selectedYear || !unitsHeld || parseFloat(unitsHeld) <= 0) {
+            setCalcResults(null);
+            return;
+        }
+
+        const units = parseFloat(unitsHeld);
+        const yearConfig = investments.find(inv => inv.year.toString() === selectedYear);
+
+        if (!yearConfig) {
+            setCalcResults(null);
+            return;
+        }
+
+        // 1. Determine Target Date & Target NAV
+        let finalTargetDate = "";
+        let finalTargetNav = 0;
+        let warning = "";
+
+        if (useCustomDate && customTargetDate) {
+            finalTargetDate = customTargetDate;
+            
+            // Look up NAV on or before custom date
+            const targetTime = new Date(customTargetDate).getTime();
+            
+            // Check if target date is before investment date
+            const investmentTime = new Date(yearConfig.investmentDate).getTime();
+            if (targetTime < investmentTime) {
+                setCalcResults({
+                    investedAmount: 0,
+                    currentAmount: 0,
+                    gainsAmount: 0,
+                    xirr: 0,
+                    investmentDate: yearConfig.investmentDate,
+                    investmentNav: yearConfig.navValue,
+                    targetDate: customTargetDate,
+                    targetNav: 0,
+                    isValid: false,
+                    warning: `Evaluation date cannot be earlier than the investment date (${new Date(yearConfig.investmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}).`
+                });
+                return;
+            }
+
+            // Find matching exact NAV or closest on or before
+            const exactMatch = navData.find(d => d.date === customTargetDate);
+            if (exactMatch) {
+                finalTargetNav = exactMatch.value;
+            } else {
+                let closestEntry: NAVData | null = null;
+                let minDiff = Infinity;
+
+                for (const entry of navData) {
+                    const entryTime = new Date(entry.date).getTime();
+                    const diff = targetTime - entryTime;
+                    // Only choose dates on or before targetTime
+                    if (diff >= 0 && diff < minDiff) {
+                        minDiff = diff;
+                        closestEntry = entry;
+                    }
+                }
+
+                if (closestEntry) {
+                    finalTargetNav = closestEntry.value;
+                    const formattedClosest = new Date(closestEntry.date).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                    warning = `NAV was not recorded on ${new Date(customTargetDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Used closest available NAV (₹${closestEntry.value.toFixed(2)}) from ${formattedClosest}.`;
+                } else {
+                    // Fallback to closest overall if none on or before
+                    const sortedNavs = [...navData].sort((a, b) => Math.abs(new Date(a.date).getTime() - targetTime) - Math.abs(new Date(b.date).getTime() - targetTime));
+                    if (sortedNavs.length > 0) {
+                        finalTargetNav = sortedNavs[0].value;
+                        finalTargetDate = sortedNavs[0].date;
+                        warning = `No NAV records found on or before evaluation date. Used closest available NAV on ${new Date(sortedNavs[0].date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+                    }
+                }
+            }
+        } else {
+            // Default to latest available NAV
+            if (latestNAV) {
+                finalTargetDate = latestNAV.date;
+                finalTargetNav = latestNAV.value;
+            }
+        }
+
+        // 2. Calculations
+        const investedAmount = units * yearConfig.navValue;
+        const currentAmount = units * finalTargetNav;
+        const gainsAmount = currentAmount - investedAmount;
+
+        // CAGR / XIRR calculation
+        let xirr = 0;
+        const startDate = new Date(yearConfig.investmentDate);
+        const endDate = new Date(finalTargetDate);
+        const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const years = days / 365.25;
+
+        if (years > 0 && yearConfig.navValue > 0) {
+            xirr = (Math.pow(finalTargetNav / yearConfig.navValue, 1 / years) - 1) * 100;
+        }
+
+        setCalcResults({
+            investedAmount,
+            currentAmount,
+            gainsAmount,
+            xirr,
+            investmentDate: yearConfig.investmentDate,
+            investmentNav: yearConfig.navValue,
+            targetDate: finalTargetDate,
+            targetNav: finalTargetNav,
+            isValid: true,
+            warning: warning || undefined
+        });
+
+    }, [unitsHeld, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV]);
+
+    const formatCurrency = (val: number) => {
+        return "₹ " + Number(val.toFixed(2)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    return (
+        <main className="min-h-screen bg-background text-foreground transition-colors">
+            
+            {/* Header Section */}
+            <section className="pt-32 pb-12 px-4 bg-background border-b border-border">
+                <div className="max-w-7xl mx-auto text-center">
+                    <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+                        NIF Returns <span className="text-accent">Calculator</span>
+                    </h1>
+                    <p className="text-xl text-muted-foreground mb-6">Estimate returns and performance on your investments</p>
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex items-center gap-2 text-accent hover:underline font-medium"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Go back to NIF Dashboard
+                    </Link>
+                </div>
+            </section>
+
+            {/* Main Content Area */}
+            <section className="py-16 px-4 max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    
+                    {/* Inputs Card (1 Column) */}
+                    <div className="bg-card border border-border p-6 rounded-2xl shadow-lg space-y-6">
+                        <div className="flex items-center gap-3 border-b border-border pb-4">
+                            <div className="p-2 bg-accent/10 rounded-lg">
+                                <Calculator className="w-6 h-6 text-accent" />
+                            </div>
+                            <h2 className="text-xl font-bold text-foreground">Calculator Inputs</h2>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Units Held */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-muted-foreground uppercase">Units Held</label>
+                                <input
+                                    type="number"
+                                    min="0.0001"
+                                    step="any"
+                                    value={unitsHeld}
+                                    onChange={e => setUnitsHeld(e.target.value)}
+                                    placeholder="Enter units held, e.g. 1500"
+                                    className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all font-mono"
+                                />
+                            </div>
+
+                            {/* Year of Investment */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-muted-foreground uppercase">Year of Investment</label>
+                                <select
+                                    value={selectedYear}
+                                    onChange={e => setSelectedYear(e.target.value)}
+                                    className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
+                                >
+                                    <option value="">Select Year</option>
+                                    {investments.map(inv => (
+                                        <option key={inv.year} value={inv.year}>
+                                            Year {inv.year} ({new Date(inv.investmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-muted-foreground ml-1">
+                                    NIF started in 2022. Select the year you purchased your units.
+                                </p>
+                            </div>
+
+                            {/* Evaluation Date Toggle */}
+                            <div className="pt-2">
+                                <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-foreground font-medium">
+                                    <input
+                                        type="checkbox"
+                                        checked={useCustomDate}
+                                        onChange={e => {
+                                            setUseCustomDate(e.target.checked);
+                                            if (e.target.checked && latestNAV && !customTargetDate) {
+                                                setCustomTargetDate(latestNAV.date);
+                                            }
+                                        }}
+                                        className="accent-accent w-4 h-4 rounded"
+                                    />
+                                    Check returns for a specific date
+                                </label>
+                            </div>
+
+                            {/* Custom Target Date Picker */}
+                            <AnimatePresence>
+                                {useCustomDate && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="space-y-1 overflow-hidden"
+                                    >
+                                        <label className="text-xs font-bold text-muted-foreground uppercase">Evaluation NAV Date</label>
+                                        <input
+                                            type="date"
+                                            value={customTargetDate}
+                                            onChange={e => setCustomTargetDate(e.target.value)}
+                                            className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent outline-none transition-all font-sans"
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* Outputs Panel (2 Columns) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        
+                        {/* If not calculated yet */}
+                        {!calcResults && (
+                            <div className="bg-card border border-border p-12 rounded-2xl text-center space-y-4 shadow-sm flex flex-col items-center justify-center min-h-[350px]">
+                                <Calculator className="w-16 h-16 text-muted-foreground opacity-30 animate-pulse" />
+                                <h3 className="text-xl font-bold text-foreground">Calculate Your Returns</h3>
+                                <p className="text-muted-foreground max-w-md mx-auto">
+                                    Enter your units held and select the year of investment on the left panel to estimate your total gains, invested principal, and annualized returns (XIRR).
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Results computed */}
+                        {calcResults && (
+                            <div className="space-y-6">
+                                
+                                {/* Warnings/Infos if any */}
+                                {calcResults.warning && (
+                                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 rounded-xl flex items-start gap-3">
+                                        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                        <span className="text-sm font-medium leading-relaxed">{calcResults.warning}</span>
+                                    </div>
+                                )}
+
+                                {/* Validation Errors */}
+                                {!calcResults.isValid ? (
+                                    <div className="bg-card border border-red-500/20 p-12 rounded-2xl text-center space-y-4 shadow-sm flex flex-col items-center justify-center min-h-[350px]">
+                                        <AlertTriangle className="w-16 h-16 text-red-500 opacity-60" />
+                                        <h3 className="text-xl font-bold text-foreground">Invalid Investment Period</h3>
+                                        <p className="text-red-500 max-w-md mx-auto font-medium">
+                                            {calcResults.warning}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="space-y-6"
+                                    >
+                                        {/* Floating Cards Grid */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            
+                                            {/* Invested Amount Card */}
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                    <Activity className="w-20 h-20 text-accent opacity-5 group-hover:scale-105 transition-transform" />
+                                                </div>
+                                                <div className="relative z-10">
+                                                    <div className="p-2.5 bg-accent/10 w-fit rounded-xl mb-4">
+                                                        <span className="text-lg font-bold text-accent">₹</span>
+                                                    </div>
+                                                    <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
+                                                        {formatCurrency(calcResults.investedAmount)}
+                                                    </h3>
+                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Invested Amount</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Total Current Amount Card */}
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                    <ArrowUpRight className="w-20 h-20 text-blue-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                </div>
+                                                <div className="relative z-10">
+                                                    <div className="p-2.5 bg-blue-500/10 w-fit rounded-xl mb-4">
+                                                        <ArrowUpRight className="w-5 h-5 text-blue-500" />
+                                                    </div>
+                                                    <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
+                                                        {formatCurrency(calcResults.currentAmount)}
+                                                    </h3>
+                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Total Amount (Value)</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Gains Card */}
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                    {calcResults.gainsAmount >= 0 ? (
+                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                    ) : (
+                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                    )}
+                                                </div>
+                                                <div className="relative z-10">
+                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 ${calcResults.gainsAmount >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                                                        {calcResults.gainsAmount >= 0 ? (
+                                                            <TrendingUp className="w-5 h-5 text-green-500" />
+                                                        ) : (
+                                                            <TrendingDown className="w-5 h-5 text-red-500" />
+                                                        )}
+                                                    </div>
+                                                    <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.gainsAmount >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                        {formatCurrency(calcResults.gainsAmount)}
+                                                    </h3>
+                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Gains Amount</p>
+                                                </div>
+                                            </div>
+
+                                            {/* XIRR Card */}
+                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                    {calcResults.xirr >= 0 ? (
+                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                    ) : (
+                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-5 group-hover:scale-105 transition-transform" />
+                                                    )}
+                                                </div>
+                                                <div className="relative z-10">
+                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 ${calcResults.xirr >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                                                        {calcResults.xirr >= 0 ? (
+                                                            <TrendingUp className="w-5 h-5 text-green-500" />
+                                                        ) : (
+                                                            <TrendingDown className="w-5 h-5 text-red-500" />
+                                                        )}
+                                                    </div>
+                                                    <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.xirr >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                        {calcResults.xirr.toFixed(2)} %
+                                                    </h3>
+                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">XIRR (Annualized Return)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Computation Details Card */}
+                                        <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
+                                            <h4 className="font-bold text-base text-foreground flex items-center gap-2">
+                                                <Info className="w-4 h-4 text-accent" />
+                                                Calculation Parameters
+                                            </h4>
+                                            
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                                <div className="p-3 bg-muted/40 rounded-xl space-y-1">
+                                                    <p className="text-xs font-bold text-muted-foreground uppercase">Investment Purchase Details</p>
+                                                    <div className="flex justify-between font-medium">
+                                                        <span>Date:</span>
+                                                        <span className="text-foreground font-semibold">
+                                                            {new Date(calcResults.investmentDate).toLocaleDateString('en-IN', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between font-medium">
+                                                        <span>NAV:</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3 bg-muted/40 rounded-xl space-y-1">
+                                                    <p className="text-xs font-bold text-muted-foreground uppercase">Evaluation / Target Details</p>
+                                                    <div className="flex justify-between font-medium">
+                                                        <span>Date:</span>
+                                                        <span className="text-foreground font-semibold">
+                                                            {new Date(calcResults.targetDate).toLocaleDateString('en-IN', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between font-medium">
+                                                        <span>NAV:</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(4)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-[11px] text-muted-foreground leading-relaxed">
+                                                * Invested Amount is calculated as <code>Units × Investment NAV</code>. Total Amount is calculated as <code>Units × Target NAV</code>. 
+                                                XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365.25 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
+                                            </div>
+                                        </div>
+
+                                    </motion.div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            <Footer />
+        </main>
+    );
+}

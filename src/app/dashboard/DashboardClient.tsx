@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import { getUTCDateInfo } from "@/lib/dateUtils";
 import NAVChart from "@/components/dashboard/NAVChart";
-import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen } from "lucide-react";
+import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen, Calculator } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface DashboardClientProps {
@@ -173,8 +173,15 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                         </div>
                     </div>
 
-                    {/* Learn More Button */}
-                    <div className="flex justify-center pt-4">
+                    {/* Calculator and Learn More Buttons */}
+                    <div className="flex flex-col items-center gap-4 pt-4">
+                        <a
+                            href="/dashboard/calculator"
+                            className="inline-flex items-center gap-3 px-6 py-3 bg-card border border-accent/45 text-foreground hover:bg-accent hover:text-white font-semibold rounded-xl shadow-md hover:shadow-accent/20 hover:-translate-y-0.5 transition-all duration-300 group"
+                        >
+                            <Calculator className="w-5 h-5 text-accent group-hover:text-white transition-colors" />
+                            NIF Returns Calculator
+                        </a>
                         <a
                             href="/dashboard/redemption"
                             className="inline-flex items-center gap-3 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-sky-400 shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:-translate-y-0.5 transition-all duration-300"

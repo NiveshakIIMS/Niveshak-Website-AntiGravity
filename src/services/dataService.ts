@@ -91,6 +91,12 @@ export interface NAVData {
     value: number;
 }
 
+export interface NIFInvestment {
+    year: number;
+    investmentDate: string;
+    navValue: number;
+}
+
 export interface NIFMetrics {
     annualizedReturn: string;
     totalAUM: string;
@@ -803,6 +809,38 @@ export const dataService = {
         );
         if (error) {
             console.error("Save Redemption Link Error", error);
+            throw error;
+        }
+    },
+
+    getNIFInvestments: async (): Promise<NIFInvestment[]> => {
+        const { data, error } = await supabase.from('nif_investments').select('*').order('year', { ascending: true });
+        if (error || !data) return [];
+        return data.map((d: any) => ({
+            year: d.year,
+            investmentDate: d.investment_date,
+            navValue: Number(d.nav_value)
+        }));
+    },
+
+    saveNIFInvestment: async (investment: NIFInvestment) => {
+        const row = {
+            year: investment.year,
+            investment_date: investment.investmentDate,
+            nav_value: investment.navValue,
+            updated_at: new Date().toISOString()
+        };
+        const { error } = await supabase.from('nif_investments').upsert(row, { onConflict: 'year' });
+        if (error) {
+            console.error("Save NIF Investment Error", error);
+            throw error;
+        }
+    },
+
+    deleteNIFInvestment: async (year: number) => {
+        const { error } = await supabase.from('nif_investments').delete().eq('year', year);
+        if (error) {
+            console.error("Delete NIF Investment Error", error);
             throw error;
         }
     }
