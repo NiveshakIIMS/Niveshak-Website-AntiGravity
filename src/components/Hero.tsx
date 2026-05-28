@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { dataService, HeroSlide } from "@/services/dataService";
+import { isVideoUrl } from "@/lib/utils";
 
 import { useLogo } from "@/context/LogoContext";
 
@@ -94,17 +95,28 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="relative w-full aspect-video md:absolute md:inset-0 z-0"
+                    className="relative w-full aspect-video md:absolute md:inset-0 z-0 bg-navy-950/20 flex items-center justify-center"
                 >
-                    <Image
-                        src={slide.imageUrl}
-                        alt="Background"
-                        fill
-                        className="object-cover object-center opacity-100 md:opacity-50"
-                        priority
-                        unoptimized={true}
-                        sizes="100vw"
-                    />
+                    {isVideoUrl(slide.imageUrl) ? (
+                        <video
+                            src={slide.imageUrl}
+                            className={`w-full h-full object-center opacity-100 md:opacity-50 ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                        />
+                    ) : (
+                        <Image
+                            src={slide.imageUrl}
+                            alt="Background"
+                            fill
+                            className={`object-center opacity-100 md:opacity-50 ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
+                            priority
+                            unoptimized={true}
+                            sizes="100vw"
+                        />
+                    )}
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-b from-navy-900/10 via-transparent to-navy-900/40 md:from-navy-900/40 md:via-navy-900/20 md:to-navy-900/80 pointer-events-none" />
                 </motion.div>

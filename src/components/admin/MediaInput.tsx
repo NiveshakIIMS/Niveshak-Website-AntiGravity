@@ -5,6 +5,7 @@ import { Link as LinkIcon, Upload, Check, X, ZoomIn, Loader2 } from "lucide-reac
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 import { uploadService } from "@/services/uploadService";
+import { isVideoUrl } from "@/lib/utils";
 
 interface MediaInputProps {
     label?: string;
@@ -12,9 +13,10 @@ interface MediaInputProps {
     onChange: (value: string) => void;
     placeholder?: string;
     folder?: string;
+    accept?: string;
 }
 
-export default function MediaInput({ label, value, onChange, placeholder = "Image URL or Upload", folder = "uploads" }: MediaInputProps) {
+export default function MediaInput({ label, value, onChange, placeholder = "Image URL or Upload", folder = "uploads", accept = "image/*" }: MediaInputProps) {
     const [mode, setMode] = useState<"link" | "upload">("link");
     const [croppingSrc, setCroppingSrc] = useState<string | null>(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -28,9 +30,28 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const isVideo = file.type.startsWith("video/");
+
+        if (isVideo) {
+            try {
+                setIsProcessing(true);
+                const extension = file.name.split('.').pop() || 'mp4';
+                const filename = `${folder}/${Date.now()}.${extension}`;
+                const publicUrl = await uploadService.uploadFile(file, filename);
+                onChange(publicUrl);
+                setMode("link"); // Switch back to view mode
+            } catch (error) {
+                console.error(error);
+                alert("Failed to upload video. Please check your connection and secrets.");
+            } finally {
+                setIsProcessing(false);
+            }
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -186,12 +207,22 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
             ) : (
                 <>
                     <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-muted/30 transition-colors group relative overflow-hidden">
-                        <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                        <input type="file" accept={accept} className="hidden" onChange={handleFileUpload} />
                         <div className="p-3 bg-muted rounded-full group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors mb-2">
-                            <Upload className="w-6 h-6 text-muted-foreground group-hover:text-blue-600" />
+                            {isProcessing ? (
+                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                            ) : (
+                                <Upload className="w-6 h-6 text-muted-foreground group-hover:text-blue-600" />
+                            )}
                         </div>
-                        <span className="text-sm font-medium text-foreground">Click to Upload Image</span>
-                        <span className="text-xs text-muted-foreground mt-1">Images can be cropped or uploaded in original size</span>
+                        <span className="text-sm font-medium text-foreground">
+                            {isProcessing ? "Uploading..." : accept.includes("video") ? "Click to Upload Image / Video" : "Click to Upload Image"}
+                        </span>
+                        <span className="text-xs text-muted-foreground mt-1">
+                            {accept.includes("video") 
+                                ? "Videos will be uploaded directly; images can be cropped"
+                                : "Images can be cropped or uploaded in original size"}
+                        </span>
                     </label>
                 </>
             )}
@@ -199,7 +230,11 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
             {/* Preview */}
             {value && (
                 <div className="mt-2 h-20 w-20 rounded-lg border border-border overflow-hidden bg-muted relative group">
-                    <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                    {isVideoUrl(value) ? (
+                        <video src={value} className="w-full h-full object-cover" muted playsInline />
+                    ) : (
+                        <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                    )}
                     <button
                         onClick={() => onChange("")}
                         className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-white text-xs font-medium"

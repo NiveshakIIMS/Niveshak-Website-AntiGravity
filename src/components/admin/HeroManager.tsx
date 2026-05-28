@@ -5,6 +5,7 @@ import { Plus, Trash2, Image as ImageIcon, Check, X, ArrowUp, ArrowDown } from "
 import { dataService, HeroSlide } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import { isVideoUrl } from "@/lib/utils";
 
 export default function HeroManager() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -93,7 +94,11 @@ export default function HeroManager() {
                             <div className="flex flex-col md:flex-row gap-6 p-6">
                                 {/* Preview Area */}
                                 <div className="w-full md:w-64 h-40 bg-muted rounded-xl overflow-hidden relative group shrink-0 border border-border">
-                                    <img src={slide.imageUrl || "/hero_background.png"} alt="Preview" className={`w-full h-full object-${slide.objectFit}`} />
+                                    {isVideoUrl(slide.imageUrl) ? (
+                                        <video src={slide.imageUrl} className={`w-full h-full object-${slide.objectFit}`} muted playsInline loop autoPlay />
+                                    ) : (
+                                        <img src={slide.imageUrl || "/hero_background.png"} alt="Preview" className={`w-full h-full object-${slide.objectFit}`} />
+                                    )}
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <span className="text-white text-xs font-medium px-2 py-1 bg-black/50 rounded backdrop-blur-sm">
                                             {slide.objectFit === "cover" ? "Fill Screen" : "Original Ratio"}
@@ -107,9 +112,10 @@ export default function HeroManager() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-1 col-span-2">
                                                 <MediaInput
-                                                    label="Image Source"
+                                                    label="Media Source"
                                                     value={editForm.imageUrl}
                                                     onChange={(val) => setEditForm({ ...editForm, imageUrl: val })}
+                                                    accept="image/*,video/*"
                                                 />
                                             </div>
                                             <div className="space-y-1">
