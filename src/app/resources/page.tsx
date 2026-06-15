@@ -1,13 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import ResourcesSection from "@/components/sections/ResourcesSection";
-import { dataService } from "@/services/dataService";
+import { dataService, Resource } from "@/services/dataService";
+import { Loader2 } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export default function Resources() {
+    const [resources, setResources] = useState<Resource[]>([]);
+    const [loading, setLoading] = useState(true);
 
-export default async function Resources() {
-    // Fetch all resources
-    const resources = await dataService.getResources();
+    useEffect(() => {
+        dataService.getResources().then(setResources).finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-background">
@@ -23,15 +36,7 @@ export default async function Resources() {
                 </div>
             </section>
 
-            {/* Resources Grid */}
-            <div className="max-w-7xl mx-auto">
-                <ResourcesSection
-                    resources={resources}
-                    showTitle={false}
-                    bgColor="bg-transparent"
-                />
-            </div>
-
+            <ResourcesSection resources={resources} />
             <Footer />
         </main>
     );

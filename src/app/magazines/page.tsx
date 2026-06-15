@@ -1,12 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import MagazinesSection from "@/components/sections/MagazinesSection";
-import { dataService } from "@/services/dataService";
+import { dataService, Magazine } from "@/services/dataService";
+import { Loader2 } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export default function Magazines() {
+    const [magazines, setMagazines] = useState<Magazine[]>([]);
+    const [loading, setLoading] = useState(true);
 
-export default async function Magazines() {
-    const magazines = await dataService.getMagazines();
+    useEffect(() => {
+        dataService.getMagazines().then(setMagazines).finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-background">
@@ -19,9 +33,7 @@ export default async function Magazines() {
                 </div>
             </section>
 
-            <div className="max-w-7xl mx-auto">
-                <MagazinesSection showTitle={false} showFilters={true} showViewAll={false} bgColor="bg-transparent" initialMagazines={magazines} />
-            </div>
+            <MagazinesSection initialMagazines={magazines} />
             <Footer />
         </main>
     );

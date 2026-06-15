@@ -1,16 +1,27 @@
+"use client";
 
+import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import TeamSection from "@/components/sections/TeamSection";
 import Link from "next/link";
-import { Award } from "lucide-react";
+import { Award, Loader2 } from "lucide-react";
+import { dataService, TeamMember } from "@/services/dataService";
 
-import { dataService } from "@/services/dataService";
+export default function Team() {
+    const [members, setMembers] = useState<TeamMember[]>([]);
+    const [loading, setLoading] = useState(true);
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+    useEffect(() => {
+        dataService.getTeam().then(setMembers).finally(() => setLoading(false));
+    }, []);
 
-export default async function Team() {
-    const members = await dataService.getTeam();
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-background text-foreground">
@@ -45,4 +56,3 @@ export default async function Team() {
         </main>
     );
 }
-
