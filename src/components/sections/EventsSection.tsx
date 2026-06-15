@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { dataService, Event } from "@/services/dataService";
 import EventCard from "@/components/EventCard";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 interface EventsSectionProps {
     initialEvents?: Event[];
@@ -21,30 +21,34 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
             })
             .slice(0, 4);
     });
+    const [isLoading, setIsLoading] = useState(initialEvents.length === 0);
 
     useEffect(() => {
-        if (initialEvents.length > 0) return;
+        if (initialEvents.length > 0) {
+            setIsLoading(false);
+            return;
+        }
         const loadEvents = async () => {
-            const allEvents = await dataService.getEvents();
-            // Simple logic: Show all (or filter by date if needed)
-            // User Request: "homepage events... only difference is... past events would also show" (Wait, user said homepage matches events page EXCEPT events page shows past too. So homepage needs to HIDE past.)
-            const eventsToShow = allEvents
-                .filter(e => e.type !== "Past")
-                .sort((a, b) => {
-                    // Priority 1: Live events first
-                    if (a.type === "Live" && b.type !== "Live") return -1;
-                    if (a.type !== "Live" && b.type === "Live") return 1;
-
-                    // Priority 2: Date Ascending (Nearest first)
-                    return new Date(a.date).getTime() - new Date(b.date).getTime();
-                })
-                .slice(0, 4); // Max 4 events
-
-            setEvents(eventsToShow);
+            setIsLoading(true);
+            try {
+                const allEvents = await dataService.getEvents();
+                const eventsToShow = allEvents
+                    .filter(e => e.type !== "Past")
+                    .sort((a, b) => {
+                        if (a.type === "Live" && b.type !== "Live") return -1;
+                        if (a.type !== "Live" && b.type === "Live") return 1;
+                        return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    })
+                    .slice(0, 4);
+                setEvents(eventsToShow);
+            } catch (err) {
+                console.error("Failed to load events:", err);
+            } finally {
+                setIsLoading(false);
+            }
         };
         loadEvents();
-    }, []);
-
+    }, [initialEvents]);
     return (
 
         <section id="events" className="py-20 px-4 bg-background transition-colors">
@@ -54,7 +58,11 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
                     <p className="text-lg text-muted-foreground">Join us for learning and competition</p>
                 </div>
 
-                {events.length === 0 ? (
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                    </div>
+                ) : events.length === 0 ? (
                     <div className="text-center text-muted-foreground">No upcoming events scheduled. Stay tuned!</div>
                 ) : (
                     <div className={`${events.length < 3 ? 'flex flex-wrap justify-center' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 justify-items-center'} gap-8 max-w-5xl mx-auto`}>

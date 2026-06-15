@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BookOpen, FileText, ArrowRight, ArrowDownUp } from "lucide-react";
+import { BookOpen, FileText, ArrowRight, ArrowDownUp, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { dataService, Magazine } from "@/services/dataService";
 import Image from "next/image";
@@ -35,6 +35,7 @@ export default function MagazinesSection({
     const [selectedYear, setSelectedYear] = useState<string>("All");
     const [selectedMonth, setSelectedMonth] = useState<string>("All");
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+    const [isLoading, setIsLoading] = useState(initialMagazines.length === 0);
 
     // Helper to get sortable string (YYYY-MM)
     const getSortKey = useCallback((m: Magazine) => {
@@ -45,15 +46,20 @@ export default function MagazinesSection({
     }, []);
 
     useEffect(() => {
-        // Only fetch if no initial data provided or force refresh needs to be handled (omitted for speed)
         if (initialMagazines.length === 0) {
+            setIsLoading(true);
             dataService.getMagazines().then((loadedMagazines) => {
                 setMagazines(loadedMagazines);
                 const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
                 setYears(distinctYears);
-            });
+            }).finally(() => setIsLoading(false));
+        } else {
+            setMagazines(initialMagazines);
+            const distinctYears = Array.from(new Set(initialMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
+            setYears(distinctYears);
+            setIsLoading(false);
         }
-    }, [initialMagazines.length]);
+    }, [initialMagazines]);
 
     // Derived State (useMemo)
     const filteredMagazines = useMemo(() => {
@@ -127,17 +133,25 @@ export default function MagazinesSection({
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredMagazines.map((mag, index) => (
-                        <MagazineCard key={mag.id} mag={mag} index={index} />
-                    ))}
-                </div>
-
-                {filteredMagazines.length === 0 && (
-                    <div className="text-center py-20 text-muted-foreground">
-                        <p className="text-xl">No magazines found for this filter.</p>
-                        <button onClick={() => { setSelectedYear("All"); setSelectedMonth("All") }} className="mt-4 text-accent hover:underline">Reset Filters</button>
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
                     </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {filteredMagazines.map((mag, index) => (
+                                <MagazineCard key={mag.id} mag={mag} index={index} />
+                            ))}
+                        </div>
+
+                        {filteredMagazines.length === 0 && (
+                            <div className="text-center py-20 text-muted-foreground">
+                                <p className="text-xl">No magazines found for this filter.</p>
+                                <button onClick={() => { setSelectedYear("All"); setSelectedMonth("All") }} className="mt-4 text-accent hover:underline">Reset Filters</button>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {showViewAll && (

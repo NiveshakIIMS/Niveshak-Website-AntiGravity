@@ -1,16 +1,23 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen, Info, ArrowRight } from "lucide-react";
-import { AboutContent } from "@/services/dataService";
+import { dataService, AboutContent } from "@/services/dataService";
 
 interface AboutSectionProps {
     initialData: AboutContent;
 }
 
 export default function AboutSection({ initialData }: AboutSectionProps) {
-    const content = initialData;
+    const [content, setContent] = useState<AboutContent>(initialData);
+
+    useEffect(() => {
+        dataService.getAbout().then(data => {
+            if (data) setContent(data);
+        });
+    }, []);
 
     // Default Icons for the 3 cards
     const icons = [

@@ -1,19 +1,31 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
-import { Resource } from "@/services/dataService";
-import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List } from "lucide-react";
+import { dataService, Resource } from "@/services/dataService";
+import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List, Loader2 } from "lucide-react";
 
 interface ResourcesSectionProps {
-    resources: Resource[];
+    resources?: Resource[];
     showTitle?: boolean;
     limit?: number;
     bgColor?: string;
 }
 
-export default function ResourcesSection({ resources: initialResources, showTitle = true, limit, bgColor = "bg-muted/30" }: ResourcesSectionProps) {
+export default function ResourcesSection({ resources: initialResources = [], showTitle = true, limit, bgColor = "bg-muted/30" }: ResourcesSectionProps) {
+    const [resources, setResources] = useState<Resource[]>(initialResources);
+    const [isLoading, setIsLoading] = useState(initialResources.length === 0);
+
+    useEffect(() => {
+        if (initialResources.length === 0) {
+            setIsLoading(true);
+            dataService.getResources().then(setResources).finally(() => setIsLoading(false));
+        } else {
+            setResources(initialResources);
+            setIsLoading(false);
+        }
+    }, [initialResources]);
     // State
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -26,13 +38,13 @@ export default function ResourcesSection({ resources: initialResources, showTitl
     const filteredResources = useMemo(() => {
         if (isHomepage) {
             // Flatten and just take top X recent files/links
-            return initialResources
+            return resources
                 .filter(r => r.type !== 'folder')
                 .slice(0, limit);
         }
 
         // Folder Mode
-        const items = initialResources.filter(r => {
+        const items = resources.filter(r => {
             // Match parent
             const matchesParent = (r.parentId || null) === currentFolderId;
             // Search override: If searching, search EVERYTHING (flat)
@@ -56,7 +68,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
         });
 
         return items;
-    }, [initialResources, currentFolderId, limit, isHomepage, sortBy, searchQuery]);
+    }, [resources, currentFolderId, limit, isHomepage, sortBy, searchQuery]);
 
     // Breadcrumbs Logic
     const breadcrumbs = useMemo(() => {
@@ -67,7 +79,7 @@ export default function ResourcesSection({ resources: initialResources, showTitl
         let depth = 0;
         // Limit depth to prevent potential infinite loops
         while (curr && depth < 20) {
-            const folder = initialResources.find(r => r.id === curr);
+            const folder = resources.find(r => r.id === curr);
             if (folder) {
                 crumbs.unshift({ id: folder.id, title: folder.title });
                 curr = folder.parentId || null;
@@ -77,9 +89,26 @@ export default function ResourcesSection({ resources: initialResources, showTitl
             }
         }
         return crumbs;
-    }, [currentFolderId, initialResources, isHomepage]);
+    }, [currentFolderId, resources, isHomepage]);
 
-    if (!initialResources.length) {
+    if (isLoading) {
+        return (
+            <section className={`py-20 px-4 ${bgColor}`}>
+                <div className="max-w-7xl mx-auto text-center">
+                    {showTitle && (
+                        <h2 className="text-3xl font-bold mb-12 text-foreground">
+                            <span className="text-accent">Resources</span>
+                        </h2>
+                    )}
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    if (!resources.length) {
         return (
             <section className={`py-20 px-4 ${bgColor}`}>
                 <div className="max-w-7xl mx-auto text-center">

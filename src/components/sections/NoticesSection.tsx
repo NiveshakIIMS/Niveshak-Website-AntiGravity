@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Bell } from "lucide-react";
+import { ArrowRight, Bell, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { dataService, Notice } from "@/services/dataService";
 import NoticeCard from "../NoticeCard";
@@ -21,23 +21,39 @@ export default function NoticesSection({ initialNotices = [] }: NoticesSectionPr
             return checkDate >= now;
         }).slice(0, 4);
     });
+    const [isLoading, setIsLoading] = useState(initialNotices.length === 0);
 
     useEffect(() => {
-        if (initialNotices.length > 0) return;
+        if (initialNotices.length > 0) {
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
         dataService.getNotices().then(data => {
             const now = new Date();
             now.setHours(0, 0, 0, 0);
 
             const activeNotices = data.filter(n => {
                 const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
-                // Keep if date is today or future (>= now)
                 return checkDate >= now;
             });
 
-            // Limit to top 4
             setNotices(activeNotices.slice(0, 4));
-        });
-    }, []);
+        }).finally(() => setIsLoading(false));
+    }, [initialNotices]);
+
+    if (isLoading) {
+        return (
+            <section className="py-20 relative overflow-hidden bg-muted/20">
+                <div className="container mx-auto px-4 text-center">
+                    <h2 className="text-3xl font-bold text-foreground mb-4">Notice <span className="text-accent">Board</span></h2>
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (notices.length === 0) {
         // Show placeholder for now so section is visible

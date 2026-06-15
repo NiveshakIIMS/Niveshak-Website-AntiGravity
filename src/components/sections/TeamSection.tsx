@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Linkedin, Mail, Copy, Check, Award } from "lucide-react";
+import { Linkedin, Mail, Copy, Check, Award, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { dataService, TeamMember } from "@/services/dataService";
@@ -14,12 +14,17 @@ interface TeamSectionProps {
 
 export default function TeamSection({ showTitle = true, showHallOfFame = false, initialMembers = [] }: TeamSectionProps) {
     const [members, setMembers] = useState<TeamMember[]>(initialMembers);
+    const [isLoading, setIsLoading] = useState(initialMembers.length === 0);
 
     useEffect(() => {
         if (initialMembers.length === 0) {
-            dataService.getTeam().then(setMembers);
+            setIsLoading(true);
+            dataService.getTeam().then(setMembers).finally(() => setIsLoading(false));
+        } else {
+            setMembers(initialMembers);
+            setIsLoading(false);
         }
-    }, [initialMembers.length]);
+    }, [initialMembers]);
 
     const facultyMembers = members.filter(m => m.category === "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));
     const studentMembers = members.filter(m => m.category !== "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));
@@ -36,45 +41,53 @@ export default function TeamSection({ showTitle = true, showHallOfFame = false, 
                     </div>
                 )}
 
-                {/* Faculty Mentors Section */}
-                {facultyMembers.length > 0 && (
-                    <div className="space-y-10">
-                        <div className="text-center">
-                            <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
-                                Faculty <span className="text-accent">Mentor</span>
-                                <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
-                            </h3>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-6">
-                            {facultyMembers.map((member, idx) => (
-                                <TeamCard
-                                    key={member.id}
-                                    member={member}
-                                    idx={idx}
-                                    className="w-[calc(50%-0.75rem)] sm:w-[calc(33.33%-1rem)] md:w-[calc(25%-1rem)] lg:w-[calc(20%-1rem)] xl:w-[calc(16.66%-1rem)] max-w-[280px]"
-                                />
-                            ))}
-                        </div>
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
                     </div>
-                )}
-
-                {/* Student Team Section */}
-                {studentMembers.length > 0 && (
-                    <div className="space-y-10">
+                ) : (
+                    <>
+                        {/* Faculty Mentors Section */}
                         {facultyMembers.length > 0 && (
-                            <div className="text-center">
-                                <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
-                                    Team <span className="text-accent">Niveshak</span>
-                                    <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
-                                </h3>
+                            <div className="space-y-10">
+                                <div className="text-center">
+                                    <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
+                                        Faculty <span className="text-accent">Mentor</span>
+                                        <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
+                                    </h3>
+                                </div>
+                                <div className="flex flex-wrap justify-center gap-6">
+                                    {facultyMembers.map((member, idx) => (
+                                        <TeamCard
+                                            key={member.id}
+                                            member={member}
+                                            idx={idx}
+                                            className="w-[calc(50%-0.75rem)] sm:w-[calc(33.33%-1rem)] md:w-[calc(25%-1rem)] lg:w-[calc(20%-1rem)] xl:w-[calc(16.66%-1rem)] max-w-[280px]"
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
-                            {studentMembers.map((member, idx) => (
-                                <TeamCard key={member.id} member={member} idx={idx} />
-                            ))}
-                        </div>
-                    </div>
+
+                        {/* Student Team Section */}
+                        {studentMembers.length > 0 && (
+                            <div className="space-y-10">
+                                {facultyMembers.length > 0 && (
+                                    <div className="text-center">
+                                        <h3 className="text-2xl lg:text-3xl font-bold text-foreground relative inline-block">
+                                            Team <span className="text-accent">Niveshak</span>
+                                            <div className="h-1 w-24 bg-accent/20 mx-auto mt-2 rounded-full"></div>
+                                        </h3>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 justify-center">
+                                    {studentMembers.map((member, idx) => (
+                                        <TeamCard key={member.id} member={member} idx={idx} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {showHallOfFame && (
