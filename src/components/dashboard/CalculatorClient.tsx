@@ -17,7 +17,9 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
     const [investments, setInvestments] = useState<NIFInvestment[]>(initialInvestments);
 
     // Inputs
+    const [calcMode, setCalcMode] = useState<"units" | "amount">("units");
     const [unitsHeld, setUnitsHeld] = useState<string>("");
+    const [investedInput, setInvestedInput] = useState<string>("");
     const [selectedYear, setSelectedYear] = useState<string>("");
     const [useCustomDate, setUseCustomDate] = useState<boolean>(false);
     const [customTargetDate, setCustomTargetDate] = useState<string>("");
@@ -59,12 +61,14 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
 
     // Trigger calculation when inputs change
     useEffect(() => {
-        if (!selectedYear || !unitsHeld || parseFloat(unitsHeld) <= 0) {
+        const hasValidUnitsInput = calcMode === "units" && unitsHeld && parseFloat(unitsHeld) > 0;
+        const hasValidAmountInput = calcMode === "amount" && investedInput && parseFloat(investedInput) > 0;
+
+        if (!selectedYear || (!hasValidUnitsInput && !hasValidAmountInput)) {
             setCalcResults(null);
             return;
         }
 
-        const units = parseFloat(unitsHeld);
         const yearConfig = investments.find(inv => inv.year.toString() === selectedYear);
 
         if (!yearConfig) {
@@ -146,8 +150,19 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         }
 
         // 2. Calculations
-        const investedAmount = units * yearConfig.navValue;
-        const currentAmount = units * finalTargetNav;
+        let investedAmount = 0;
+        let currentAmount = 0;
+
+        if (calcMode === "units") {
+            const units = parseFloat(unitsHeld);
+            investedAmount = units * yearConfig.navValue;
+            currentAmount = units * finalTargetNav;
+        } else {
+            investedAmount = parseFloat(investedInput);
+            const units = investedAmount / yearConfig.navValue;
+            currentAmount = units * finalTargetNav;
+        }
+
         const gainsAmount = currentAmount - investedAmount;
 
         // CAGR / XIRR calculation
@@ -174,7 +189,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
             warning: warning || undefined
         });
 
-    }, [unitsHeld, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV]);
+    }, [unitsHeld, investedInput, calcMode, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV]);
 
     const formatCurrency = (val: number) => {
         return "₹ " + Number(val.toFixed(2)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -213,19 +228,59 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                         </div>
 
                         <div className="space-y-4">
-                            {/* Units Held */}
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-muted-foreground uppercase">Units Held</label>
-                                <input
-                                    type="number"
-                                    min="0.0001"
-                                    step="any"
-                                    value={unitsHeld}
-                                    onChange={e => setUnitsHeld(e.target.value)}
-                                    placeholder="Enter units held, e.g. 1500"
-                                    className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all font-mono"
-                                />
+                            {/* Calculation Mode Toggle */}
+                            <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted rounded-xl text-xs font-semibold">
+                                <button
+                                    type="button"
+                                    onClick={() => setCalcMode("units")}
+                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer ${
+                                        calcMode === "units"
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    By Units
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCalcMode("amount")}
+                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer ${
+                                        calcMode === "amount"
+                                            ? "bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    By Invested INR
+                                </button>
                             </div>
+
+                            {calcMode === "units" ? (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase">Units Held</label>
+                                    <input
+                                        type="number"
+                                        min="0.0001"
+                                        step="any"
+                                        value={unitsHeld}
+                                        onChange={e => setUnitsHeld(e.target.value)}
+                                        placeholder="Enter units held, e.g. 1500"
+                                        className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all font-mono"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase">Invested Amount (INR)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        step="any"
+                                        value={investedInput}
+                                        onChange={e => setInvestedInput(e.target.value)}
+                                        placeholder="Enter invested amount, e.g. 10000"
+                                        className="w-full p-3 border border-input rounded-xl bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all font-mono"
+                                    />
+                                </div>
+                            )}
 
                             {/* Year of Investment */}
                             <div className="space-y-1">
@@ -297,7 +352,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                 <Calculator className="w-16 h-16 text-muted-foreground opacity-30 animate-pulse" />
                                 <h3 className="text-xl font-bold text-foreground">Calculate Your Returns</h3>
                                 <p className="text-muted-foreground max-w-md mx-auto">
-                                    Enter your units held and select the year of investment on the left panel to estimate your total gains, invested principal, and annualized returns (XIRR).
+                                    Enter your {calcMode === "units" ? "units held" : "invested amount (INR)"} and select the year of investment on the left panel to estimate your total gains, invested principal, and annualized returns (XIRR).
                                 </p>
                             </div>
                         )}
@@ -458,9 +513,18 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                 </div>
                                             </div>
 
-                                            <div className="text-[11px] text-muted-foreground leading-relaxed">
-                                                * Invested Amount is calculated as <code>Units × Investment NAV</code>. Total Amount is calculated as <code>Units × Target NAV</code>. 
-                                                XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
+                                            <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1.5">
+                                                <div>
+                                                    * {calcMode === "units" 
+                                                        ? <>Invested Amount is calculated as <code>Units × Investment NAV</code>. </>
+                                                        : <>Units purchased is calculated as <code>Invested Amount / Investment NAV</code>. </>
+                                                    }
+                                                    Total Amount is calculated as <code>Units × Target NAV</code>. 
+                                                    XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
+                                                </div>
+                                                <div className="pt-2 border-t border-border/40 text-[10px] italic">
+                                                    Footnote: Please note that these calculations are approximated. The actual values can be slightly different than what is shown here.
+                                                </div>
                                             </div>
                                         </div>
 
