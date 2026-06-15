@@ -297,7 +297,7 @@ const ChartView = ({
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={processedData}
-                    margin={{ top: 5, right: 15, left: 0, bottom: 50 }}
+                    margin={{ top: 5, right: isComparison ? 65 : 15, left: 0, bottom: 50 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis
