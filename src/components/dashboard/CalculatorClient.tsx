@@ -229,14 +229,14 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
 
                         <div className="space-y-4">
                             {/* Calculation Mode Toggle */}
-                            <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted rounded-xl text-xs font-semibold">
+                            <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted/50 rounded-xl text-xs font-semibold">
                                 <button
                                     type="button"
                                     onClick={() => setCalcMode("units")}
-                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer ${
+                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer font-bold ${
                                         calcMode === "units"
-                                            ? "bg-card text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
+                                            ? "bg-accent text-white shadow-md shadow-accent/25"
+                                            : "text-muted-foreground hover:text-foreground bg-transparent"
                                     }`}
                                 >
                                     By Units
@@ -244,10 +244,10 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                 <button
                                     type="button"
                                     onClick={() => setCalcMode("amount")}
-                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer ${
+                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer font-bold ${
                                         calcMode === "amount"
-                                            ? "bg-card text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
+                                            ? "bg-accent text-white shadow-md shadow-accent/25"
+                                            : "text-muted-foreground hover:text-foreground bg-transparent"
                                     }`}
                                 >
                                     By Invested INR
