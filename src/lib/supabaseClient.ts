@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         fetch: (url, options) => {
             return fetch(url, {
                 ...options,
-                next: { revalidate: 60 }
+                cache: 'no-store'
             });
         }
     }
