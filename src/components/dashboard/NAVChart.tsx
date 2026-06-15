@@ -20,6 +20,7 @@ interface ChartData {
     nifty: number | null;
     fullDate: Date;
     sortKey?: number;
+    niftyIndexed?: number | null;
 }
 
 // --- Helper Functions (Pure) ---
@@ -133,9 +134,9 @@ export default function NAVChart({ data }: NAVChartProps) {
     const { theme } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Default to OVERALL and Comparison
+    // Default to OVERALL and Indexed comparison
     const [filterMode, setFilterMode] = useState<FilterMode>("OVERALL");
-    const [chartType, setChartType] = useState<"comparison" | "nif" | "nifty">("comparison");
+    const [chartType, setChartType] = useState<"indexed" | "comparison" | "nif" | "nifty">("indexed");
 
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
@@ -210,6 +211,11 @@ export default function NAVChart({ data }: NAVChartProps) {
                         </div>
                     )}
                 </div>
+                {chartType === "indexed" && (
+                    <p className="text-[11px] md:text-xs text-muted-foreground mt-3 italic text-center leading-relaxed">
+                        * Note: Nifty 50 data is normalized/indexed with NIF NAV data for comparison purpose. This provides a direct, relative comparison of performance starting from the same baseline.
+                    </p>
+                )}
             </div>
 
             {/* Expanded Modal (Portal) */}
@@ -262,8 +268,15 @@ export default function NAVChart({ data }: NAVChartProps) {
                                     chartType={chartType}
                                     setChartType={setChartType}
                                 />
-                                <div className="flex-1 w-full min-h-[400px]">
-                                    <ChartView processedData={processedData} filterMode={filterMode} chartType={chartType} />
+                                <div className="flex-1 w-full min-h-[400px] flex flex-col justify-between">
+                                    <div className="flex-1 w-full">
+                                        <ChartView processedData={processedData} filterMode={filterMode} chartType={chartType} />
+                                    </div>
+                                    {chartType === "indexed" && (
+                                        <p className="text-xs text-muted-foreground mt-4 italic text-center leading-relaxed">
+                                            * Note: Nifty 50 data is normalized/indexed with NIF NAV data for comparison purpose. This provides a direct, relative comparison of performance starting from the same baseline.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -284,19 +297,47 @@ const ChartView = ({
 }: {
     processedData: ChartData[];
     filterMode: FilterMode;
-    chartType: "comparison" | "nif" | "nifty";
+    chartType: "indexed" | "comparison" | "nif" | "nifty";
 }) => {
-    // Determine Axis configuration based on mode
+    // Determine Axis and Data configurations based on mode
     const isOverall = filterMode === "OVERALL";
-    const showNIF = chartType === "comparison" || chartType === "nif";
-    const showNifty = chartType === "comparison" || chartType === "nifty";
+    const showNIF = chartType === "indexed" || chartType === "comparison" || chartType === "nif";
+    const showNifty = chartType === "indexed" || chartType === "comparison" || chartType === "nifty";
     const isComparison = chartType === "comparison";
+
+    // 1. Calculate indexed/normalized Nifty 50 data starting from NIF NAV baseline
+    const chartDataWithIndexed = useMemo(() => {
+        if (!processedData || processedData.length === 0) return [];
+        
+        // Find the first data point with both valid NAV and Nifty 50
+        const firstValid = processedData.find(d => 
+            d.value !== undefined && d.value !== null && 
+            d.nifty !== undefined && d.nifty !== null
+        );
+        
+        if (!firstValid) {
+            return processedData.map(d => ({ ...d, niftyIndexed: d.nifty }));
+        }
+        
+        const baseNAV = firstValid.value;
+        const baseNifty = firstValid.nifty!;
+        
+        return processedData.map(d => {
+            const niftyIndexed = d.nifty !== null && d.nifty !== undefined && baseNifty !== 0
+                ? parseFloat((d.nifty * (baseNAV / baseNifty)).toFixed(2))
+                : null;
+            return {
+                ...d,
+                niftyIndexed
+            };
+        });
+    }, [processedData]);
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                    data={processedData}
+                    data={chartDataWithIndexed}
                     margin={{ top: 5, right: 10, left: 10, bottom: 10 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
@@ -333,7 +374,7 @@ const ChartView = ({
                         })() : undefined}
                     />
                     
-                    {/* Left YAxis (for NIF NAV) */}
+                    {/* Left YAxis (for NIF NAV and Shared Indexed Axis) */}
                     {showNIF && (
                         <YAxis
                             yAxisId={isComparison ? "left" : undefined}
@@ -347,8 +388,8 @@ const ChartView = ({
                         />
                     )}
 
-                    {/* Right YAxis (for Nifty 50) */}
-                    {showNifty && (
+                    {/* Right YAxis (for Nifty 50 - only used in dual-axis Comparison/Nifty Performance mode) */}
+                    {(chartType === "comparison" || chartType === "nifty") && (
                         <YAxis
                             yAxisId={isComparison ? "right" : undefined}
                             orientation={isComparison ? "right" : "left"}
@@ -374,8 +415,15 @@ const ChartView = ({
                             if (isOverall) return new Date(label).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
                             return label;
                         }}
-                        formatter={(value: any, name?: string) => {
+                        formatter={(value: any, name?: string, props?: any) => {
                             if (name === "NIF NAV") return [`₹ ${Number(value).toFixed(2)}`, name];
+                            if (name === "Nifty 50 (Indexed)") {
+                                const actualNifty = props?.payload?.nifty;
+                                const actualStr = actualNifty !== null && actualNifty !== undefined
+                                    ? ` (Actual: ₹ ${Number(actualNifty).toLocaleString('en-IN')})`
+                                    : "";
+                                return [`₹ ${Number(value).toFixed(2)}${actualStr}`, name];
+                            }
                             return [`₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, name ?? ""];
                         }}
                         labelStyle={{ color: '#64748b', marginBottom: '4px' }}
@@ -408,8 +456,8 @@ const ChartView = ({
                         <Line
                             yAxisId={isComparison ? "right" : undefined}
                             type="monotone"
-                            dataKey="nifty"
-                            name="Nifty 50"
+                            dataKey={chartType === "indexed" ? "niftyIndexed" : "nifty"}
+                            name={chartType === "indexed" ? "Nifty 50 (Indexed)" : "Nifty 50"}
                             stroke="#F97316"
                             strokeWidth={3}
                             dot={!isOverall ? { r: 4, fill: '#F97316', strokeWidth: 2, stroke: '#fff' } : false}
@@ -440,8 +488,8 @@ interface ControlsProps {
     setSelectedYear: (val: string) => void;
     selectedMonth: string;
     setSelectedMonth: (val: string) => void;
-    chartType: "comparison" | "nif" | "nifty";
-    setChartType: (val: "comparison" | "nif" | "nifty") => void;
+    chartType: "indexed" | "comparison" | "nif" | "nifty";
+    setChartType: (val: "indexed" | "comparison" | "nif" | "nifty") => void;
 }
 
 const Controls = ({
@@ -459,7 +507,8 @@ const Controls = ({
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
             }}
         >
-            <option value="comparison">NIF NAV vs Nifty 50</option>
+            <option value="indexed">Indexed comparison of NIF NAV and Nifty 50</option>
+            <option value="comparison">NIF NAV vs Nifty 50 (Dual Axis)</option>
             <option value="nif">NIF NAV Performance</option>
             <option value="nifty">Nifty 50 Performance</option>
         </select>
