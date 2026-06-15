@@ -354,9 +354,9 @@ const ChartView = ({
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: '#9ca3af', fontSize: 10 }}
-                            tickFormatter={(value) => Number(value).toLocaleString('en-IN')}
+                            tickFormatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`}
                             domain={['auto', 'auto']}
-                            width={50}
+                            width={60}
                         />
                     )}
 
@@ -374,7 +374,7 @@ const ChartView = ({
                         }}
                         formatter={(value: any, name?: string) => {
                             if (name === "NIF NAV") return [`₹ ${Number(value).toFixed(2)}`, name];
-                            return [Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 }), name ?? ""];
+                            return [`₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, name ?? ""];
                         }}
                         labelStyle={{ color: '#64748b', marginBottom: '4px' }}
                     />

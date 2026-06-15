@@ -538,7 +538,7 @@ export default function NIFManager() {
                                     <div className="text-right">
                                         <p className="font-mono text-blue-600 dark:text-blue-400 font-bold text-lg">₹ {d.value}</p>
                                         {d.nifty50 !== undefined && d.nifty50 !== null && (
-                                            <p className="text-[10px] text-muted-foreground font-semibold">Nifty: {d.nifty50}</p>
+                                            <p className="text-[10px] text-muted-foreground font-semibold">Nifty: ₹ {Number(d.nifty50).toLocaleString('en-IN')}</p>
                                         )}
                                     </div>
                                     <button onClick={() => deleteEntry(d.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2"><Trash2 className="w-4 h-4" /></button>
@@ -587,7 +587,7 @@ export default function NIFManager() {
                                                 <td className="p-4">
                                                     {d.nifty50 !== undefined && d.nifty50 !== null ? (
                                                         <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-900/10 px-2 py-1 rounded-md">
-                                                            {d.nifty50}
+                                                            ₹ {Number(d.nifty50).toLocaleString('en-IN')}
                                                         </span>
                                                     ) : (
                                                         <span className="text-xs text-muted-foreground">—</span>

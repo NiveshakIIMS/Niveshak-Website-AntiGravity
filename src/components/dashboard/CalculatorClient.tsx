@@ -599,7 +599,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     {calcResults.niftyStart !== undefined && calcResults.niftyStart !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50:</span>
-                                                            <span className="text-foreground font-semibold font-mono">{calcResults.niftyStart.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyStart.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -623,7 +623,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     {calcResults.niftyEnd !== undefined && calcResults.niftyEnd !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50:</span>
-                                                            <span className="text-foreground font-semibold font-mono">{calcResults.niftyEnd.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyEnd.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                                         </div>
                                                     )}
                                                 </div>
