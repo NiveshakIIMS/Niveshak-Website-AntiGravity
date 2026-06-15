@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Maximize2, X } from "lucide-react";
 import { NAVData } from "@/services/dataService";
 import { useTheme } from "@/components/ThemeProvider";
@@ -379,6 +379,14 @@ const ChartView = ({
                         labelStyle={{ color: '#64748b', marginBottom: '4px' }}
                     />
                     
+                    <Legend 
+                        verticalAlign="top" 
+                        height={36} 
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value) => <span className="text-foreground font-bold text-xs ml-1.5">{value}</span>}
+                    />
+
                     {showNIF && (
                         <Line
                             yAxisId={isComparison ? "left" : undefined}
@@ -400,9 +408,9 @@ const ChartView = ({
                             type="monotone"
                             dataKey="nifty"
                             name="Nifty 50"
-                            stroke="#10B981"
+                            stroke="#F97316"
                             strokeWidth={3}
-                            dot={!isOverall ? { r: 4, fill: '#10B981', strokeWidth: 2, stroke: '#fff' } : false}
+                            dot={!isOverall ? { r: 4, fill: '#F97316', strokeWidth: 2, stroke: '#fff' } : false}
                             activeDot={{ r: 6, strokeWidth: 0 }}
                             animationDuration={800}
                             isAnimationActive={false}
