@@ -17,6 +17,7 @@ type FilterMode = "DAYS" | "MONTHS" | "YEARS" | "OVERALL";
 interface ChartData {
     label: string | number; // String for category views, Number (timestamp) for OVERALL
     value: number;
+    nifty: number | null;
     fullDate: Date;
     sortKey?: number;
 }
@@ -49,6 +50,7 @@ const processChartData = (
             .map(d => ({
                 label: new Date(d.date).getDate().toString(), // "1", "2", "31"
                 value: d.value,
+                nifty: d.nifty50 ?? null,
                 fullDate: new Date(d.date)
             }));
     }
@@ -56,13 +58,17 @@ const processChartData = (
     // 2. MONTHS: Show monthly averages for a specific Year
     if (filterMode === "MONTHS") {
         filtered = filtered.filter(d => new Date(d.date).getFullYear().toString() === selectedYear);
-        const groups: { [key: number]: { sum: number, count: number } } = {};
+        const groups: { [key: number]: { navSum: number, navCount: number, niftySum: number, niftyCount: number } } = {};
 
         for (const d of filtered) {
             const month = new Date(d.date).getMonth();
-            if (!groups[month]) groups[month] = { sum: 0, count: 0 };
-            groups[month].sum += d.value;
-            groups[month].count += 1;
+            if (!groups[month]) groups[month] = { navSum: 0, navCount: 0, niftySum: 0, niftyCount: 0 };
+            groups[month].navSum += d.value;
+            groups[month].navCount += 1;
+            if (d.nifty50 !== undefined && d.nifty50 !== null) {
+                groups[month].niftySum += d.nifty50;
+                groups[month].niftyCount += 1;
+            }
         }
 
         return Object.entries(groups)
@@ -71,7 +77,8 @@ const processChartData = (
                 date.setMonth(parseInt(monthIdx));
                 return {
                     label: date.toLocaleString('default', { month: 'short' }), // "Jan", "Feb"
-                    value: parseFloat((g.sum / g.count).toFixed(2)),
+                    value: parseFloat((g.navSum / g.navCount).toFixed(2)),
+                    nifty: g.niftyCount > 0 ? parseFloat((g.niftySum / g.niftyCount).toFixed(2)) : null,
                     fullDate: date,
                     sortKey: parseInt(monthIdx)
                 };
@@ -81,19 +88,24 @@ const processChartData = (
 
     // 3. YEARS: Show yearly averages for all time
     if (filterMode === "YEARS") {
-        const groups: { [key: string]: { sum: number, count: number } } = {};
+        const groups: { [key: string]: { navSum: number, navCount: number, niftySum: number, niftyCount: number } } = {};
 
         for (const d of filtered) {
             const year = new Date(d.date).getFullYear().toString();
-            if (!groups[year]) groups[year] = { sum: 0, count: 0 };
-            groups[year].sum += d.value;
-            groups[year].count += 1;
+            if (!groups[year]) groups[year] = { navSum: 0, navCount: 0, niftySum: 0, niftyCount: 0 };
+            groups[year].navSum += d.value;
+            groups[year].navCount += 1;
+            if (d.nifty50 !== undefined && d.nifty50 !== null) {
+                groups[year].niftySum += d.nifty50;
+                groups[year].niftyCount += 1;
+            }
         }
 
         return Object.entries(groups)
             .map(([year, g]) => ({
                 label: year, // "2025", "2026"
-                value: parseFloat((g.sum / g.count).toFixed(2)),
+                value: parseFloat((g.navSum / g.navCount).toFixed(2)),
+                nifty: g.niftyCount > 0 ? parseFloat((g.niftySum / g.niftyCount).toFixed(2)) : null,
                 fullDate: new Date(parseInt(year), 0, 1),
                 sortKey: parseInt(year)
             }))
@@ -107,6 +119,7 @@ const processChartData = (
             .map(d => ({
                 label: new Date(d.date).getTime(), // Timestamp for continuous X-axis
                 value: d.value,
+                nifty: d.nifty50 ?? null,
                 fullDate: new Date(d.date)
             }));
     }
@@ -120,8 +133,9 @@ export default function NAVChart({ data }: NAVChartProps) {
     const { theme } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Default to OVERALL
+    // Default to OVERALL and Comparison
     const [filterMode, setFilterMode] = useState<FilterMode>("OVERALL");
+    const [chartType, setChartType] = useState<"comparison" | "nif" | "nifty">("comparison");
 
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
@@ -173,6 +187,8 @@ export default function NAVChart({ data }: NAVChartProps) {
                         setSelectedYear={setSelectedYear}
                         selectedMonth={selectedMonth}
                         setSelectedMonth={setSelectedMonth}
+                        chartType={chartType}
+                        setChartType={setChartType}
                     />
                     <button
                         onClick={() => setIsExpanded(true)}
@@ -187,7 +203,7 @@ export default function NAVChart({ data }: NAVChartProps) {
                 {/* Chart Container - Reduced height for tighter fit */}
                 <div className="h-[340px] md:h-[350px] w-full">
                     {mounted ? (
-                        <ChartView processedData={processedData} filterMode={filterMode} />
+                        <ChartView processedData={processedData} filterMode={filterMode} chartType={chartType} />
                     ) : (
                         <div className="h-full w-full rounded-xl bg-gray-100 dark:bg-navy-800 animate-pulse flex items-center justify-center text-xs text-muted-foreground">
                             Loading Chart...
@@ -243,9 +259,11 @@ export default function NAVChart({ data }: NAVChartProps) {
                                     setSelectedYear={setSelectedYear}
                                     selectedMonth={selectedMonth}
                                     setSelectedMonth={setSelectedMonth}
+                                    chartType={chartType}
+                                    setChartType={setChartType}
                                 />
                                 <div className="flex-1 w-full min-h-[400px]">
-                                    <ChartView processedData={processedData} filterMode={filterMode} />
+                                    <ChartView processedData={processedData} filterMode={filterMode} chartType={chartType} />
                                 </div>
                             </div>
                         </div>
@@ -259,9 +277,20 @@ export default function NAVChart({ data }: NAVChartProps) {
 
 // --- Sub-components ---
 
-const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; filterMode: FilterMode }) => {
+const ChartView = ({
+    processedData,
+    filterMode,
+    chartType
+}: {
+    processedData: ChartData[];
+    filterMode: FilterMode;
+    chartType: "comparison" | "nif" | "nifty";
+}) => {
     // Determine Axis configuration based on mode
     const isOverall = filterMode === "OVERALL";
+    const showNIF = chartType === "comparison" || chartType === "nif";
+    const showNifty = chartType === "comparison" || chartType === "nifty";
+    const isComparison = chartType === "comparison";
 
     return (
         <div style={{ width: '100%', height: '100%', minHeight: '350px' }}>
@@ -294,10 +323,8 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
 
                             const ticks = [];
 
-                            // Always add the exact start date as the first tick so "202X" appears at the start
                             ticks.push(minTime);
 
-                            // Add Jan 1st for subsequent years
                             for (let y = minYear + 1; y <= maxYear; y++) {
                                 ticks.push(new Date(y, 0, 1).getTime());
                             }
@@ -305,14 +332,34 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                             return ticks;
                         })() : undefined}
                     />
-                    <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        tickFormatter={(value) => `₹${value}`}
-                        domain={['auto', 'auto']}
-                        width={45}
-                    />
+                    
+                    {/* Left YAxis (for NIF NAV) */}
+                    {showNIF && (
+                        <YAxis
+                            yAxisId={isComparison ? "left" : undefined}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9ca3af', fontSize: 10 }}
+                            tickFormatter={(value) => `₹${value}`}
+                            domain={['auto', 'auto']}
+                            width={45}
+                        />
+                    )}
+
+                    {/* Right YAxis (for Nifty 50) */}
+                    {showNifty && (
+                        <YAxis
+                            yAxisId={isComparison ? "right" : undefined}
+                            orientation={isComparison ? "right" : "left"}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9ca3af', fontSize: 10 }}
+                            tickFormatter={(value) => Number(value).toLocaleString('en-IN')}
+                            domain={['auto', 'auto']}
+                            width={50}
+                        />
+                    )}
+
                     <Tooltip
                         contentStyle={{
                             borderRadius: '12px',
@@ -320,25 +367,48 @@ const ChartView = ({ processedData, filterMode }: { processedData: ChartData[]; 
                             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                             backgroundColor: 'rgba(255, 255, 255, 0.95)'
                         }}
-                        itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                        // Handle formatting for timestamp label in Overall mode vs string in others
+                        itemStyle={{ fontWeight: 'bold' }}
                         labelFormatter={(label) => {
                             if (isOverall) return new Date(label).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
                             return label;
                         }}
-                        formatter={(value: number | undefined) => [`₹ ${value || 0}`, "NAV"]}
+                        formatter={(value: any, name?: string) => {
+                            if (name === "NIF NAV") return [`₹ ${Number(value).toFixed(2)}`, name];
+                            return [Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 }), name ?? ""];
+                        }}
                         labelStyle={{ color: '#64748b', marginBottom: '4px' }}
                     />
-                    <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#00A8E8"
-                        strokeWidth={3}
-                        dot={!isOverall ? { r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' } : false}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
-                        animationDuration={800}
-                        isAnimationActive={false} // Disable animation to prevent potential freezing during rapid updates
-                    />
+                    
+                    {showNIF && (
+                        <Line
+                            yAxisId={isComparison ? "left" : undefined}
+                            type="monotone"
+                            dataKey="value"
+                            name="NIF NAV"
+                            stroke="#00A8E8"
+                            strokeWidth={3}
+                            dot={!isOverall ? { r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' } : false}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            animationDuration={800}
+                            isAnimationActive={false}
+                        />
+                    )}
+
+                    {showNifty && (
+                        <Line
+                            yAxisId={isComparison ? "right" : undefined}
+                            type="monotone"
+                            dataKey="nifty"
+                            name="Nifty 50"
+                            stroke="#10B981"
+                            strokeWidth={3}
+                            dot={!isOverall ? { r: 4, fill: '#10B981', strokeWidth: 2, stroke: '#fff' } : false}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            animationDuration={800}
+                            isAnimationActive={false}
+                            connectNulls={true}
+                        />
+                    )}
                 </LineChart>
             </ResponsiveContainer>
             {processedData.length === 0 && (
@@ -360,13 +430,30 @@ interface ControlsProps {
     setSelectedYear: (val: string) => void;
     selectedMonth: string;
     setSelectedMonth: (val: string) => void;
+    chartType: "comparison" | "nif" | "nifty";
+    setChartType: (val: "comparison" | "nif" | "nifty") => void;
 }
 
 const Controls = ({
     filterMode, setFilterMode, theme, availableYears, availableMonths,
-    selectedYear, setSelectedYear, selectedMonth, setSelectedMonth
+    selectedYear, setSelectedYear, selectedMonth, setSelectedMonth,
+    chartType, setChartType
 }: ControlsProps) => (
     <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Chart Type Dropdown */}
+        <select
+            value={chartType}
+            onChange={(e) => setChartType(e.target.value as any)}
+            className="p-2.5 text-xs font-bold border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground cursor-pointer shadow-sm transition-colors duration-300"
+            style={{
+                borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
+            }}
+        >
+            <option value="comparison">NIF NAV vs Nifty 50</option>
+            <option value="nif">NIF NAV Performance</option>
+            <option value="nifty">Nifty 50 Performance</option>
+        </select>
+
         <div
             className="flex border rounded-lg p-1 shadow-sm transition-colors duration-300 flex-shrink-0"
             style={{
@@ -433,7 +520,5 @@ const Controls = ({
                 {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
         )}
-
-        {/* OVERALL & YEARS Logic: No dropdowns needed */}
     </div>
 );
