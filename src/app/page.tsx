@@ -1,5 +1,3 @@
-"use client";
-
 import Hero from "@/components/Hero";
 import AboutSection from "@/components/sections/AboutSection";
 import TeamSection from "@/components/sections/TeamSection";
@@ -9,8 +7,19 @@ import NAVSection from "@/components/sections/NAVSection";
 import ResourcesSection from "@/components/sections/ResourcesSection";
 import NoticesSection from "@/components/sections/NoticesSection";
 import Footer from "@/components/Footer";
+import { dataService } from "@/services/dataService";
 
-export default function Home() {
+export default async function Home() {
+  const [aboutData, members, magazines, events, notices, resources, slides] = await Promise.all([
+    dataService.getAbout(),
+    dataService.getTeam(),
+    dataService.getMagazines(),
+    dataService.getEvents(),
+    dataService.getNotices(),
+    dataService.getResources(),
+    dataService.getHeroSlides()
+  ]);
+
   const defaultAboutData = {
     title: "About Niveshak",
     description: "The Finance and Investment Club of IIM Shillong...",
@@ -24,15 +33,15 @@ export default function Home() {
 
   return (
     <div suppressHydrationWarning className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Hero />
+      <Hero initialSlides={slides || []} />
       <div className="space-y-0">
-        <AboutSection initialData={defaultAboutData} />
-        <TeamSection showHallOfFame={true} />
-        <MagazinesSection limit={4} showFilters={false} showViewAll={true} />
-        <EventsSection />
-        <NoticesSection />
+        <AboutSection initialData={aboutData || defaultAboutData} />
+        <TeamSection showHallOfFame={true} initialMembers={members || []} />
+        <MagazinesSection limit={4} showFilters={false} showViewAll={true} initialMagazines={magazines || []} />
+        <EventsSection initialEvents={events || []} />
+        <NoticesSection initialNotices={notices || []} />
         <NAVSection />
-        <ResourcesSection limit={3} bgColor="bg-muted/10" />
+        <ResourcesSection limit={3} bgColor="bg-muted/10" resources={resources || []} />
       </div>
       <Footer />
     </div>

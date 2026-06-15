@@ -46,19 +46,25 @@ export default function MagazinesSection({
     }, []);
 
     useEffect(() => {
-        if (initialMagazines.length === 0) {
-            setIsLoading(true);
-            dataService.getMagazines().then((loadedMagazines) => {
-                setMagazines(loadedMagazines);
-                const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
-                setYears(distinctYears);
-            }).finally(() => setIsLoading(false));
-        } else {
+        if (initialMagazines.length > 0) {
             setMagazines(initialMagazines);
             const distinctYears = Array.from(new Set(initialMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
-            setYears(distinctYears);
+            setYears(distinctYears as string[]);
             setIsLoading(false);
+        } else {
+            setIsLoading(true);
         }
+
+        dataService.getMagazines()
+            .then((loadedMagazines) => {
+                if (loadedMagazines && loadedMagazines.length > 0) {
+                    setMagazines(loadedMagazines);
+                    const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
+                    setYears(distinctYears as string[]);
+                }
+            })
+            .catch(err => console.error("Error fetching magazines in background:", err))
+            .finally(() => setIsLoading(false));
     }, [initialMagazines]);
 
     // Derived State (useMemo)

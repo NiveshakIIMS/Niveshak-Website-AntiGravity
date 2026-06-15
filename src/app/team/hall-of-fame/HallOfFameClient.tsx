@@ -21,15 +21,22 @@ export default function HallOfFameClient({ initialMembers = [] }: HallOfFameClie
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // A-Z default
 
     useEffect(() => {
-        if (initialMembers.length === 0) {
-            dataService.getHallOfFame().then(data => {
-                setMembers(data);
-                setLoading(false);
-            });
-        } else {
+        if (initialMembers.length > 0) {
+            setMembers(initialMembers);
             setLoading(false);
+        } else {
+            setLoading(true);
         }
-    }, [initialMembers.length]);
+
+        dataService.getHallOfFame()
+            .then(data => {
+                if (data && data.length > 0) {
+                    setMembers(data);
+                }
+            })
+            .catch(err => console.error("Error fetching Hall of Fame in background:", err))
+            .finally(() => setLoading(false));
+    }, [initialMembers]);
 
     // Get unique batches for filter dropdown
     const allBatches = useMemo(() => {

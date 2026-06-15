@@ -26,10 +26,11 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
     useEffect(() => {
         if (initialEvents.length > 0) {
             setIsLoading(false);
-            return;
-        }
-        const loadEvents = async () => {
+        } else {
             setIsLoading(true);
+        }
+
+        const loadEvents = async () => {
             try {
                 const allEvents = await dataService.getEvents();
                 const eventsToShow = allEvents
@@ -40,9 +41,11 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
                         return new Date(a.date).getTime() - new Date(b.date).getTime();
                     })
                     .slice(0, 4);
-                setEvents(eventsToShow);
+                if (eventsToShow && eventsToShow.length > 0) {
+                    setEvents(eventsToShow);
+                }
             } catch (err) {
-                console.error("Failed to load events:", err);
+                console.error("Failed to load events in background:", err);
             } finally {
                 setIsLoading(false);
             }

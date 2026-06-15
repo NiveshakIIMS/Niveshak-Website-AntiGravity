@@ -18,10 +18,18 @@ export default function NoticesClient({ initialNotices = [] }: NoticesClientProp
     const [month, setMonth] = useState("All");
 
     useEffect(() => {
-        if (initialNotices.length === 0) {
-            dataService.getNotices().then(setNotices);
+        if (initialNotices.length > 0) {
+            setNotices(initialNotices);
         }
-    }, [initialNotices.length]);
+
+        dataService.getNotices()
+            .then(freshNotices => {
+                if (freshNotices && freshNotices.length > 0) {
+                    setNotices(freshNotices);
+                }
+            })
+            .catch(err => console.error("Error fetching notices in background:", err));
+    }, [initialNotices]);
 
     // Extract years
     const years = Array.from(new Set(notices.map(n => new Date(n.date).getFullYear()))).sort((a, b) => b - a);

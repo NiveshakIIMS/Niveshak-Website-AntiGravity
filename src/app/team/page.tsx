@@ -1,27 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import TeamSection from "@/components/sections/TeamSection";
 import Link from "next/link";
-import { Award, Loader2 } from "lucide-react";
-import { dataService, TeamMember } from "@/services/dataService";
+import { Award } from "lucide-react";
+import { dataService } from "@/services/dataService";
 
-export default function Team() {
-    const [members, setMembers] = useState<TeamMember[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        dataService.getTeam().then(setMembers).finally(() => setLoading(false));
-    }, []);
-
-    if (loading) {
-        return (
-            <main className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-            </main>
-        );
-    }
+export default async function Team() {
+    const members = await dataService.getTeam();
 
     return (
         <main className="min-h-screen bg-background text-foreground">
@@ -35,7 +19,7 @@ export default function Team() {
             </section>
 
             <section>
-                <TeamSection showTitle={false} initialMembers={members} />
+                <TeamSection showTitle={false} initialMembers={members || []} />
             </section>
 
             {/* Hall of Fame Button */}

@@ -17,13 +17,21 @@ export default function TeamSection({ showTitle = true, showHallOfFame = false, 
     const [isLoading, setIsLoading] = useState(initialMembers.length === 0);
 
     useEffect(() => {
-        if (initialMembers.length === 0) {
-            setIsLoading(true);
-            dataService.getTeam().then(setMembers).finally(() => setIsLoading(false));
-        } else {
+        if (initialMembers.length > 0) {
             setMembers(initialMembers);
             setIsLoading(false);
+        } else {
+            setIsLoading(true);
         }
+
+        dataService.getTeam()
+            .then(freshMembers => {
+                if (freshMembers && freshMembers.length > 0) {
+                    setMembers(freshMembers);
+                }
+            })
+            .catch(err => console.error("Error fetching team in background:", err))
+            .finally(() => setIsLoading(false));
     }, [initialMembers]);
 
     const facultyMembers = members.filter(m => m.category === "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));

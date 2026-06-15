@@ -18,13 +18,19 @@ export default function ResourcesSection({ resources: initialResources = [], sho
     const [isLoading, setIsLoading] = useState(initialResources.length === 0);
 
     useEffect(() => {
-        if (initialResources.length === 0) {
-            setIsLoading(true);
-            dataService.getResources().then(setResources).finally(() => setIsLoading(false));
-        } else {
+        if (initialResources.length > 0) {
             setResources(initialResources);
             setIsLoading(false);
+        } else {
+            setIsLoading(true);
         }
+
+        dataService.getResources().then(freshResources => {
+            if (freshResources && freshResources.length > 0) {
+                setResources(freshResources);
+            }
+        }).catch(err => console.error("Error fetching resources in background:", err))
+          .finally(() => setIsLoading(false));
     }, [initialResources]);
     // State
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);

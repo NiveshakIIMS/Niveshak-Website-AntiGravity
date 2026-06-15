@@ -16,10 +16,18 @@ export default function EventsClient({ initialEvents = [] }: EventsClientProps) 
     const [month, setMonth] = useState("All");
 
     useEffect(() => {
-        if (initialEvents.length === 0) {
-            dataService.getEvents().then(setEvents);
+        if (initialEvents.length > 0) {
+            setEvents(initialEvents);
         }
-    }, [initialEvents.length]);
+
+        dataService.getEvents()
+            .then(freshEvents => {
+                if (freshEvents && freshEvents.length > 0) {
+                    setEvents(freshEvents);
+                }
+            })
+            .catch(err => console.error("Error fetching events in background:", err));
+    }, [initialEvents]);
 
     // Extract years
     const years = Array.from(new Set(events.map(e => new Date(e.date).getFullYear()))).sort((a, b) => b - a);

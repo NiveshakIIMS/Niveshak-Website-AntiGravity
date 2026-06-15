@@ -1,14 +1,25 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen } from "lucide-react";
-import { AboutContent } from "@/services/dataService";
+import { dataService, AboutContent } from "@/services/dataService";
 
 interface AboutClientProps {
     data: AboutContent;
 }
 
-export default function AboutClient({ data }: AboutClientProps) {
+export default function AboutClient({ data: initialData }: AboutClientProps) {
+    const [data, setData] = useState<AboutContent>(initialData);
+
+    useEffect(() => {
+        dataService.getAbout().then(freshData => {
+            if (freshData) {
+                setData(freshData);
+            }
+        }).catch(err => console.error("Error fetching about data in background:", err));
+    }, []);
+
     const icons = [
         <Target key="target" className="w-8 h-8 text-blue-400" />,
         <Users key="users" className="w-8 h-8 text-blue-400" />,

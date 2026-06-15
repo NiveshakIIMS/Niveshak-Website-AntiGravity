@@ -26,20 +26,24 @@ export default function NoticesSection({ initialNotices = [] }: NoticesSectionPr
     useEffect(() => {
         if (initialNotices.length > 0) {
             setIsLoading(false);
-            return;
+        } else {
+            setIsLoading(true);
         }
-        setIsLoading(true);
+
         dataService.getNotices().then(data => {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
+            if (data && data.length > 0) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
-            const activeNotices = data.filter(n => {
-                const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
-                return checkDate >= now;
-            });
+                const activeNotices = data.filter(n => {
+                    const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
+                    return checkDate >= now;
+                });
 
-            setNotices(activeNotices.slice(0, 4));
-        }).finally(() => setIsLoading(false));
+                setNotices(activeNotices.slice(0, 4));
+            }
+        }).catch(err => console.error("Error fetching notices in background:", err))
+          .finally(() => setIsLoading(false));
     }, [initialNotices]);
 
     if (isLoading) {

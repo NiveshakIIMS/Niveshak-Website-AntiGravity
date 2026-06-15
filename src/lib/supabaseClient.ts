@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         fetch: (url, options) => {
             return fetch(url, {
                 ...options,
-                cache: 'no-store'
+                cache: typeof window === 'undefined' ? 'force-cache' : 'no-store'
             });
         }
     }

@@ -1,30 +1,24 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import AboutClient from "@/components/AboutClient";
-import { dataService, AboutContent } from "@/services/dataService";
-import { Loader2 } from "lucide-react";
+import { dataService } from "@/services/dataService";
 
-export default function About() {
-    const [data, setData] = useState<AboutContent | null>(null);
-    const [loading, setLoading] = useState(true);
+export default async function About() {
+    const data = await dataService.getAbout();
 
-    useEffect(() => {
-        dataService.getAbout().then(setData).finally(() => setLoading(false));
-    }, []);
-
-    if (loading || !data) {
-        return (
-            <main className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-            </main>
-        );
-    }
+    const defaultAboutData = {
+        title: "About Niveshak",
+        description: "The Finance and Investment Club of IIM Shillong...",
+        cards: [
+            { title: "Target", description: "Promoting financial literacy..." },
+            { title: "Team", description: "Minds behind the club..." },
+            { title: "Book", description: "Publications..." }
+        ],
+        slides: []
+    };
 
     return (
         <main className="min-h-screen bg-background">
-            <AboutClient data={data} />
+            <AboutClient data={data || defaultAboutData} />
             <Footer />
         </main>
     );
