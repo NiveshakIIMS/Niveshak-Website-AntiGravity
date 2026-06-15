@@ -487,8 +487,8 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                 </div>
                                             </div>
 
-                                            {/* Bottom Row: Percentage Returns (2 Columns) */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            {/* Bottom Row: Percentage Returns (3 Columns) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                 
                                                 {/* XIRR Card (NIF Return) */}
                                                 <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.xirr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
@@ -537,6 +537,38 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Nifty 50 Return (Same Period)</p>
                                                     </div>
                                                 </div>
+
+                                                {/* Outperformance Card */}
+                                                {(() => {
+                                                    const outperformance = calcResults.niftyReturn !== null 
+                                                        ? calcResults.xirr - calcResults.niftyReturn 
+                                                        : null;
+                                                    const isPositive = outperformance !== null && outperformance >= 0;
+                                                    return (
+                                                        <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${outperformance !== null && isPositive ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                                            <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                                {outperformance !== null && isPositive ? (
+                                                                    <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
+                                                                ) : (
+                                                                    <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
+                                                                )}
+                                                            </div>
+                                                            <div className="relative z-10">
+                                                                <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${outperformance !== null && isPositive ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                                                    {outperformance !== null && isPositive ? (
+                                                                        <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
+                                                                    ) : (
+                                                                        <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                                    )}
+                                                                </div>
+                                                                <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${outperformance !== null && isPositive ? "text-green-500" : "text-red-500"}`}>
+                                                                    {outperformance !== null ? `${isPositive ? "+" : ""}${outperformance.toFixed(2)} %` : "—"}
+                                                                </h3>
+                                                                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Outperformance vs Nifty 50</p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
 

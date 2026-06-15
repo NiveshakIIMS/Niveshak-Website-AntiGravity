@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import { getUTCDateInfo } from "@/lib/dateUtils";
 import NAVChart from "@/components/dashboard/NAVChart";
-import { TrendingUp, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen, Calculator } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen, Calculator } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface DashboardClientProps {
@@ -55,6 +55,11 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
 
     const latestNAV = navData.length > 0 ? [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
 
+    const niftyReturnStr = calculateNiftyCAGR(navData);
+    const niftyReturnVal = niftyReturnStr ? parseFloat(niftyReturnStr) : null;
+    const nifReturnVal = metrics?.annualizedReturn ? parseFloat(metrics.annualizedReturn) : 0;
+    const outperformance = niftyReturnVal !== null ? (nifReturnVal - niftyReturnVal) : null;
+
     return (
         <main className="min-h-screen bg-background text-foreground transition-colors">
 
@@ -71,7 +76,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
             <section className="py-20 px-4 max-w-7xl mx-auto">
                 <div className="space-y-8">
                     {/* Key Metrics Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                         {/* AUM Card */}
                         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
@@ -141,6 +146,30 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 </div>
                                 <h3 className="text-3xl font-bold text-foreground">{calculateNiftyCAGR(navData) || "—"}%</h3>
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Nifty 50 Return (Same Period)</p>
+                            </div>
+                        </div>
+
+                        {/* Outperformance Card */}
+                        <div className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                {outperformance !== null && outperformance >= 0 ? (
+                                    <TrendingUp className="w-24 h-24 text-green-500 opacity-70 group-hover:scale-105 transition-transform" />
+                                ) : (
+                                    <TrendingDown className="w-24 h-24 text-red-500 opacity-70 group-hover:scale-105 transition-transform" />
+                                )}
+                            </div>
+                            <div className="relative z-10">
+                                <div className={`p-3 w-fit rounded-xl mb-4 ${outperformance !== null && outperformance >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                                    {outperformance !== null && outperformance >= 0 ? (
+                                        <ArrowUpRight className="w-6 h-6 text-green-500" />
+                                    ) : (
+                                        <TrendingDown className="w-6 h-6 text-red-500" />
+                                    )}
+                                </div>
+                                <h3 className={`text-3xl font-bold ${outperformance !== null ? (outperformance >= 0 ? "text-green-500" : "text-red-500") : "text-foreground"}`}>
+                                    {outperformance !== null ? `${outperformance >= 0 ? "+" : ""}${outperformance.toFixed(2)}%` : "—"}
+                                </h3>
+                                <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Outperformance vs Nifty 50</p>
                             </div>
                         </div>
 
