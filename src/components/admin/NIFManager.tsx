@@ -12,7 +12,7 @@ import * as XLSX from "xlsx";
 export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
     const [metrics, setMetrics] = useState<any>({ annualizedReturn: "", totalAUM: "", ytdReturn: "" });
-    const [newEntry, setNewEntry] = useState({ date: "", value: "" });
+    const [newEntry, setNewEntry] = useState({ date: "", value: "", nifty50: "" });
 
     useEffect(() => {
         Promise.all([
@@ -120,9 +120,10 @@ export default function NIFManager() {
                 // Iterate Excel Rows (Skip Header Row 0)
                 for (let i = 1; i < jsonData.length; i++) {
                     const row = jsonData[i];
-                    // Expect Col A=Date, Col B=Value
+                    // Expect Col A=Date, Col B=Value, Col C=Nifty 50
                     const dateRaw = row[0];
                     const val = row[1];
+                    const niftyValRaw = row[2];
 
                     if (dateRaw === undefined || dateRaw === null || val === undefined || val === null) continue;
 
@@ -158,6 +159,14 @@ export default function NIFManager() {
                     const numVal = Math.round(parseFloat(val) * 10000) / 10000;
                     if (isNaN(numVal)) continue;
 
+                    let niftyVal: number | null = null;
+                    if (niftyValRaw !== undefined && niftyValRaw !== null) {
+                        const parsedNifty = parseFloat(niftyValRaw);
+                        if (!isNaN(parsedNifty)) {
+                            niftyVal = Math.round(parsedNifty * 10000) / 10000;
+                        }
+                    }
+
                     if (dataMap.has(dateStr)) {
                         updatedCount++;
                     } else {
@@ -168,7 +177,8 @@ export default function NIFManager() {
                     dataMap.set(dateStr, {
                         id: dataMap.get(dateStr)?.id || (Date.now() + i).toString(),
                         date: dateStr,
-                        value: numVal
+                        value: numVal,
+                        nifty50: niftyVal !== null ? niftyVal : dataMap.get(dateStr)?.nifty50
                     });
                 }
 
@@ -198,16 +208,18 @@ export default function NIFManager() {
     const addEntry = async () => {
         if (!newEntry.date || !newEntry.value) return;
         const valRounded = Math.round(parseFloat(newEntry.value) * 10000) / 10000;
+        const niftyVal = newEntry.nifty50 ? Math.round(parseFloat(newEntry.nifty50) * 10000) / 10000 : null;
         const entry: NAVData = {
             id: Date.now().toString(),
             date: newEntry.date,
-            value: valRounded
+            value: valRounded,
+            nifty50: niftyVal
         };
         // Check duplication
         const existsRef = data.find(d => d.date === newEntry.date);
         let newData;
         if (existsRef) {
-            newData = data.map(d => d.date === newEntry.date ? { ...d, value: valRounded } : d);
+            newData = data.map(d => d.date === newEntry.date ? { ...d, value: valRounded, nifty50: niftyVal } : d);
         } else {
             newData = [...data, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         }
@@ -215,7 +227,7 @@ export default function NIFManager() {
         try {
             await dataService.saveNAVData(newData);
             setData(newData);
-            setNewEntry({ date: "", value: "" });
+            setNewEntry({ date: "", value: "", nifty50: "" });
         } catch (error: any) {
             console.error("Add Entry Save Error:", error);
             alert(`Failed to save data point: ${error.message || "Unknown error"}`);
@@ -319,6 +331,17 @@ export default function NIFManager() {
                                         placeholder="102.50"
                                     />
                                 </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-muted-foreground uppercase">Nifty 50 Index Value (Optional)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={newEntry.nifty50}
+                                    onChange={e => setNewEntry({ ...newEntry, nifty50: e.target.value })}
+                                    className="w-full p-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-foreground"
+                                    placeholder="18329.15"
+                                />
                             </div>
                             <button onClick={addEntry} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95">Add Data Point</button>
                         </div>
@@ -512,7 +535,12 @@ export default function NIFManager() {
                                     <span className="text-xs text-muted-foreground">{formatDateIndian(d.date)}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="font-mono text-blue-600 dark:text-blue-400 font-bold text-lg">₹ {d.value}</span>
+                                    <div className="text-right">
+                                        <p className="font-mono text-blue-600 dark:text-blue-400 font-bold text-lg">₹ {d.value}</p>
+                                        {d.nifty50 !== undefined && d.nifty50 !== null && (
+                                            <p className="text-[10px] text-muted-foreground font-semibold">Nifty: {d.nifty50}</p>
+                                        )}
+                                    </div>
                                     <button onClick={() => deleteEntry(d.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             </div>
@@ -538,6 +566,7 @@ export default function NIFManager() {
                                         <tr>
                                             <th className="p-4 pl-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</th>
                                             <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">NAV Value</th>
+                                            <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Nifty 50</th>
                                             <th className="p-4 pr-6 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
@@ -555,11 +584,24 @@ export default function NIFManager() {
                                                         ₹ {d.value}
                                                     </span>
                                                 </td>
+                                                <td className="p-4">
+                                                    {d.nifty50 !== undefined && d.nifty50 !== null ? (
+                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-900/10 px-2 py-1 rounded-md">
+                                                            {d.nifty50}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                    )}
+                                                </td>
                                                 <td className="p-4 pr-6 text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => {
-                                                                setNewEntry({ date: d.date, value: d.value.toString() });
+                                                                setNewEntry({
+                                                                    date: d.date,
+                                                                    value: d.value.toString(),
+                                                                    nifty50: d.nifty50 !== undefined && d.nifty50 !== null ? d.nifty50.toString() : ""
+                                                                });
                                                                 setIsMaximized(false);
                                                             }}
                                                             className="px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"

@@ -12,6 +12,31 @@ interface CalculatorClientProps {
     initialInvestments?: NIFInvestment[];
 }
 
+const findNiftyValueForDate = (dateStr: string, navData: NAVData[]): number | null => {
+    if (!dateStr || navData.length === 0) return null;
+    const targetTime = new Date(dateStr).getTime();
+    
+    // Filter to entries that actually have nifty50 values
+    const entriesWithNifty = navData.filter(d => d.nifty50 !== undefined && d.nifty50 !== null);
+    if (entriesWithNifty.length === 0) return null;
+
+    // Try exact match first
+    const exact = entriesWithNifty.find(d => d.date === dateStr);
+    if (exact && exact.nifty50) return exact.nifty50 ?? null;
+
+    // Otherwise, find the closest entry in time
+    let closestEntry: NAVData | null = null;
+    let minDiff = Infinity;
+    for (const entry of entriesWithNifty) {
+        const diff = Math.abs(new Date(entry.date).getTime() - targetTime);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestEntry = entry;
+        }
+    }
+    return closestEntry ? (closestEntry.nifty50 ?? null) : null;
+};
+
 export default function CalculatorClient({ initialNAVData = [], initialInvestments = [] }: CalculatorClientProps) {
     const [navData, setNavData] = useState<NAVData[]>(initialNAVData);
     const [investments, setInvestments] = useState<NIFInvestment[]>(initialInvestments);
@@ -36,6 +61,9 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         targetNav: number;
         isValid: boolean;
         warning?: string;
+        niftyStart: number | null;
+        niftyEnd: number | null;
+        niftyReturn: number | null;
     } | null>(null);
 
     useEffect(() => {
@@ -100,7 +128,10 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                     targetDate: customTargetDate,
                     targetNav: 0,
                     isValid: false,
-                    warning: `Evaluation date cannot be earlier than the investment date (${new Date(yearConfig.investmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}).`
+                    warning: `Evaluation date cannot be earlier than the investment date (${new Date(yearConfig.investmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}).`,
+                    niftyStart: null,
+                    niftyEnd: null,
+                    niftyReturn: null
                 });
                 return;
             }
@@ -176,6 +207,13 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
             xirr = (Math.pow(finalTargetNav / yearConfig.navValue, 1 / years) - 1) * 100;
         }
 
+        const startNifty = findNiftyValueForDate(yearConfig.investmentDate, navData);
+        const endNifty = findNiftyValueForDate(finalTargetDate, navData);
+        let niftyReturn: number | null = null;
+        if (years > 0 && startNifty && endNifty) {
+            niftyReturn = (Math.pow(endNifty / startNifty, 1 / years) - 1) * 100;
+        }
+
         setCalcResults({
             investedAmount,
             currentAmount,
@@ -186,7 +224,10 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
             targetDate: finalTargetDate,
             targetNav: finalTargetNav,
             isValid: true,
-            warning: warning || undefined
+            warning: warning || undefined,
+            niftyStart: startNifty,
+            niftyEnd: endNifty,
+            niftyReturn
         });
 
     }, [unitsHeld, investedInput, calcMode, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV]);
@@ -385,85 +426,116 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                         className="space-y-6"
                                     >
                                         {/* Floating Cards Grid */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            
-                                            {/* Invested Amount Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-accent/5 hover:shadow-2xl hover:shadow-accent/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    <Activity className="w-20 h-20 text-accent opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
-                                                </div>
-                                                <div className="relative z-10">
-                                                    <div className="p-2.5 bg-accent/15 border border-accent/30 w-fit rounded-xl mb-4 shadow-sm shadow-accent/10">
-                                                        <span className="text-lg font-bold text-accent">₹</span>
+                                        <div className="space-y-6">
+                                            {/* Top Row: Monetary Values (3 Columns) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                                
+                                                {/* Invested Amount Card */}
+                                                <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-accent/5 hover:shadow-2xl hover:shadow-accent/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                        <Activity className="w-20 h-20 text-accent opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                     </div>
-                                                    <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
-                                                        {formatCurrency(calcResults.investedAmount)}
-                                                    </h3>
-                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Invested Amount</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Total Current Amount Card */}
-                                            <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    <ArrowUpRight className="w-20 h-20 text-blue-600 opacity-20 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300" />
-                                                </div>
-                                                <div className="relative z-10">
-                                                    <div className="p-2.5 bg-blue-500/15 border border-blue-500/30 w-fit rounded-xl mb-4 shadow-sm shadow-blue-500/10">
-                                                        <ArrowUpRight className="w-5 h-5 text-blue-500 stroke-[3]" />
+                                                    <div className="relative z-10">
+                                                        <div className="p-2.5 bg-accent/15 border border-accent/30 w-fit rounded-xl mb-4 shadow-sm shadow-accent/10">
+                                                            <span className="text-lg font-bold text-accent">₹</span>
+                                                        </div>
+                                                        <h3 className="text-xl md:text-2xl font-extrabold text-foreground tracking-tight font-mono">
+                                                            {formatCurrency(calcResults.investedAmount)}
+                                                        </h3>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Invested Amount</p>
                                                     </div>
-                                                    <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight font-mono">
-                                                        {formatCurrency(calcResults.currentAmount)}
-                                                    </h3>
-                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Total Amount (Value)</p>
                                                 </div>
-                                            </div>
 
-                                            {/* Gains Card */}
-                                            <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.gainsAmount >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
-                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    {calcResults.gainsAmount >= 0 ? (
-                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
-                                                    ) : (
-                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
-                                                    )}
+                                                {/* Total Current Amount Card */}
+                                                <div className="bg-card border border-border p-6 rounded-2xl shadow-xl shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/15 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                        <ArrowUpRight className="w-20 h-20 text-blue-600 opacity-20 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300" />
+                                                    </div>
+                                                    <div className="relative z-10">
+                                                        <div className="p-2.5 bg-blue-500/15 border border-blue-500/30 w-fit rounded-xl mb-4 shadow-sm shadow-blue-500/10">
+                                                            <ArrowUpRight className="w-5 h-5 text-blue-500 stroke-[3]" />
+                                                        </div>
+                                                        <h3 className="text-xl md:text-2xl font-extrabold text-foreground tracking-tight font-mono">
+                                                            {formatCurrency(calcResults.currentAmount)}
+                                                        </h3>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Total Amount (Value)</p>
+                                                    </div>
                                                 </div>
-                                                <div className="relative z-10">
-                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.gainsAmount >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+
+                                                {/* Gains Card */}
+                                                <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.gainsAmount >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                                    <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
                                                         {calcResults.gainsAmount >= 0 ? (
-                                                            <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
+                                                            <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                         ) : (
-                                                            <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                            <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
                                                         )}
                                                     </div>
-                                                    <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.gainsAmount >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                        {formatCurrency(calcResults.gainsAmount)}
-                                                    </h3>
-                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Gains Amount</p>
+                                                    <div className="relative z-10">
+                                                        <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.gainsAmount >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                                            {calcResults.gainsAmount >= 0 ? (
+                                                                <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
+                                                            ) : (
+                                                                <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                            )}
+                                                        </div>
+                                                        <h3 className={`text-xl md:text-2xl font-extrabold tracking-tight font-mono ${calcResults.gainsAmount >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                            {formatCurrency(calcResults.gainsAmount)}
+                                                        </h3>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Gains Amount</p>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* XIRR Card */}
-                                            <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.xirr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
-                                                <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                    {calcResults.xirr >= 0 ? (
-                                                        <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
-                                                    ) : (
-                                                        <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
-                                                    )}
-                                                </div>
-                                                <div className="relative z-10">
-                                                    <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.xirr >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                            {/* Bottom Row: Percentage Returns (2 Columns) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                
+                                                {/* XIRR Card (NIF Return) */}
+                                                <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.xirr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                                    <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
                                                         {calcResults.xirr >= 0 ? (
-                                                            <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
+                                                            <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                         ) : (
-                                                            <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                            <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
                                                         )}
                                                     </div>
-                                                    <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.xirr >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                        {calcResults.xirr.toFixed(2)} %
-                                                    </h3>
-                                                    <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">XIRR (Annualized Return)</p>
+                                                    <div className="relative z-10">
+                                                        <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.xirr >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                                            {calcResults.xirr >= 0 ? (
+                                                                <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
+                                                            ) : (
+                                                                <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                            )}
+                                                        </div>
+                                                        <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.xirr >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                            {calcResults.xirr.toFixed(2)} %
+                                                        </h3>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">NIF Annualized Return (XIRR)</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Nifty 50 Return Card */}
+                                                <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? "shadow-blue-500/5 hover:shadow-blue-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                                    <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
+                                                        {calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? (
+                                                            <TrendingUp className="w-20 h-20 text-blue-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
+                                                        ) : (
+                                                            <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
+                                                        )}
+                                                    </div>
+                                                    <div className="relative z-10">
+                                                        <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? "bg-blue-500/15 border-blue-500/30 text-blue-500 shadow-blue-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                                            {calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? (
+                                                                <TrendingUp className="w-5 h-5 text-blue-500 stroke-[3]" />
+                                                            ) : (
+                                                                <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
+                                                            )}
+                                                        </div>
+                                                        <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? "text-blue-500" : "text-red-500"}`}>
+                                                            {calcResults.niftyReturn !== null ? `${calcResults.niftyReturn.toFixed(2)} %` : "—"}
+                                                        </h3>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Nifty 50 Return (Same Period)</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -489,9 +561,15 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between font-medium">
-                                                        <span>NAV:</span>
-                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(1)}</span>
+                                                        <span>NIF NAV:</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
                                                     </div>
+                                                    {calcResults.niftyStart !== undefined && calcResults.niftyStart !== null && (
+                                                        <div className="flex justify-between font-medium">
+                                                            <span>Nifty 50:</span>
+                                                            <span className="text-foreground font-semibold font-mono">{calcResults.niftyStart.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="p-3 bg-muted/40 rounded-xl space-y-1">
@@ -507,9 +585,15 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between font-medium">
-                                                        <span>NAV:</span>
-                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(1)}</span>
+                                                        <span>NIF NAV:</span>
+                                                        <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(4)}</span>
                                                     </div>
+                                                    {calcResults.niftyEnd !== undefined && calcResults.niftyEnd !== null && (
+                                                        <div className="flex justify-between font-medium">
+                                                            <span>Nifty 50:</span>
+                                                            <span className="text-foreground font-semibold font-mono">{calcResults.niftyEnd.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -521,6 +605,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     }
                                                     Total Amount is calculated as <code>Units × Target NAV</code>. 
                                                     XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
+                                                    The Nifty 50 Return represents the CAGR of the Nifty 50 Index over the exact same period, computed as <code>((Target Nifty 50 / Investment Nifty 50) ^ (365 / Days)) - 1</code>.
                                                 </div>
                                                 <div className="pt-2 border-t border-border/40 text-[10px] italic">
                                                     Footnote: Please note that these calculations are approximated. The actual values can be slightly different than what is shown here.

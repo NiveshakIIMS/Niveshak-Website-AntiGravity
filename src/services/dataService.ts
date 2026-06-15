@@ -89,6 +89,7 @@ export interface NAVData {
     id: string;
     date: string;
     value: number;
+    nifty50?: number | null;
 }
 
 export interface NIFInvestment {
@@ -477,7 +478,8 @@ export const dataService = {
         return data.map((d: any) => ({
             id: d.id,
             date: d.date,
-            value: d.value
+            value: d.value,
+            nifty50: d.nifty50
         }));
     },
     saveNAVData: async (data: NAVData[]) => {
@@ -506,7 +508,8 @@ export const dataService = {
             const rows = data.map(d => ({
                 id: d.id,
                 date: d.date,
-                value: d.value
+                value: d.value,
+                nifty50: d.nifty50 !== undefined && d.nifty50 !== null ? d.nifty50 : null
             }));
             const { error: insertError } = await supabase.from('nav_data').upsert(rows);
             if (insertError) {
