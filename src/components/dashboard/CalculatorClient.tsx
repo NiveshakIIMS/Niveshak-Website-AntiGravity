@@ -17,7 +17,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
     const [investments, setInvestments] = useState<NIFInvestment[]>(initialInvestments);
 
     // Inputs
-    const [calcMode, setCalcMode] = useState<"units" | "amount">("units");
+    const [calcMode, setCalcMode] = useState<"units" | "amount">("amount");
     const [unitsHeld, setUnitsHeld] = useState<string>("");
     const [investedInput, setInvestedInput] = useState<string>("");
     const [selectedYear, setSelectedYear] = useState<string>("");
@@ -232,17 +232,6 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                             <div className="grid grid-cols-2 gap-2 p-1.5 bg-muted/50 rounded-xl text-xs font-semibold">
                                 <button
                                     type="button"
-                                    onClick={() => setCalcMode("units")}
-                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer font-bold ${
-                                        calcMode === "units"
-                                            ? "bg-accent text-white shadow-md shadow-accent/25"
-                                            : "text-muted-foreground hover:text-foreground bg-transparent"
-                                    }`}
-                                >
-                                    By Units
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => setCalcMode("amount")}
                                     className={`py-2 px-3 rounded-lg transition-all cursor-pointer font-bold ${
                                         calcMode === "amount"
@@ -251,6 +240,17 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                     }`}
                                 >
                                     By Invested INR
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCalcMode("units")}
+                                    className={`py-2 px-3 rounded-lg transition-all cursor-pointer font-bold ${
+                                        calcMode === "units"
+                                            ? "bg-accent text-white shadow-md shadow-accent/25"
+                                            : "text-muted-foreground hover:text-foreground bg-transparent"
+                                    }`}
+                                >
+                                    By Units
                                 </button>
                             </div>
 
