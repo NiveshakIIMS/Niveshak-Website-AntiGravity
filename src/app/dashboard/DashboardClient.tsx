@@ -179,7 +179,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                         {/* Chart Section */}
                         <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm p-4 md:p-6 overflow-hidden">
                             <h3 className="text-xl font-bold text-foreground mb-4">NAV & Index Performance</h3>
-                            <div className="h-[420px] md:h-[420px] w-full min-w-0">
+                            <div className="h-auto w-full min-w-0">
                                 <NAVChart data={navData} />
                             </div>
                         </div>

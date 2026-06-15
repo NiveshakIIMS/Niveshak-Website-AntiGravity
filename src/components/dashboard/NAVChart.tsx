@@ -293,11 +293,11 @@ const ChartView = ({
     const isComparison = chartType === "comparison";
 
     return (
-        <div style={{ width: '100%', height: '100%', minHeight: '350px' }}>
+        <div style={{ width: '100%', height: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                     data={processedData}
-                    margin={{ top: 5, right: isComparison ? 65 : 15, left: 0, bottom: 50 }}
+                    margin={{ top: 5, right: 10, left: 10, bottom: 10 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                     <XAxis
@@ -343,6 +343,7 @@ const ChartView = ({
                             tickFormatter={(value) => `₹${value}`}
                             domain={['auto', 'auto']}
                             width={45}
+                            hide={true}
                         />
                     )}
 
@@ -357,6 +358,7 @@ const ChartView = ({
                             tickFormatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`}
                             domain={['auto', 'auto']}
                             width={60}
+                            hide={true}
                         />
                     )}
 
