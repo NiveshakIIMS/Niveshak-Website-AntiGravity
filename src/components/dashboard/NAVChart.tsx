@@ -416,8 +416,8 @@ const ChartView = ({
                             return label;
                         }}
                         formatter={(value: any, name?: string, props?: any) => {
-                            if (name === "NIF NAV") return [`₹ ${Number(value).toFixed(2)}`, name];
-                            if (name === "Nifty 50 (Indexed)") {
+                            if (name === "NIF") return [`₹ ${Number(value).toFixed(2)}`, name];
+                            if (chartType === "indexed" && name === "Nifty 50") {
                                 const actualNifty = props?.payload?.nifty;
                                 const actualStr = actualNifty !== null && actualNifty !== undefined
                                     ? ` (Actual: ₹ ${Number(actualNifty).toLocaleString('en-IN')})`
@@ -442,7 +442,7 @@ const ChartView = ({
                             yAxisId={isComparison ? "left" : undefined}
                             type="monotone"
                             dataKey="value"
-                            name="NIF NAV"
+                            name="NIF"
                             stroke="#00A8E8"
                             strokeWidth={3}
                             dot={!isOverall ? { r: 4, fill: '#00A8E8', strokeWidth: 2, stroke: '#fff' } : false}
@@ -457,7 +457,7 @@ const ChartView = ({
                             yAxisId={isComparison ? "right" : undefined}
                             type="monotone"
                             dataKey={chartType === "indexed" ? "niftyIndexed" : "nifty"}
-                            name={chartType === "indexed" ? "Nifty 50 (Indexed)" : "Nifty 50"}
+                            name="Nifty 50"
                             stroke="#F97316"
                             strokeWidth={3}
                             dot={!isOverall ? { r: 4, fill: '#F97316', strokeWidth: 2, stroke: '#fff' } : false}
@@ -507,7 +507,7 @@ const Controls = ({
                 borderColor: theme === 'dark' ? '#334155' : '#e5e7eb'
             }}
         >
-            <option value="indexed">Indexed comparison of NIF NAV and Nifty 50</option>
+            <option value="indexed">Comparison of NIF and Nifty50</option>
             <option value="comparison">NIF NAV vs Nifty 50 (Dual Axis)</option>
             <option value="nif">NIF NAV Performance</option>
             <option value="nifty">Nifty 50 Performance</option>
