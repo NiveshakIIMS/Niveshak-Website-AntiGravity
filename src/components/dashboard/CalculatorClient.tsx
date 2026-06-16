@@ -598,8 +598,8 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     </div>
                                                     {calcResults.niftyStart !== undefined && calcResults.niftyStart !== null && (
                                                         <div className="flex justify-between font-medium">
-                                                            <span>Nifty 50:</span>
-                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyStart.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                            <span>Nifty 50 (Indexed):</span>
+                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -620,10 +620,12 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <span>NIF NAV:</span>
                                                         <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(4)}</span>
                                                     </div>
-                                                    {calcResults.niftyEnd !== undefined && calcResults.niftyEnd !== null && (
+                                                    {calcResults.niftyEnd !== undefined && calcResults.niftyEnd !== null && calcResults.niftyStart && calcResults.niftyStart !== 0 && (
                                                         <div className="flex justify-between font-medium">
-                                                            <span>Nifty 50:</span>
-                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyEnd.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                            <span>Nifty 50 (Indexed):</span>
+                                                            <span className="text-foreground font-semibold font-mono">
+                                                                ₹ {(calcResults.niftyEnd * (calcResults.investmentNav / calcResults.niftyStart)).toFixed(4)}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
