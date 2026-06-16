@@ -415,14 +415,9 @@ const ChartView = ({
                             if (isOverall) return new Date(label).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
                             return label;
                         }}
-                        formatter={(value: any, name?: string, props?: any) => {
-                            if (name === "NIF") return [`₹ ${Number(value).toFixed(2)}`, name];
-                            if (chartType === "indexed" && name === "Nifty 50") {
-                                const actualNifty = props?.payload?.nifty;
-                                const actualStr = actualNifty !== null && actualNifty !== undefined
-                                    ? ` (Actual: ₹ ${Number(actualNifty).toLocaleString('en-IN')})`
-                                    : "";
-                                return [`₹ ${Number(value).toFixed(2)}${actualStr}`, name];
+                        formatter={(value: any, name?: string) => {
+                            if (name === "NIF" || (chartType === "indexed" && name === "Nifty 50")) {
+                                return [`₹ ${Number(value).toFixed(2)}`, name];
                             }
                             return [`₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, name ?? ""];
                         }}
