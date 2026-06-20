@@ -63,6 +63,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         currentAmount: number;
         gainsAmount: number;
         cagr: number;
+        units: number;
         investmentDate: string;
         investmentNav: number;
         targetDate: string;
@@ -140,6 +141,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                     currentAmount: 0,
                     gainsAmount: 0,
                     cagr: 0,
+                    units: 0,
                     investmentDate: yearConfig.investmentDate,
                     investmentNav: yearConfig.navValue,
                     targetDate: customTargetDate,
@@ -202,14 +204,15 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         // 2. Calculations
         let investedAmount = 0;
         let currentAmount = 0;
+        let units = 0;
 
         if (calcMode === "units") {
-            const units = parseFloat(unitsHeld);
+            units = parseFloat(unitsHeld) || 0;
             investedAmount = units * yearConfig.navValue;
             currentAmount = units * finalTargetNav;
         } else {
-            investedAmount = parseFloat(investedInput);
-            const units = investedAmount / yearConfig.navValue;
+            investedAmount = parseFloat(investedInput) || 0;
+            units = investedAmount / yearConfig.navValue;
             currentAmount = units * finalTargetNav;
         }
 
@@ -247,6 +250,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
             currentAmount,
             gainsAmount,
             cagr,
+            units,
             investmentDate: yearConfig.investmentDate,
             investmentNav: yearConfig.navValue,
             targetDate: finalTargetDate,
@@ -626,6 +630,12 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <span>NIF NAV:</span>
                                                         <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
                                                     </div>
+                                                    {calcMode === "amount" && (
+                                                        <div className="flex justify-between font-medium">
+                                                            <span>Units Purchased:</span>
+                                                            <span className="text-foreground font-semibold font-mono">{calcResults.units.toFixed(4)}</span>
+                                                        </div>
+                                                    )}
                                                     {calcResults.niftyStartIndexed !== undefined && calcResults.niftyStartIndexed !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50 (Indexed):</span>
