@@ -654,18 +654,24 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                 </div>
                                             </div>
 
-                                            <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1.5">
-                                                <div>
-                                                    * {calcMode === "units" 
-                                                        ? <>Invested Amount is calculated as <code>Units × Investment NAV</code>. </>
-                                                        : <>Units purchased is calculated as <code>Invested Amount / Investment NAV</code>. </>
-                                                    }
-                                                    Total Amount is calculated as <code>Units × Target NAV</code>. 
-                                                    CAGR is computed as <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code> representing the compounded annual rate of growth over the period, where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days.
-                                                    The Nifty 50 Return represents the CAGR of the Nifty 50 Index over the exact same period, computed as <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>.
-                                                </div>
+                                            <div className="text-[11px] text-muted-foreground leading-relaxed space-y-2">
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    <li>
+                                                        {calcMode === "units" 
+                                                            ? <><strong>Invested Amount</strong> = <code>Units × Investment NAV</code></>
+                                                            : <><strong>Units Purchased</strong> = <code>Invested Amount / Investment NAV</code></>
+                                                        }
+                                                    </li>
+                                                    <li><strong>Total Amount (Value)</strong> = <code>Units × Target NAV</code></li>
+                                                    <li>
+                                                        <strong>NIF CAGR</strong> = <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code> (where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days).
+                                                    </li>
+                                                    <li>
+                                                        <strong>Nifty 50 Return (CAGR)</strong> = <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>
+                                                    </li>
+                                                </ul>
                                                 <div className="pt-2 border-t border-border/40 text-[10px] italic">
-                                                    Footnote: Please note that these calculations are approximated. The actual values can be slightly different than what is shown here.
+                                                    Note: These calculations are approximated. Actual values may vary slightly.
                                                 </div>
                                             </div>
                                         </div>
