@@ -636,16 +636,16 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <span>NIF NAV:</span>
                                                         <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
                                                     </div>
-                                                    {calcMode === "amount" && (
-                                                        <div className="flex justify-between font-medium">
-                                                            <span>Units Purchased:</span>
-                                                            <span className="text-foreground font-semibold font-mono">{calcResults.units.toFixed(4)}</span>
-                                                        </div>
-                                                    )}
                                                     {calcResults.niftyStartIndexed !== undefined && calcResults.niftyStartIndexed !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50 (Indexed):</span>
                                                             <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyStartIndexed.toFixed(4)}</span>
+                                                        </div>
+                                                    )}
+                                                    {calcMode === "amount" && (
+                                                        <div className="flex justify-between font-medium">
+                                                            <span>Units Purchased:</span>
+                                                            <span className="text-foreground font-semibold font-mono">{calcResults.units.toFixed(4)}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -687,7 +687,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     </li>
                                                     <li><strong>Total Amount (Value)</strong> = <code>Units × Target NAV</code></li>
                                                     <li>
-                                                        <strong>NIF CAGR</strong> = <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code> (where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days).
+                                                        <strong>NIF (CAGR)</strong> = <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code> (where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days).
                                                     </li>
                                                     <li>
                                                         <strong>Nifty 50 Return (CAGR)</strong> = <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>
