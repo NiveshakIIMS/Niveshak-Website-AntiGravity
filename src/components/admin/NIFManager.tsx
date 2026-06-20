@@ -520,33 +520,38 @@ export default function NIFManager() {
                             Configure the number of trading days for each year (default: 252). This is used for CAGR calculations.
                         </p>
                         <div className="space-y-3">
-                            {[2022, 2023, 2024, 2025, 2026].map((year) => (
-                                <div key={year} className="flex items-center justify-between gap-4">
-                                    <span className="font-semibold text-sm text-foreground">Year {year}:</span>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            value={tradingDays[year] !== undefined ? tradingDays[year] : 252}
-                                            onChange={async (e) => {
-                                                const val = parseInt(e.target.value) || 252;
-                                                const newDays = { ...tradingDays, [year]: val };
-                                                setTradingDays(newDays);
-                                                await dataService.saveTradingDays(year, val);
-                                                
-                                                if (metrics.isAutoReturn && data.length >= 2) {
-                                                    const newReturn = calculateCAGR(data, newDays);
-                                                    const newMetrics = { ...metrics, annualizedReturn: newReturn };
-                                                    await updateMetricsStateAndDb(newMetrics);
-                                                }
-                                            }}
-                                            className="w-24 p-2 border border-input rounded-lg bg-background text-sm text-center font-mono font-bold text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
-                                            min="1"
-                                            max="366"
-                                        />
-                                        <span className="text-xs text-muted-foreground">days</span>
+                            {(() => {
+                                const startYear = 2022;
+                                const currentYear = new Date().getFullYear();
+                                const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i);
+                                return years.map((year) => (
+                                    <div key={year} className="flex items-center justify-between gap-4">
+                                        <span className="font-semibold text-sm text-foreground">Year {year}:</span>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={tradingDays[year] !== undefined ? tradingDays[year] : 252}
+                                                onChange={async (e) => {
+                                                    const val = parseInt(e.target.value) || 252;
+                                                    const newDays = { ...tradingDays, [year]: val };
+                                                    setTradingDays(newDays);
+                                                    await dataService.saveTradingDays(year, val);
+                                                    
+                                                    if (metrics.isAutoReturn && data.length >= 2) {
+                                                        const newReturn = calculateCAGR(data, newDays);
+                                                        const newMetrics = { ...metrics, annualizedReturn: newReturn };
+                                                        await updateMetricsStateAndDb(newMetrics);
+                                                    }
+                                                }}
+                                                className="w-24 p-2 border border-input rounded-lg bg-background text-sm text-center font-mono font-bold text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
+                                                min="1"
+                                                max="366"
+                                            />
+                                            <span className="text-xs text-muted-foreground">days</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ));
+                            })()}
                         </div>
                     </motion.div>
                 </div>
