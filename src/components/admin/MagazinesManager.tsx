@@ -6,6 +6,8 @@ import { dataService, Magazine } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { sanitizeString, validateUrl } from "@/lib/validation";
+
 export default function MagazinesManager() {
     const [magazines, setMagazines] = useState<Magazine[]>([]);
 
@@ -21,11 +23,22 @@ export default function MagazinesManager() {
     const saveMag = async () => {
         if (!magForm) return;
 
+        // Sanitize inputs to prevent XSS
+        const sanitizedMag: Magazine = {
+            ...magForm,
+            title: sanitizeString(magForm.title),
+            issueMonth: sanitizeString(magForm.issueMonth),
+            issueYear: sanitizeString(magForm.issueYear),
+            coverUrl: magForm.coverUrl ? validateUrl(magForm.coverUrl) : "",
+            pdfUrl: magForm.pdfUrl ? validateUrl(magForm.pdfUrl) : "",
+            flipUrl: magForm.flipUrl ? validateUrl(magForm.flipUrl) : undefined,
+        };
+
         let newMags;
         if (isEditing === "new") {
-            newMags = [...magazines, magForm];
+            newMags = [...magazines, sanitizedMag];
         } else {
-            newMags = magazines.map(m => m.id === magForm.id ? magForm : m);
+            newMags = magazines.map(m => m.id === sanitizedMag.id ? sanitizedMag : m);
         }
 
         setMagazines(newMags);

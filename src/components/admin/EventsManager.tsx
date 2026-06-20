@@ -9,6 +9,8 @@ import TimePicker from "./TimePicker";
 import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { sanitizeString, validateUrl } from "@/lib/validation";
+
 export default function EventsManager() {
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -24,11 +26,22 @@ export default function EventsManager() {
     const saveEvent = async () => {
         if (!eventForm) return;
 
+        // Sanitize string inputs to protect against XSS
+        const sanitizedEvent: Event = {
+            ...eventForm,
+            title: sanitizeString(eventForm.title),
+            location: sanitizeString(eventForm.location),
+            description: eventForm.description ? sanitizeString(eventForm.description) : undefined,
+            meetingLink: eventForm.meetingLink ? validateUrl(eventForm.meetingLink) : undefined,
+            registration_link: eventForm.registration_link ? validateUrl(eventForm.registration_link) : undefined,
+            imageUrl: validateUrl(eventForm.imageUrl),
+        };
+
         let newEvents;
         if (isEditing === "new") {
-            newEvents = [...events, eventForm];
+            newEvents = [...events, sanitizedEvent];
         } else {
-            newEvents = events.map(e => e.id === eventForm.id ? eventForm : e);
+            newEvents = events.map(e => e.id === sanitizedEvent.id ? sanitizedEvent : e);
         }
         setEvents(newEvents);
         await dataService.saveEvents(newEvents);

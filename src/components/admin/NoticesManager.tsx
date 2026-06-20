@@ -8,6 +8,8 @@ import MediaInput from "./MediaInput";
 import TimePicker from "./TimePicker";
 import { formatDateIndian } from "@/lib/dateUtils";
 
+import { sanitizeString, validateUrl } from "@/lib/validation";
+
 export default function NoticesManager() {
     const [notices, setNotices] = useState<Notice[]>([]);
     const [isEditing, setIsEditing] = useState<string | null>(null); // 'new', 'edit', or null
@@ -20,11 +22,21 @@ export default function NoticesManager() {
     const handleSave = async () => {
         if (!form) return;
 
+        // Sanitize string inputs to protect against XSS
+        const sanitizedNotice: Notice = {
+            ...form,
+            title: sanitizeString(form.title),
+            content: sanitizeString(form.content),
+            linkLabel: form.linkLabel ? sanitizeString(form.linkLabel) : undefined,
+            link: form.link ? validateUrl(form.link) : undefined,
+            imageUrl: form.imageUrl ? validateUrl(form.imageUrl) : undefined,
+        };
+
         let newNotices;
         if (isEditing === "new") {
-            newNotices = [form, ...notices];
+            newNotices = [sanitizedNotice, ...notices];
         } else {
-            newNotices = notices.map(n => n.id === form.id ? form : n);
+            newNotices = notices.map(n => n.id === sanitizedNotice.id ? sanitizedNotice : n);
         }
 
         setNotices(newNotices);

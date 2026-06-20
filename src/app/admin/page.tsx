@@ -74,6 +74,13 @@ export default function AdminPage() {
         setIsLoggingIn(true);
         setError("");
 
+        // Prevent Long Password DoS attack
+        if (password.length > 72) {
+            setError("Password cannot exceed 72 characters.");
+            setIsLoggingIn(false);
+            return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
