@@ -62,8 +62,8 @@ export default function NoticesManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
@@ -116,7 +116,7 @@ export default function NoticesManager() {
                                 </div>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(notice.id); }}
-                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg self-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg self-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -140,7 +140,7 @@ export default function NoticesManager() {
                             </h3>
 
                             <div className="space-y-5">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-muted-foreground uppercase">Title</label>
                                         <input
@@ -175,7 +175,7 @@ export default function NoticesManager() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-muted-foreground uppercase">Publish Date</label>
                                         <div className="grid grid-cols-[3fr_2fr] gap-2">
@@ -211,7 +211,7 @@ export default function NoticesManager() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-[1fr_2fr] gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-muted-foreground uppercase">Link Label</label>
                                         <input

@@ -61,8 +61,8 @@ export default function HeroManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -91,7 +91,7 @@ export default function HeroManager() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             className={`bg-card rounded-2xl border transition-all ${isEditing === slide.id ? "border-blue-500 shadow-lg ring-1 ring-blue-500" : "border-border shadow-sm hover:shadow-md"}`}
                         >
-                            <div className="flex flex-col md:flex-row gap-6 p-6">
+                            <div className="flex flex-col md:flex-row gap-6 p-4 sm:p-6">
                                 {/* Preview Area */}
                                 <div className="w-full md:w-64 h-40 bg-muted rounded-xl overflow-hidden relative group shrink-0 border border-border">
                                     {isVideoUrl(slide.imageUrl) ? (

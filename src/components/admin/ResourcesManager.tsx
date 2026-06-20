@@ -128,9 +128,9 @@ export default function ResourcesManager() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
             <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h2 className="text-3xl font-bold text-foreground">Resources</h2>
                         <p className="text-muted-foreground">Manage documents, links, and folders.</p>

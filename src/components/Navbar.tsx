@@ -170,7 +170,7 @@ export default function Navbar() {
                                     exit={{ scale: 0.6, opacity: 0, rotate: 45 }}
                                     transition={{ duration: 0.2 }}
                                 >
-                                    {theme === 'light' ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-blue-300" />}
+                                    {theme === 'light' ? <Sun className="w-5 h-5 text-white" /> : <Moon className="w-5 h-5 text-blue-300" />}
                                 </motion.div>
                             </AnimatePresence>
                         </button>
@@ -191,57 +191,59 @@ export default function Navbar() {
             </div>
         </nav>
 
-        {/* Mobile Menu Dropdown Card (Floating glassmorphism card with CSS animations) */}
+        {/* Mobile Menu Dropdown Card (Floating glassmorphism card with cool spring animations) */}
         <div className="fixed inset-x-0 top-0 z-40 pointer-events-none md:hidden">
-            <div
-                className={`absolute top-[88px] right-4 left-4 rounded-2xl border border-navy-700/50 shadow-2xl bg-navy-900/70 backdrop-blur-lg z-50 pointer-events-auto transition-opacity duration-300 ${
-                    isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-                }`}
-            >
-                <div
-                    className={`px-4 pt-4 pb-6 space-y-2 transition-all duration-300 ease-out transform ${
-                        isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-4 scale-95"
-                    }`}
-                >
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors"
-                        >
-                            {item.name}
-                        </Link>
-                    ))}
-                    <Link
-                        href="/notices"
-                        onClick={() => setIsOpen(false)}
-                        className={`block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between transition-colors ${pathname === "/notices" ? "text-white bg-navy-800" : ""}`}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.92, y: -16 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.92, y: -16 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        className="absolute top-[88px] right-4 left-4 rounded-2xl border border-navy-700/50 shadow-2xl bg-navy-900/70 backdrop-blur-lg z-50 pointer-events-auto"
                     >
-                        Notice Board
-                        <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
-                    </Link>
-                    <div className="h-px bg-navy-800/80 my-2" />
-                    <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors">
-                        Admin Login
-                    </Link>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                            if (window.showNiveshakInstallPrompt) {
-                                window.showNiveshakInstallPrompt();
-                            } else {
-                                alert("PWA installation is not supported on this browser/device. Try opening in Safari (iOS) or Chrome (Android).");
-                            }
-                        }}
-                        className="w-full text-left block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors flex items-center justify-between"
-                    >
-                        <span>Install Web App</span>
-                        <Download className="w-4 h-4 text-accent" />
-                    </button>
-                </div>
-            </div>
+                        <div className="px-4 pt-4 pb-6 space-y-2">
+                            {navItems.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors"
+                                >
+                                    {item.name}
+                                </Link>
+                            ))}
+                            <Link
+                                href="/notices"
+                                onClick={() => setIsOpen(false)}
+                                className={`block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 flex items-center justify-between transition-colors ${pathname === "/notices" ? "text-white bg-navy-800" : ""}`}
+                            >
+                                Notice Board
+                                <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
+                            </Link>
+                            <div className="h-px bg-navy-800/80 my-2" />
+                            <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors">
+                                Admin Login
+                            </Link>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsOpen(false);
+                                    if (window.showNiveshakInstallPrompt) {
+                                        window.showNiveshakInstallPrompt();
+                                    } else {
+                                        alert("PWA installation is not supported on this browser/device. Try opening in Safari (iOS) or Chrome (Android).");
+                                    }
+                                }}
+                                className="w-full text-left block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors flex items-center justify-between"
+                            >
+                                <span>Install Web App</span>
+                                <Download className="w-4 h-4 text-accent" />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     </>
     );

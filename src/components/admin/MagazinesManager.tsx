@@ -53,8 +53,8 @@ export default function MagazinesManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
@@ -74,7 +74,7 @@ export default function MagazinesManager() {
                         <motion.div initial={{ opacity: 0, height: 0, overflow: "hidden" }} animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }}>
                             <div className="bg-card p-6 rounded-2xl border border-border shadow-xl grid gap-4 border-l-4 border-l-orange-500">
                                 <h4 className="font-bold text-foreground mb-2">Editor</h4>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <input placeholder="Title (e.g. Niveshak Jan)" value={magForm.title} onChange={e => setMagForm({ ...magForm, title: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none" />
                                     <div className="space-y-1">
                                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Issue Date</label>

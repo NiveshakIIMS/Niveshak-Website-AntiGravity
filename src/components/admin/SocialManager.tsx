@@ -93,7 +93,7 @@ export default function SocialManager() {
     if (loading) return <div className="text-center py-12 text-muted-foreground">Loading settings...</div>;
 
     return (
-        <div className="space-y-8">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
             {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-500">
                     <div className="font-bold">Error:</div>
@@ -102,7 +102,7 @@ export default function SocialManager() {
                 </div>
             )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-foreground">Social Media Links</h2>
                     <p className="text-muted-foreground">Manage your social icons in the website footer.</p>

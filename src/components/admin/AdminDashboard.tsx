@@ -14,7 +14,6 @@ import NIFCalculatorManager from "./NIFCalculatorManager";
 import SocialManager from "./SocialManager";
 import NoticesManager from "./NoticesManager";
 import ResourcesManager from "./ResourcesManager";
-import MigrationManager from "./MigrationManager";
 import HallOfFameManager from "./HallOfFameManager";
 import RedemptionManager from "./RedemptionManager";
 import MFAEnrollment from "./MFAEnrollment";
@@ -94,7 +93,6 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
             case "social": return <SocialManager />;
             case "notices": return <NoticesManager />;
             case "resources": return <ResourcesManager />;
-            case "migration": return <MigrationManager />;
             default: return <HeroManager />;
         }
     };
@@ -142,7 +140,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         className="max-w-6xl mx-auto"
                     >
-                        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden ring-1 ring-gray-900/5">
+                        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-visible ring-1 ring-gray-900/5">
                             {renderContent()}
                         </div>
                     </motion.div>

@@ -47,8 +47,8 @@ export default function EventsManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -70,7 +70,7 @@ export default function EventsManager() {
                                 <h4 className="font-bold text-foreground mb-2">Event Editor</h4>
 
                                 {/* Title + Type */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <input placeholder="Event Title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none" />
                                     <select value={eventForm.type} onChange={e => setEventForm({ ...eventForm, type: e.target.value as any })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-blue-500 outline-none">
                                         <option value="Upcoming">Upcoming</option>
@@ -96,7 +96,7 @@ export default function EventsManager() {
                                     </div>
                                     {eventForm.showTime && (
                                         <div className="p-4 space-y-3 border-t border-border">
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <TimePicker
                                                     value={eventForm.time || ""}
                                                     onChange={(val) => setEventForm({ ...eventForm, time: val })}
@@ -176,8 +176,8 @@ export default function EventsManager() {
                 <div className="space-y-3">
                     <AnimatePresence>
                         {events.map(event => (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} key={event.id} className="flex justify-between items-center bg-card p-5 rounded-xl border border-border shadow-sm hover:shadow-md transition-all">
-                                <div className="flex gap-4 items-center">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} key={event.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-5 rounded-xl border border-border shadow-sm hover:shadow-md transition-all">
+                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full">
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg ${event.type === "Live" ? "bg-red-500 animate-pulse" : "bg-blue-500"}`}>
                                         {new Date(event.date).getDate()}
                                     </div>
@@ -192,7 +192,7 @@ export default function EventsManager() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-border">
                                     <button onClick={() => { setEventForm(event); setIsEditing("edit"); }} className="p-2 hover:bg-muted rounded-lg text-blue-500 transition-colors"><BookOpen className="w-5 h-5" /></button>
                                     <button onClick={() => deleteEvent(event.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
                                 </div>

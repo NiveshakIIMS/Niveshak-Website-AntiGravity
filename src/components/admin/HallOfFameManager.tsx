@@ -197,8 +197,8 @@ export default function HallOfFameManager() {
     });
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">

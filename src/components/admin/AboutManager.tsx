@@ -166,8 +166,8 @@ export default function AboutManager() {
     if (!data) return <div className="p-8 text-muted-foreground">Loading editor...</div>;
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -186,7 +186,7 @@ export default function AboutManager() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6 bg-card p-8 rounded-2xl border border-border shadow-sm sticky top-8"
+                    className="space-y-6 bg-card p-4 sm:p-8 rounded-2xl border border-border shadow-sm sticky top-8"
                 >
                     <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
                         <Layout className="w-5 h-5 text-muted-foreground" />
@@ -326,7 +326,7 @@ export default function AboutManager() {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="group relative bg-background border border-border rounded-xl p-4 hover:border-blue-500 transition-colors"
                                     >
-                                        <div className="absolute right-2 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <div className="absolute right-2 top-2 flex flex-col gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                                             {block.type === "paragraph" && (
                                                 <button onClick={() => setExpandedBlockId(block.id)} className="p-1 hover:bg-muted rounded shadow-sm text-muted-foreground hover:text-blue-500" title="Maximize Editor"><Maximize2 className="w-3 h-3" /></button>
                                             )}

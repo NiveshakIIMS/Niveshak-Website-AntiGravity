@@ -117,8 +117,8 @@ export default function RedemptionManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-3 bg-purple-500/10 rounded-xl">
                         <BookOpen className="w-7 h-7 text-purple-500" />

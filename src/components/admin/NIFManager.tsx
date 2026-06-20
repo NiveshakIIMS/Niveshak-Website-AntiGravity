@@ -273,8 +273,8 @@ export default function NIFManager() {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-background min-h-full">
-            <div className="flex justify-between items-center border-b border-border pb-6">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -556,8 +556,8 @@ export default function NIFManager() {
                     </motion.div>
                 </div>
 
-                {/* Right Column: Historical Data (Long Portrait) */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col h-[700px] sticky top-8">
+                 {/* Right Column: Historical Data (Long Portrait) */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-sm flex flex-col lg:h-[700px] h-auto lg:sticky top-8">
                     <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
                         <h3 className="font-bold text-foreground flex items-center gap-2">
                             Historical Data
@@ -590,7 +590,7 @@ export default function NIFManager() {
                                             <p className="text-[10px] text-muted-foreground font-semibold">Nifty: ₹ {Number(d.nifty50).toLocaleString('en-IN')}</p>
                                         )}
                                     </div>
-                                    <button onClick={() => deleteEntry(d.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => deleteEntry(d.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             </div>
                         ))}
@@ -609,8 +609,8 @@ export default function NIFManager() {
                                 <button onClick={() => setIsMaximized(false)} className="px-5 py-2 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition-opacity">Close</button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                                <table className="w-full text-left border-collapse">
+                             <div className="flex-1 overflow-auto p-0 custom-scrollbar">
+                                <table className="w-full text-left border-collapse min-w-[600px]">
                                     <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur-md">
                                         <tr>
                                             <th className="p-4 pl-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</th>
