@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dataService, NAVData, NIFInvestment } from "@/services/dataService";
+import { dataService, NAVData, NIFInvestment, calculateTradingYears } from "@/services/dataService";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowLeft, Calculator, TrendingUp, TrendingDown, ArrowUpRight, Activity, Calendar, Info, AlertTriangle } from "lucide-react";
@@ -50,11 +50,12 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
     const [customTargetDate, setCustomTargetDate] = useState<string>("");
 
     // Outputs
+    const [tradingDays, setTradingDays] = useState<{ [year: number]: number }>({});
     const [calcResults, setCalcResults] = useState<{
         investedAmount: number;
         currentAmount: number;
         gainsAmount: number;
-        xirr: number;
+        cagr: number;
         investmentDate: string;
         investmentNav: number;
         targetDate: string;
@@ -63,18 +64,27 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
         warning?: string;
         niftyStart: number | null;
         niftyEnd: number | null;
+        niftyStartIndexed: number | null;
+        niftyEndIndexed: number | null;
         niftyReturn: number | null;
     } | null>(null);
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [navs, invs] = await Promise.all([
+                const [navs, invs, days] = await Promise.all([
                     dataService.getNAVData(),
-                    dataService.getNIFInvestments()
+                    dataService.getNIFInvestments(),
+                    dataService.getTradingDays()
                 ]);
                 if (navs && navs.length > 0) setNavData(navs);
                 if (invs && invs.length > 0) setInvestments(invs);
+                
+                const daysObj: { [year: number]: number } = {};
+                days.forEach(d => {
+                    daysObj[d.year] = d.days;
+                });
+                setTradingDays(daysObj);
             } catch (err) {
                 console.error("Failed to load fresh calculator data:", err);
             }
@@ -122,7 +132,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                     investedAmount: 0,
                     currentAmount: 0,
                     gainsAmount: 0,
-                    xirr: 0,
+                    cagr: 0,
                     investmentDate: yearConfig.investmentDate,
                     investmentNav: yearConfig.navValue,
                     targetDate: customTargetDate,
@@ -131,6 +141,8 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                     warning: `Evaluation date cannot be earlier than the investment date (${new Date(yearConfig.investmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}).`,
                     niftyStart: null,
                     niftyEnd: null,
+                    niftyStartIndexed: null,
+                    niftyEndIndexed: null,
                     niftyReturn: null
                 });
                 return;
@@ -196,29 +208,38 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
 
         const gainsAmount = currentAmount - investedAmount;
 
-        // CAGR / XIRR calculation
-        let xirr = 0;
-        const startDate = new Date(yearConfig.investmentDate);
-        const endDate = new Date(finalTargetDate);
-        const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const years = days / 365;
-
+        // CAGR calculation using trading days count
+        const years = calculateTradingYears(yearConfig.investmentDate, finalTargetDate, navData, tradingDays);
+        
+        let cagr = 0;
         if (years > 0 && yearConfig.navValue > 0) {
-            xirr = (Math.pow(finalTargetNav / yearConfig.navValue, 1 / years) - 1) * 100;
+            cagr = (Math.pow(finalTargetNav / yearConfig.navValue, 1 / years) - 1) * 100;
         }
 
         const startNifty = findNiftyValueForDate(yearConfig.investmentDate, navData);
         const endNifty = findNiftyValueForDate(finalTargetDate, navData);
+        
         let niftyReturn: number | null = null;
         if (years > 0 && startNifty && endNifty) {
             niftyReturn = (Math.pow(endNifty / startNifty, 1 / years) - 1) * 100;
         }
 
+        // Compute fixed indexation baseline factor from oldest overall DB entry
+        const sortedNavData = [...navData]
+            .filter(d => d.value !== undefined && d.value !== null && d.nifty50 !== undefined && d.nifty50 !== null)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const baseNAV = sortedNavData.length > 0 ? sortedNavData[0].value : 1;
+        const baseNifty = sortedNavData.length > 0 ? sortedNavData[0].nifty50! : 1;
+        const indexationFactor = baseNifty !== 0 ? baseNAV / baseNifty : 1;
+
+        const niftyStartIndexed = startNifty ? parseFloat((startNifty * indexationFactor).toFixed(4)) : null;
+        const niftyEndIndexed = endNifty ? parseFloat((endNifty * indexationFactor).toFixed(4)) : null;
+
         setCalcResults({
             investedAmount,
             currentAmount,
             gainsAmount,
-            xirr,
+            cagr,
             investmentDate: yearConfig.investmentDate,
             investmentNav: yearConfig.navValue,
             targetDate: finalTargetDate,
@@ -227,10 +248,12 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
             warning: warning || undefined,
             niftyStart: startNifty,
             niftyEnd: endNifty,
+            niftyStartIndexed,
+            niftyEndIndexed,
             niftyReturn
         });
 
-    }, [unitsHeld, investedInput, calcMode, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV]);
+    }, [unitsHeld, investedInput, calcMode, selectedYear, useCustomDate, customTargetDate, investments, navData, latestNAV, tradingDays]);
 
     const formatCurrency = (val: number) => {
         return "₹ " + Number(val.toFixed(2)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -393,7 +416,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                 <Calculator className="w-16 h-16 text-muted-foreground opacity-30 animate-pulse" />
                                 <h3 className="text-xl font-bold text-foreground">Calculate Your Returns</h3>
                                 <p className="text-muted-foreground max-w-md mx-auto">
-                                    Enter your {calcMode === "units" ? "units held" : "invested amount (INR)"} and select the year of investment on the left panel to estimate your total gains, invested principal, and annualized returns (XIRR).
+                                    Enter your {calcMode === "units" ? "units held" : "invested amount (INR)"} and select the year of investment on the left panel to estimate your total gains, invested principal, and annualized returns (CAGR).
                                 </p>
                             </div>
                         )}
@@ -490,27 +513,27 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                             {/* Bottom Row: Percentage Returns (3 Columns) */}
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                 
-                                                {/* XIRR Card (NIF Return) */}
-                                                <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.xirr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                                {/* CAGR Card (NIF Return) */}
+                                                <div className={`bg-card border border-border p-6 rounded-2xl shadow-xl ${calcResults.cagr >= 0 ? "shadow-green-500/5 hover:shadow-green-500/15" : "shadow-red-500/5 hover:shadow-red-500/15"} hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
                                                     <div className="absolute top-0 right-0 p-4 transform translate-x-2 -translate-y-2">
-                                                        {calcResults.xirr >= 0 ? (
+                                                        {calcResults.cagr >= 0 ? (
                                                             <TrendingUp className="w-20 h-20 text-green-500 opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300" />
                                                         ) : (
                                                             <TrendingDown className="w-20 h-20 text-red-500 opacity-20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300" />
                                                         )}
                                                     </div>
                                                     <div className="relative z-10">
-                                                        <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.xirr >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
-                                                            {calcResults.xirr >= 0 ? (
+                                                        <div className={`p-2.5 w-fit rounded-xl mb-4 border shadow-sm ${calcResults.cagr >= 0 ? "bg-green-500/15 border-green-500/30 text-green-500 shadow-green-500/10" : "bg-red-500/15 border-red-500/30 text-red-500 shadow-red-500/10"}`}>
+                                                            {calcResults.cagr >= 0 ? (
                                                                 <TrendingUp className="w-5 h-5 text-green-500 stroke-[3]" />
                                                             ) : (
                                                                 <TrendingDown className="w-5 h-5 text-red-500 stroke-[3]" />
                                                             )}
                                                         </div>
-                                                        <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.xirr >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                            {calcResults.xirr.toFixed(2)} %
+                                                        <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.cagr >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                            {calcResults.cagr.toFixed(2)} %
                                                         </h3>
-                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">NIF Annualized Return (XIRR)</p>
+                                                        <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">NIF Annualized Return (CAGR)</p>
                                                     </div>
                                                 </div>
 
@@ -541,7 +564,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                 {/* Outperformance Card */}
                                                 {(() => {
                                                     const outperformance = calcResults.niftyReturn !== null 
-                                                        ? calcResults.xirr - calcResults.niftyReturn 
+                                                        ? calcResults.cagr - calcResults.niftyReturn 
                                                         : null;
                                                     const isPositive = outperformance !== null && outperformance >= 0;
                                                     return (
@@ -596,10 +619,10 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <span>NIF NAV:</span>
                                                         <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
                                                     </div>
-                                                    {calcResults.niftyStart !== undefined && calcResults.niftyStart !== null && (
+                                                    {calcResults.niftyStartIndexed !== undefined && calcResults.niftyStartIndexed !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50 (Indexed):</span>
-                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.investmentNav.toFixed(4)}</span>
+                                                            <span className="text-foreground font-semibold font-mono">₹ {calcResults.niftyStartIndexed.toFixed(4)}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -620,11 +643,11 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         <span>NIF NAV:</span>
                                                         <span className="text-foreground font-semibold font-mono">₹ {calcResults.targetNav.toFixed(4)}</span>
                                                     </div>
-                                                    {calcResults.niftyEnd !== undefined && calcResults.niftyEnd !== null && calcResults.niftyStart && calcResults.niftyStart !== 0 && (
+                                                    {calcResults.niftyEndIndexed !== undefined && calcResults.niftyEndIndexed !== null && (
                                                         <div className="flex justify-between font-medium">
                                                             <span>Nifty 50 (Indexed):</span>
                                                             <span className="text-foreground font-semibold font-mono">
-                                                                ₹ {(calcResults.niftyEnd * (calcResults.investmentNav / calcResults.niftyStart)).toFixed(4)}
+                                                                ₹ {calcResults.niftyEndIndexed.toFixed(4)}
                                                             </span>
                                                         </div>
                                                     )}
@@ -638,8 +661,8 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                         : <>Units purchased is calculated as <code>Invested Amount / Investment NAV</code>. </>
                                                     }
                                                     Total Amount is calculated as <code>Units × Target NAV</code>. 
-                                                    XIRR (CAGR) is computed as <code>((Target NAV / Investment NAV) ^ (365 / Days)) - 1</code> representing the compounded annual rate of growth over the period.
-                                                    The Nifty 50 Return represents the CAGR of the Nifty 50 Index over the exact same period, computed as <code>((Target Nifty 50 / Investment Nifty 50) ^ (365 / Days)) - 1</code>.
+                                                    CAGR is computed as <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code> representing the compounded annual rate of growth over the period, where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days.
+                                                    The Nifty 50 Return represents the CAGR of the Nifty 50 Index over the exact same period, computed as <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>.
                                                 </div>
                                                 <div className="pt-2 border-t border-border/40 text-[10px] italic">
                                                     Footnote: Please note that these calculations are approximated. The actual values can be slightly different than what is shown here.

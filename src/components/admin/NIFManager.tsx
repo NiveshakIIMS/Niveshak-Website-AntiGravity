@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, TrendingUp, Save, BarChart3 } from "lucide-react";
-import { dataService, NAVData } from "@/services/dataService";
+import { Plus, Trash2, TrendingUp, Save, BarChart3, Calendar } from "lucide-react";
+import { dataService, NAVData, calculateTradingYears } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
@@ -13,20 +13,27 @@ export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
     const [metrics, setMetrics] = useState<any>({ annualizedReturn: "", totalAUM: "", ytdReturn: "" });
     const [newEntry, setNewEntry] = useState({ date: "", value: "", nifty50: "" });
+    const [tradingDays, setTradingDays] = useState<{ [year: number]: number }>({});
 
     useEffect(() => {
         Promise.all([
             dataService.getNAVData(),
-            dataService.getNIFMetrics()
-        ]).then(([navData, metricsData]) => {
+            dataService.getNIFMetrics(),
+            dataService.getTradingDays()
+        ]).then(([navData, metricsData, tradingDaysData]) => {
             setData(navData);
             setMetrics(metricsData);
+            
+            const daysObj: { [year: number]: number } = {};
+            tradingDaysData.forEach(d => {
+                daysObj[d.year] = d.days;
+            });
+            setTradingDays(daysObj);
         });
     }, []);
 
-    const calculateCAGR = (navData: NAVData[]) => {
+    const calculateCAGR = (navData: NAVData[], daysConfig?: { [year: number]: number }) => {
         if (navData.length < 2) return "0";
-        // Sort ascending
         const sorted = [...navData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const start = sorted[0];
         const end = sorted[sorted.length - 1];
@@ -36,10 +43,8 @@ export default function NIFManager() {
 
         if (startVal === 0) return "0";
 
-        const startDate = new Date(start.date);
-        const endDate = new Date(end.date);
-        const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const years = days / 365;
+        const currentDaysConfig = daysConfig || tradingDays;
+        const years = calculateTradingYears(start.date, end.date, sorted, currentDaysConfig);
 
         if (years <= 0) return "0";
 
@@ -72,7 +77,7 @@ export default function NIFManager() {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, metrics.isAutoReturn]);
+    }, [data, metrics.isAutoReturn, tradingDays]);
 
     // 2. Auto-calculate Total AUM
     useEffect(() => {
@@ -503,6 +508,45 @@ export default function NIFManager() {
                                     <Plus className="w-4 h-4" /> Add Asset Class
                                 </button>
                             </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Trading Days Editor */}
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="bg-card p-6 rounded-2xl border border-border shadow-xl space-y-4">
+                        <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-green-500" /> Trading Days Config
+                        </h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Configure the number of trading days for each year (default: 252). This is used for CAGR calculations.
+                        </p>
+                        <div className="space-y-3">
+                            {[2022, 2023, 2024, 2025, 2026].map((year) => (
+                                <div key={year} className="flex items-center justify-between gap-4">
+                                    <span className="font-semibold text-sm text-foreground">Year {year}:</span>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            value={tradingDays[year] !== undefined ? tradingDays[year] : 252}
+                                            onChange={async (e) => {
+                                                const val = parseInt(e.target.value) || 252;
+                                                const newDays = { ...tradingDays, [year]: val };
+                                                setTradingDays(newDays);
+                                                await dataService.saveTradingDays(year, val);
+                                                
+                                                if (metrics.isAutoReturn && data.length >= 2) {
+                                                    const newReturn = calculateCAGR(data, newDays);
+                                                    const newMetrics = { ...metrics, annualizedReturn: newReturn };
+                                                    await updateMetricsStateAndDb(newMetrics);
+                                                }
+                                            }}
+                                            className="w-24 p-2 border border-input rounded-lg bg-background text-sm text-center font-mono font-bold text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
+                                            min="1"
+                                            max="366"
+                                        />
+                                        <span className="text-xs text-muted-foreground">days</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 </div>

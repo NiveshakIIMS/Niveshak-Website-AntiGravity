@@ -98,6 +98,11 @@ export interface NIFInvestment {
     navValue: number;
 }
 
+export interface TradingDays {
+    year: number;
+    days: number;
+}
+
 export interface NIFMetrics {
     annualizedReturn: string;
     totalAUM: string;
@@ -846,5 +851,60 @@ export const dataService = {
             console.error("Delete NIF Investment Error", error);
             throw error;
         }
+    },
+
+    getTradingDays: async (): Promise<TradingDays[]> => {
+        const { data, error } = await supabase.from('trading_days').select('*').order('year', { ascending: true });
+        if (error || !data) return [];
+        return data.map((d: any) => ({
+            year: d.year,
+            days: d.days
+        }));
+    },
+
+    saveTradingDays: async (year: number, days: number) => {
+        const { error } = await supabase.from('trading_days').upsert({ year, days }, { onConflict: 'year' });
+        if (error) {
+            console.error("Save Trading Days Error", error);
+            throw error;
+        }
     }
 };
+
+export function calculateTradingYears(
+    startDateStr: string,
+    endDateStr: string,
+    navData: NAVData[],
+    tradingDaysConfig: { [year: number]: number }
+): number {
+    if (!startDateStr || !endDateStr || navData.length === 0) return 0;
+    
+    // Normalize dates to YYYY-MM-DD
+    const startStr = startDateStr.slice(0, 10);
+    const endStr = endDateStr.slice(0, 10);
+    if (startStr > endStr) return 0;
+    
+    // Filter and sort entries within the period [startStr, endStr]
+    const sorted = [...navData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const periodEntries = sorted.filter(d => d.date >= startStr && d.date <= endStr);
+    
+    if (periodEntries.length < 2) return 0;
+    
+    // Count intervals/steps in each year
+    const stepsByYear: { [year: number]: number } = {};
+    for (let i = 0; i < periodEntries.length - 1; i++) {
+        const year = new Date(periodEntries[i].date).getFullYear();
+        stepsByYear[year] = (stepsByYear[year] || 0) + 1;
+    }
+    
+    // Sum fractional years
+    let Y = 0;
+    for (const yearStr in stepsByYear) {
+        const year = parseInt(yearStr);
+        const steps = stepsByYear[year];
+        const yearDays = tradingDaysConfig[year] || 252; // Default to 252 days
+        Y += steps / yearDays;
+    }
+    
+    return Y;
+}

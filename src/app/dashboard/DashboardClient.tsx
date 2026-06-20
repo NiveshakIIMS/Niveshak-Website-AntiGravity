@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
-import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
+import { dataService, NAVData, NIFMetrics, calculateTradingYears } from "@/services/dataService";
 import { getUTCDateInfo } from "@/lib/dateUtils";
 import NAVChart from "@/components/dashboard/NAVChart";
 import { TrendingUp, TrendingDown, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen, Calculator } from "lucide-react";
@@ -14,7 +14,7 @@ interface DashboardClientProps {
     initialMetrics?: NIFMetrics | null;
 }
 
-const calculateNiftyCAGR = (navData: NAVData[]) => {
+const calculateNiftyCAGR = (navData: NAVData[], tradingDaysConfig: { [year: number]: number }) => {
     const sorted = [...navData]
         .filter(d => d.nifty50 !== undefined && d.nifty50 !== null)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -23,10 +23,7 @@ const calculateNiftyCAGR = (navData: NAVData[]) => {
     const end = sorted[sorted.length - 1];
     if (!start.nifty50 || !end.nifty50) return null;
 
-    const startDate = new Date(start.date);
-    const endDate = new Date(end.date);
-    const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-    const years = days / 365;
+    const years = calculateTradingYears(start.date, end.date, sorted, tradingDaysConfig);
     if (years <= 0) return null;
 
     const cagr = (Math.pow(end.nifty50 / start.nifty50, 1 / years) - 1) * 100;
@@ -36,16 +33,24 @@ const calculateNiftyCAGR = (navData: NAVData[]) => {
 export default function DashboardClient({ initialNAVData = [], initialMetrics = null }: DashboardClientProps) {
     const [navData, setNavData] = useState<NAVData[]>(initialNAVData);
     const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
+    const [tradingDays, setTradingDays] = useState<{ [year: number]: number }>({});
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [nav, met] = await Promise.all([
+                const [nav, met, days] = await Promise.all([
                     dataService.getNAVData(),
-                    dataService.getNIFMetrics()
+                    dataService.getNIFMetrics(),
+                    dataService.getTradingDays()
                 ]);
                 if (nav && nav.length > 0) setNavData(nav);
                 if (met) setMetrics(met);
+
+                const daysObj: { [year: number]: number } = {};
+                days.forEach(d => {
+                    daysObj[d.year] = d.days;
+                });
+                setTradingDays(daysObj);
             } catch (err) {
                 console.error("Failed to load fresh dashboard data:", err);
             }
@@ -55,7 +60,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
 
     const latestNAV = navData.length > 0 ? [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
 
-    const niftyReturnStr = calculateNiftyCAGR(navData);
+    const niftyReturnStr = calculateNiftyCAGR(navData, tradingDays);
     const niftyReturnVal = niftyReturnStr ? parseFloat(niftyReturnStr) : null;
     const nifReturnVal = metrics?.annualizedReturn ? parseFloat(metrics.annualizedReturn) : 0;
     const outperformance = niftyReturnVal !== null ? (nifReturnVal - niftyReturnVal) : null;
@@ -144,7 +149,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <div className="p-3 bg-blue-500/10 w-fit rounded-xl mb-4">
                                     <ArrowUpRight className="w-6 h-6 text-blue-500" />
                                 </div>
-                                <h3 className="text-3xl font-bold text-foreground">{calculateNiftyCAGR(navData) || "—"}%</h3>
+                                <h3 className="text-3xl font-bold text-foreground">{niftyReturnStr || "—"}%</h3>
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Nifty 50 Return (Same Period)</p>
                             </div>
                         </div>
