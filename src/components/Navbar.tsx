@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, TrendingUp } from "lucide-react";
+import { Menu, X, Sun, Moon, ChevronDown, TrendingUp, Download } from "lucide-react";
 import { useLogo } from "@/context/LogoContext";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -37,6 +37,22 @@ export default function Navbar() {
             setLogoInNav(true);
         }
     }, [pathname, setLogoInNav]);
+
+    // Register Service Worker for PWA
+    useEffect(() => {
+        if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js").then(
+                    (registration) => {
+                        console.log("ServiceWorker registered successfully with scope: ", registration.scope);
+                    },
+                    (err) => {
+                        console.log("ServiceWorker registration failed: ", err);
+                    }
+                );
+            });
+        }
+    }, []);
 
     if (pathname.startsWith("/admin")) return null;
 
@@ -206,6 +222,21 @@ export default function Navbar() {
                             <Link href="/admin" onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors">
                                 Admin Login
                             </Link>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsOpen(false);
+                                    if (window.showNiveshakInstallPrompt) {
+                                        window.showNiveshakInstallPrompt();
+                                    } else {
+                                        alert("PWA installation is not supported on this browser/device. Try opening in Safari (iOS) or Chrome (Android).");
+                                    }
+                                }}
+                                className="w-full text-left block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors flex items-center justify-between"
+                            >
+                                <span>Install Web App</span>
+                                <Download className="w-4 h-4 text-accent" />
+                            </button>
                         </div>
                     </motion.div>
                 )}
