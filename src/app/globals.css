@@ -81,3 +81,9 @@ body {
   transition-duration: 300ms;
   overflow-x: hidden;
 }
+
+.glassmorphism-menu {
+  background-color: rgba(13, 27, 42, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}

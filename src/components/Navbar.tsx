@@ -61,15 +61,15 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20 relative">
 
-                    {/* Left & Center Logos Wrapper (Grouped on mobile, split on desktop) */}
-                    <div className="flex items-center gap-3 md:gap-0 w-auto h-20">
+                    {/* Left Logos Wrapper */}
+                    <div className="flex items-center gap-3 w-auto h-20">
                         {/* Section 1: IIM Shillong Logo (Left) */}
                         <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
                             <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
                         </a>
 
-                        {/* Section 2: Niveshak Logo (Centered on desktop, flows on mobile) */}
-                        <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center justify-center md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:top-0">
+                        {/* Section 2: Niveshak Logo */}
+                        <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center justify-center">
                             <Link href="/" className="flex items-center gap-3 group">
                                 {isLogoInNav && (
                                     <>
@@ -197,7 +197,7 @@ export default function Navbar() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -15 }}
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className="absolute top-[88px] right-4 left-4 md:hidden rounded-2xl border border-navy-700/50 bg-navy-900/90 backdrop-blur-xl shadow-2xl overflow-hidden z-50"
+                        className="absolute top-[88px] right-4 left-4 md:hidden rounded-2xl border border-navy-700/50 shadow-2xl overflow-hidden z-50 glassmorphism-menu"
                     >
                         <div className="px-4 pt-4 pb-6 space-y-2">
                             {navItems.map((item) => (
