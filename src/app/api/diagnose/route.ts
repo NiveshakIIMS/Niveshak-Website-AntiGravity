@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
         requestUrl: request.url,
     };
 
-    // Try a direct fetch to check connectivity
-    let fetchStatus = "not_attempted";
-    let fetchError = null;
-    let fetchBodySnippet = "";
+    // Test 1: Direct fetch to Supabase downstream
+    let directFetchStatus = "not_attempted";
+    let directFetchError = null;
+    let directFetchSnippet = "";
 
     if (url && anonKey) {
         try {
@@ -29,21 +29,56 @@ export async function GET(request: NextRequest) {
                     "Authorization": `Bearer ${anonKey}`
                 }
             });
-            fetchStatus = `response_status_${res.status}`;
+            directFetchStatus = `status_${res.status}`;
             const text = await res.text();
-            fetchBodySnippet = text.substring(0, 200);
+            directFetchSnippet = text.substring(0, 200);
         } catch (err: any) {
-            fetchStatus = "failed";
-            fetchError = err.message || String(err);
+            directFetchStatus = "failed";
+            directFetchError = err.message || String(err);
         }
+    }
+
+    // Test 2: Fetch through the Proxy endpoint on the same host
+    let proxyFetchStatus = "not_attempted";
+    let proxyFetchError = null;
+    let proxyFetchSnippet = "";
+    let proxyHeaders: Record<string, string> = {};
+
+    try {
+        const origin = new URL(request.url).origin;
+        // Simulating browser client fetch
+        const res = await fetch(`${origin}/api/supabase/rest/v1/hero_slides?select=*`, {
+            headers: {
+                "apikey": "proxy-dummy-key",
+                "Authorization": "Bearer proxy-dummy-key"
+            }
+        });
+        proxyFetchStatus = `status_${res.status}`;
+        
+        // Read response headers to check if anything is weird
+        res.headers.forEach((val, key) => {
+            proxyHeaders[key] = val;
+        });
+
+        const text = await res.text();
+        proxyFetchSnippet = text.substring(0, 200);
+    } catch (err: any) {
+        proxyFetchStatus = "failed";
+        proxyFetchError = err.message || String(err);
     }
 
     return NextResponse.json({
         diagnostics,
-        connectivity: {
-            status: fetchStatus,
-            error: fetchError,
-            bodySnippet: fetchBodySnippet
+        directFetch: {
+            status: directFetchStatus,
+            error: directFetchError,
+            bodySnippet: directFetchSnippet
+        },
+        proxyFetch: {
+            status: proxyFetchStatus,
+            error: proxyFetchError,
+            bodySnippet: proxyFetchSnippet,
+            headers: proxyHeaders
         }
     });
 }
