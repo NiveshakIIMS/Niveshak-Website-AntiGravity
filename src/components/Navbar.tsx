@@ -196,13 +196,19 @@ export default function Navbar() {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -15 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -15 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                         className="absolute top-[88px] right-4 left-4 rounded-2xl border border-navy-700/50 shadow-2xl overflow-hidden pointer-events-auto glassmorphism-menu"
                     >
-                        <div className="px-4 pt-4 pb-6 space-y-2">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -15 }}
+                            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                            className="px-4 pt-4 pb-6 space-y-2"
+                        >
                             {navItems.map((item) => (
                                 <Link
                                     key={item.name}
@@ -240,7 +246,7 @@ export default function Navbar() {
                                 <span>Install Web App</span>
                                 <Download className="w-4 h-4 text-accent" />
                             </button>
-                        </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
