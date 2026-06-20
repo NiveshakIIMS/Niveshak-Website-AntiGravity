@@ -119,12 +119,18 @@ async function handleProxy(request: NextRequest, context: { params: Promise<{ pa
 
     // 7. Forward standard HTTP Requests
     try {
-        const response = await fetch(targetUrl, {
+        const fetchOptions: RequestInit = {
             method: request.method,
             headers,
-            body,
             redirect: "manual"
-        });
+        };
+
+        // GET and HEAD requests must not have a body property in fetch, otherwise it throws a TypeError.
+        if (!["GET", "HEAD"].includes(request.method)) {
+            fetchOptions.body = body;
+        }
+
+        const response = await fetch(targetUrl, fetchOptions);
 
         // Filter out downstream transfer-encoding / content-encoding so Cloudflare can compress properly
         const responseHeaders = new Headers(response.headers);
