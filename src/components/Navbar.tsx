@@ -57,7 +57,8 @@ export default function Navbar() {
     if (pathname.startsWith("/admin")) return null;
 
     return (
-        <nav className="fixed w-full z-50 transition-all duration-300 bg-navy-900/70 border-b border-navy-800 shadow-lg backdrop-blur-lg">
+        <>
+            <nav className="fixed w-full z-50 transition-all duration-300 bg-navy-900/70 border-b border-navy-800 shadow-lg backdrop-blur-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20 relative">
 
@@ -188,8 +189,10 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+        </nav>
 
-            {/* Mobile Menu Dropdown Card (Floating glassmorphism card with spring animation) */}
+        {/* Mobile Menu Dropdown Card (Floating glassmorphism card with spring animation) */}
+        <div className="fixed inset-x-0 top-0 z-40 pointer-events-none md:hidden">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -197,7 +200,7 @@ export default function Navbar() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -15 }}
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className="absolute top-[88px] right-4 left-4 md:hidden rounded-2xl border border-navy-700/50 shadow-2xl overflow-hidden z-50 glassmorphism-menu"
+                        className="absolute top-[88px] right-4 left-4 rounded-2xl border border-navy-700/50 shadow-2xl overflow-hidden pointer-events-auto glassmorphism-menu"
                     >
                         <div className="px-4 pt-4 pb-6 space-y-2">
                             {navItems.map((item) => (
@@ -241,6 +244,7 @@ export default function Navbar() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </nav>
+        </div>
+    </>
     );
 }
