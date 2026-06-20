@@ -687,10 +687,10 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                     </li>
                                                     <li><strong>Total Amount (Value)</strong> = <code>Units × Target NAV</code></li>
                                                     <li>
-                                                        <strong>NIF (CAGR)</strong> = <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code>, where <code>Y</code> is the fractional years computed by dividing actual trading days in each calendar year by that year's configured trading days.
+                                                        <strong>NIF (CAGR)</strong> = <code>((Target NAV / Investment NAV) ^ (1 / Y)) - 1</code>, where the fractional years <code>Y = Σ (d_i / T_i)</code> is computed by summing the ratios of actual trading days in each calendar year (<code>d_i</code>) to that year's configured trading days (<code>T_i</code>).
                                                     </li>
                                                     <li>
-                                                        <strong>Nifty 50 Return (CAGR)</strong> = <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>, calculated over the exact same period using the same trading-days-based fractional years (<code>Y</code>).
+                                                        <strong>Nifty 50 Return (CAGR)</strong> = <code>((Target Nifty 50 / Investment Nifty 50) ^ (1 / Y)) - 1</code>, calculated over the exact same period using the same fractional years (<code>Y = Σ (d_i / T_i)</code>).
                                                     </li>
                                                 </ul>
                                                 <div className="pt-2 border-t border-border/40 text-[10px] italic">
