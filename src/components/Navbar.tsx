@@ -197,7 +197,7 @@ export default function Navbar() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -15 }}
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className="absolute top-[88px] right-4 left-4 md:hidden rounded-2xl border border-navy-700/50 bg-navy-950/80 backdrop-blur-xl shadow-2xl overflow-hidden z-50"
+                        className="absolute top-[88px] right-4 left-4 md:hidden rounded-2xl border border-navy-700/50 bg-navy-900/90 backdrop-blur-xl shadow-2xl overflow-hidden z-50"
                     >
                         <div className="px-4 pt-4 pb-6 space-y-2">
                             {navItems.map((item) => (

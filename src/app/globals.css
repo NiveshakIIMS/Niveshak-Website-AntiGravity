@@ -57,6 +57,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
+  --color-navy-950: #060D17;
   --color-navy-900: #0D1B2A;
   --color-navy-800: #1B263B;
   --color-navy-700: #415A77;
