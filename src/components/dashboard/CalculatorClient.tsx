@@ -37,6 +37,13 @@ const findNiftyValueForDate = (dateStr: string, navData: NAVData[]): number | nu
     return closestEntry ? (closestEntry.nifty50 ?? null) : null;
 };
 
+const formatPercent = (val: number | null, showPlus = false): string => {
+    if (val === null) return "—";
+    const sign = val < 0 ? "- " : (showPlus && val > 0 ? "+ " : "");
+    const absVal = Math.abs(val).toFixed(2);
+    return `${sign}${absVal} %`;
+};
+
 export default function CalculatorClient({ initialNAVData = [], initialInvestments = [] }: CalculatorClientProps) {
     const [navData, setNavData] = useState<NAVData[]>(initialNAVData);
     const [investments, setInvestments] = useState<NIFInvestment[]>(initialInvestments);
@@ -531,7 +538,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                             )}
                                                         </div>
                                                         <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.cagr >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                            {calcResults.cagr.toFixed(2)} %
+                                                            {formatPercent(calcResults.cagr)}
                                                         </h3>
                                                         <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">NIF Annualized Return (CAGR)</p>
                                                     </div>
@@ -555,7 +562,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                             )}
                                                         </div>
                                                         <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${calcResults.niftyReturn !== null && calcResults.niftyReturn >= 0 ? "text-blue-500" : "text-red-500"}`}>
-                                                            {calcResults.niftyReturn !== null ? `${calcResults.niftyReturn.toFixed(2)} %` : "—"}
+                                                            {formatPercent(calcResults.niftyReturn)}
                                                         </h3>
                                                         <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Nifty 50 Return (Same Period)</p>
                                                     </div>
@@ -585,7 +592,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                                     )}
                                                                 </div>
                                                                 <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight font-mono ${outperformance !== null && isPositive ? "text-green-500" : "text-red-500"}`}>
-                                                                    {outperformance !== null ? `${isPositive ? "+" : ""}${outperformance.toFixed(2)} %` : "—"}
+                                                                    {formatPercent(outperformance, true)}
                                                                 </h3>
                                                                 <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Outperformance vs Nifty 50</p>
                                                             </div>

@@ -12,6 +12,15 @@ interface NAVSectionProps {
     initialMetrics?: NIFMetrics | null;
 }
 
+const formatPercentStr = (str: string | null | undefined): string => {
+    if (!str) return "0.00 %";
+    const val = parseFloat(str);
+    if (isNaN(val)) return "0.00 %";
+    const sign = val < 0 ? "- " : "";
+    const absVal = Math.abs(val).toFixed(2);
+    return `${sign}${absVal} %`;
+};
+
 export default function NAVSection({ initialNAVData = [], initialMetrics = null }: NAVSectionProps) {
     const [latestNAV, setLatestNAV] = useState<NAVData | null>(() => {
         if (initialNAVData.length > 0) {
@@ -100,7 +109,7 @@ export default function NAVSection({ initialNAVData = [], initialMetrics = null 
                             <div className="flex items-center gap-2 text-sm mt-1">
                                 <span className="text-muted-foreground opacity-80">Annualized Return:</span>
                                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                    {metrics?.annualizedReturn || "0.0"}%
+                                    {formatPercentStr(metrics?.annualizedReturn)}
                                 </span>
                             </div>
                         </div>

@@ -30,6 +30,13 @@ const calculateNiftyCAGR = (navData: NAVData[], tradingDaysConfig: { [year: numb
     return cagr.toFixed(2);
 };
 
+const formatPercent = (val: number | null, showPlus = false): string => {
+    if (val === null) return "—";
+    const sign = val < 0 ? "- " : (showPlus && val > 0 ? "+ " : "");
+    const absVal = Math.abs(val).toFixed(2);
+    return `${sign}${absVal} %`;
+};
+
 export default function DashboardClient({ initialNAVData = [], initialMetrics = null }: DashboardClientProps) {
     const [navData, setNavData] = useState<NAVData[]>(initialNAVData);
     const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
@@ -135,8 +142,8 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <div className="p-3 bg-green-500/10 w-fit rounded-xl mb-4">
                                     <ArrowUpRight className="w-6 h-6 text-green-500" />
                                 </div>
-                                <h3 className="text-3xl font-bold text-foreground">{metrics?.annualizedReturn || "0.0"}%</h3>
-                                <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Annualized Return (NIF)</p>
+                                <h3 className="text-3xl font-bold text-foreground">{formatPercent(nifReturnVal)}</h3>
+                                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1">NIF Annualized Return (CAGR)</p>
                             </div>
                         </div>
 
@@ -149,8 +156,8 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                 <div className="p-3 bg-blue-500/10 w-fit rounded-xl mb-4">
                                     <ArrowUpRight className="w-6 h-6 text-blue-500" />
                                 </div>
-                                <h3 className="text-3xl font-bold text-foreground">{niftyReturnStr || "—"}%</h3>
-                                <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Nifty 50 Return (Same Period)</p>
+                                <h3 className="text-3xl font-bold text-foreground">{formatPercent(niftyReturnVal)}</h3>
+                                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1">Nifty 50 Return (Same Period)</p>
                             </div>
                         </div>
 
@@ -172,7 +179,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                     )}
                                 </div>
                                 <h3 className={`text-3xl font-bold ${outperformance !== null ? (outperformance >= 0 ? "text-green-500" : "text-red-500") : "text-foreground"}`}>
-                                    {outperformance !== null ? `${outperformance >= 0 ? "+" : ""}${outperformance.toFixed(2)}%` : "—"}
+                                    {formatPercent(outperformance, true)}
                                 </h3>
                                 <p className="text-muted-foreground font-medium uppercase tracking-wider text-xs mt-1">Outperformance vs Nifty 50</p>
                             </div>
