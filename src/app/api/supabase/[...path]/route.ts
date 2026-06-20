@@ -37,9 +37,12 @@ async function handleProxy(request: NextRequest, context: { params: Promise<{ pa
         return NextResponse.json({ error: "Configuration Error: Supabase URL is missing." }, { status: 500 });
     }
 
-    // Build the target url
+    // Build the target url, stripping Next.js internal route params from the query string
     const requestUrl = new URL(request.url);
-    const targetUrl = `${supabaseUrl}/${pathStr}${requestUrl.search}`;
+    const searchParams = new URLSearchParams(requestUrl.search);
+    searchParams.delete("path");
+    const queryString = searchParams.toString();
+    const targetUrl = `${supabaseUrl}/${pathStr}${queryString ? `?${queryString}` : ""}`;
 
     const headers = new Headers(request.headers);
 
