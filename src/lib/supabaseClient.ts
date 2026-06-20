@@ -5,11 +5,11 @@ const isClient = typeof window !== 'undefined';
 
 const supabaseUrl = isClient
     ? `${window.location.origin}/api/supabase`
-    : (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co');
+    : (process.env["SUPABASE_URL"] || process.env["NEXT_PUBLIC_SUPABASE_URL"] || 'https://placeholder.supabase.co');
 
 const supabaseKey = isClient
     ? 'proxy-dummy-key'
-    : (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key');
+    : (process.env["SUPABASE_ANON_KEY"] || process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] || 'placeholder-key');
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
