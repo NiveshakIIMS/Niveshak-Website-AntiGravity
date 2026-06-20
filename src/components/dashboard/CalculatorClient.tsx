@@ -37,11 +37,17 @@ const findNiftyValueForDate = (dateStr: string, navData: NAVData[]): number | nu
     return closestEntry ? (closestEntry.nifty50 ?? null) : null;
 };
 
-const formatPercent = (val: number | null, showPlus = false): string => {
+const formatPercent = (val: number | null, showPlus = true): string => {
     if (val === null) return "—";
     const sign = val < 0 ? "- " : (showPlus && val > 0 ? "+ " : "");
     const absVal = Math.abs(val).toFixed(2);
     return `${sign}${absVal} %`;
+};
+
+const formatSignedCurrency = (val: number): string => {
+    const sign = val < 0 ? "- " : (val > 0 ? "+ " : "");
+    const absVal = Math.abs(val);
+    return `${sign}₹ ${absVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 export default function CalculatorClient({ initialNAVData = [], initialInvestments = [] }: CalculatorClientProps) {
@@ -514,7 +520,7 @@ export default function CalculatorClient({ initialNAVData = [], initialInvestmen
                                                             )}
                                                         </div>
                                                         <h3 className={`text-xl md:text-2xl font-extrabold tracking-tight font-mono ${calcResults.gainsAmount >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                            {formatCurrency(calcResults.gainsAmount)}
+                                                            {formatSignedCurrency(calcResults.gainsAmount)}
                                                         </h3>
                                                         <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs mt-1.5">Gains Amount</p>
                                                     </div>

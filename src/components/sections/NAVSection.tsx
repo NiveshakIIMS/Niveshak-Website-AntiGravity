@@ -12,11 +12,11 @@ interface NAVSectionProps {
     initialMetrics?: NIFMetrics | null;
 }
 
-const formatPercentStr = (str: string | null | undefined): string => {
+const formatPercentStr = (str: string | null | undefined, showPlus = true): string => {
     if (!str) return "0.00 %";
     const val = parseFloat(str);
     if (isNaN(val)) return "0.00 %";
-    const sign = val < 0 ? "- " : "";
+    const sign = val < 0 ? "- " : (showPlus && val > 0 ? "+ " : "");
     const absVal = Math.abs(val).toFixed(2);
     return `${sign}${absVal} %`;
 };
