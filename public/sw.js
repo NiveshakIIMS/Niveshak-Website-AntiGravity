@@ -1,8 +1,10 @@
-const CACHE_NAME = 'niveshak-cache-v1';
+const CACHE_NAME = 'niveshak-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/logo.png',
-  '/iim-shillong-logo.png'
+  '/iim-shillong-logo.png',
+  '/pwa-icon.png',
+  '/icon.png'
 ];
 
 self.addEventListener('install', (event) => {

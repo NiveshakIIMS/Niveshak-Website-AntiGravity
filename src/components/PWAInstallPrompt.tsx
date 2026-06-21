@@ -127,8 +127,8 @@ export default function PWAInstallPrompt() {
                     });
                     new Notification("Niveshak NAV Updated 📈", {
                         body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
-                        icon: "/pwa-icon.png",
-                        badge: "/pwa-icon.png",
+                        icon: "/pwa-icon.png?v=2",
+                        badge: "/pwa-icon.png?v=2",
                         tag: `niveshak-nav-update-${newNAV.date}`
                     });
                 } catch (err) {
