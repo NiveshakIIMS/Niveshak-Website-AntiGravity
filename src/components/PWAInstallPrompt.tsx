@@ -93,6 +93,52 @@ export default function PWAInstallPrompt() {
         if (typeof window === "undefined") return;
         if (!("Notification" in window) || Notification.permission !== "granted") return;
 
+        let updateBuffer: any[] = [];
+        let processTimeout: NodeJS.Timeout | null = null;
+
+        const formatDateDDMMYYYY = (dateStr: string) => {
+            if (!dateStr) return "";
+            try {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const [y, m, d] = parts;
+                    return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+                }
+                const d = new Date(dateStr);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                return `${day}-${month}-${year}`;
+            } catch {
+                return "";
+            }
+        };
+
+        const processUpdates = () => {
+            // Sort chronologically (oldest first)
+            updateBuffer.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            updateBuffer.forEach((newNAV) => {
+                try {
+                    const formattedDate = formatDateDDMMYYYY(newNAV.date);
+                    const formattedValue = Number(newNAV.value).toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    new Notification("Niveshak NAV Updated 📈", {
+                        body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
+                        icon: "/pwa-icon.png",
+                        badge: "/pwa-icon.png",
+                        tag: `niveshak-nav-update-${newNAV.date}`
+                    });
+                } catch (err) {
+                    console.error("Error displaying notification:", err);
+                }
+            });
+
+            updateBuffer = [];
+        };
+
         const channel = supabase
             .channel("nav-updates-realtime")
             .on(
@@ -100,26 +146,17 @@ export default function PWAInstallPrompt() {
                 { event: "*", schema: "public", table: "nav_data" },
                 (payload) => {
                     const newNAV = payload.new as any;
-                    if (newNAV && newNAV.value) {
-                        try {
-                            const formattedDate = newNAV.date 
-                                ? new Date(newNAV.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) 
-                                : "";
-                            new Notification("Niveshak NAV Updated 📈", {
-                                body: `NIF NAV has been updated to ₹${Number(newNAV.value).toFixed(2)}${formattedDate ? ` for ${formattedDate}` : ''}. Open Niveshak app to view details.`,
-                                icon: "/logo.png",
-                                badge: "/logo.png",
-                                tag: "niveshak-nav-update"
-                            });
-                        } catch (err) {
-                            console.error("Error displaying notification:", err);
-                        }
+                    if (newNAV && newNAV.value && newNAV.date) {
+                        updateBuffer.push(newNAV);
+                        if (processTimeout) clearTimeout(processTimeout);
+                        processTimeout = setTimeout(processUpdates, 300);
                     }
                 }
             )
             .subscribe();
 
         return () => {
+            if (processTimeout) clearTimeout(processTimeout);
             supabase.removeChannel(channel);
         };
     }, [notificationPermission]);
