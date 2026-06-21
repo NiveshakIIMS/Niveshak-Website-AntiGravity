@@ -19,6 +19,8 @@ export default function PWAInstallPrompt() {
     const [isStandalone, setIsStandalone] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [notificationPermission, setNotificationPermission] = useState<string>("default");
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [isNotifDismissedThisSession, setIsNotifDismissedThisSession] = useState(false);
 
     // 1. Detect environment and installation status
     useEffect(() => {
@@ -88,7 +90,63 @@ export default function PWAInstallPrompt() {
         };
     }, [isIOS, isAndroid, isStandalone]);
 
-    // 2. Setup Supabase Realtime Subscription for NAV updates
+    // 2. Notification auto-prompting logic on mount and visibility change
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const isMob = /iphone|ipad|ipod|android/.test(window.navigator.userAgent.toLowerCase());
+        if (!isMob || !("Notification" in window)) return;
+
+        let timer: NodeJS.Timeout;
+
+        const checkAndPrompt = async () => {
+            if (Notification.permission === "granted") {
+                setShowNotificationPrompt(false);
+                return;
+            }
+
+            // 1. Attempt system-level popup directly
+            try {
+                const permission = await Notification.requestPermission();
+                setNotificationPermission(permission);
+                if (permission === "granted") {
+                    setShowNotificationPrompt(false);
+                    new Notification("Notifications Enabled 🔔", {
+                        body: "You will now receive alerts whenever the NIF NAV is updated.",
+                        icon: "/pwa-icon.png?v=2"
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.log("Auto-requesting system permission failed (requires user gesture):", err);
+            }
+
+            // 2. Show in-app prompt if still not granted after a small delay
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => {
+                if (Notification.permission !== "granted") {
+                    setShowNotificationPrompt(true);
+                }
+            }, 4000);
+        };
+
+        // Trigger on mount
+        checkAndPrompt();
+
+        // Trigger on app foregrounding / visibility change
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                checkAndPrompt();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibility);
+        return () => {
+            if (timer) clearTimeout(timer);
+            document.removeEventListener("visibilitychange", handleVisibility);
+        };
+    }, []);
+
+    // 3. Setup Supabase Realtime Subscription for NAV updates
     useEffect(() => {
         if (typeof window === "undefined") return;
         if (!("Notification" in window) || Notification.permission !== "granted") return;
@@ -185,114 +243,186 @@ export default function PWAInstallPrompt() {
     const requestNotificationPermission = async () => {
         if (!("Notification" in window)) return;
         
-        const permission = await Notification.requestPermission();
-        setNotificationPermission(permission);
+        try {
+            const permission = await Notification.requestPermission();
+            setNotificationPermission(permission);
 
-        if (permission === "granted") {
-            // Trigger test notification
-            new Notification("Notifications Enabled 🔔", {
-                body: "You will now receive alerts whenever the NIF NAV is updated.",
-                icon: "/logo.png"
-            });
+            if (permission === "granted") {
+                setShowNotificationPrompt(false);
+                // Trigger test notification
+                new Notification("Notifications Enabled 🔔", {
+                    body: "You will now receive alerts whenever the NIF NAV is updated.",
+                    icon: "/pwa-icon.png?v=2"
+                });
+            } else if (permission === "denied") {
+                alert("Notifications are blocked. Please enable notification permissions in your browser or site settings to receive NAV updates.");
+                setShowNotificationPrompt(false);
+            }
+        } catch (err) {
+            console.error("Error requesting notification permission:", err);
         }
+    };
+
+    const handleDismissNotifPrompt = () => {
+        setShowNotificationPrompt(false);
+        setIsNotifDismissedThisSession(true);
     };
 
     // If on desktop or already installed (and not explicitly opened via menu), don't render
     const isMobile = useMemo(() => isIOS || isAndroid, [isIOS, isAndroid]);
     if (!isMobile) return null;
 
+    const shouldShowNotifBanner = showNotificationPrompt && !isVisible && !isNotifDismissedThisSession && notificationPermission !== "granted";
+
     return (
-        <AnimatePresence>
-            {isVisible && (
-                <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 flex justify-center items-end pointer-events-none md:hidden">
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="w-full max-w-sm rounded-2xl border border-navy-700/50 bg-navy-950/90 backdrop-blur-xl shadow-2xl p-5 space-y-4 pointer-events-auto overflow-hidden relative"
-                    >
-                        {/* Header */}
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-white rounded-xl p-1 overflow-hidden shadow-md shrink-0 flex items-center justify-center">
-                                    <img src="/logo.png" alt="Niveshak Logo" className="w-full h-full object-contain" />
+        <>
+            <AnimatePresence>
+                {isVisible && (
+                    <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 flex justify-center items-end pointer-events-none md:hidden">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="w-full max-w-sm rounded-2xl border border-navy-700/50 bg-navy-950/90 backdrop-blur-xl shadow-2xl p-5 space-y-4 pointer-events-auto overflow-hidden relative"
+                        >
+                            {/* Header */}
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-white rounded-xl p-1 overflow-hidden shadow-md shrink-0 flex items-center justify-center">
+                                        <img src="/logo.png" alt="Niveshak Logo" className="w-full h-full object-contain" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-extrabold text-white text-base">Install Niveshak App</h3>
+                                        <p className="text-[11px] text-gray-400">Finance Club of IIM Shillong</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-extrabold text-white text-base">Install Niveshak App</h3>
-                                    <p className="text-[11px] text-gray-400">Finance Club of IIM Shillong</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleDismiss}
-                                className="p-1 rounded-full bg-navy-800 text-gray-400 hover:text-white transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-xs text-gray-300 leading-relaxed">
-                            Add Niveshak to your home screen for instant access, offline support, and real-time NAV update notifications!
-                        </p>
-
-                        {/* IOS Specific Instructions */}
-                        {isIOS && !isStandalone && (
-                            <div className="p-3 rounded-xl bg-navy-900/50 border border-navy-800 text-[11px] text-gray-300 space-y-2.5">
-                                <div className="font-semibold text-white flex items-center gap-1.5 text-xs">
-                                    <InfoIcon className="w-3.5 h-3.5 text-accent" />
-                                    Installation Instructions:
-                                </div>
-                                <div className="space-y-1.5 leading-normal">
-                                    <p className="flex items-center gap-1.5">
-                                        1. Tap the <span className="p-1 bg-navy-800 rounded text-white"><Share className="w-3.5 h-3.5 inline" /></span> share button in Safari.
-                                    </p>
-                                    <p className="flex items-center gap-1.5">
-                                        2. Scroll down and select <span className="font-bold text-white flex items-center gap-1">Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline" /></span>.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Actions */}
-                        <div className="flex flex-col gap-2 pt-1">
-                            {/* Install Button for Android */}
-                            {isAndroid && deferredPrompt && (
                                 <button
-                                    onClick={handleInstallAndroid}
-                                    className="w-full py-2.5 rounded-xl bg-accent hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25"
+                                    onClick={handleDismiss}
+                                    className="p-1 rounded-full bg-navy-800 text-gray-400 hover:text-white transition-colors"
                                 >
-                                    <Download className="w-4 h-4" /> Install App
+                                    <X className="w-4 h-4" />
                                 </button>
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-xs text-gray-300 leading-relaxed">
+                                Add Niveshak to your home screen for instant access, offline support, and real-time NAV update notifications!
+                            </p>
+
+                            {/* IOS Specific Instructions */}
+                            {isIOS && !isStandalone && (
+                                <div className="p-3 rounded-xl bg-navy-900/50 border border-navy-800 text-[11px] text-gray-300 space-y-2.5">
+                                    <div className="font-semibold text-white flex items-center gap-1.5 text-xs">
+                                        <InfoIcon className="w-3.5 h-3.5 text-accent" />
+                                        Installation Instructions:
+                                    </div>
+                                    <div className="space-y-1.5 leading-normal">
+                                        <p className="flex items-center gap-1.5">
+                                            1. Tap the <span className="p-1 bg-navy-800 rounded text-white"><Share className="w-3.5 h-3.5 inline" /></span> share button in Safari.
+                                        </p>
+                                        <p className="flex items-center gap-1.5">
+                                            2. Scroll down and select <span className="font-bold text-white flex items-center gap-1">Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline" /></span>.
+                                        </p>
+                                    </div>
+                                </div>
                             )}
 
-                            {/* Enable Notifications Button */}
-                            {notificationPermission !== "granted" && (
+                            {/* Actions */}
+                            <div className="flex flex-col gap-2 pt-1">
+                                {/* Install Button for Android */}
+                                {isAndroid && deferredPrompt && (
+                                    <button
+                                        onClick={handleInstallAndroid}
+                                        className="w-full py-2.5 rounded-xl bg-accent hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25"
+                                    >
+                                        <Download className="w-4 h-4" /> Install App
+                                    </button>
+                                )}
+
+                                {/* Enable Notifications Button */}
+                                {notificationPermission !== "granted" && (
+                                    <button
+                                        onClick={requestNotificationPermission}
+                                        className="w-full py-2.5 rounded-xl bg-navy-800/80 hover:bg-navy-800 border border-navy-700/50 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Bell className="w-4 h-4 text-yellow-400" /> Enable NAV Alerts
+                                    </button>
+                                )}
+
+                                {notificationPermission === "granted" && (
+                                    <div className="text-[10px] text-green-400 font-semibold flex items-center justify-center gap-1.5 py-1">
+                                        <Bell className="w-3.5 h-3.5 text-green-400 animate-bounce" /> Real-time NAV update notifications enabled!
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleDismiss}
+                                    className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all text-center"
+                                >
+                                    Maybe Later
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {shouldShowNotifBanner && (
+                    <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 flex justify-center items-end pointer-events-none md:hidden">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="w-full max-w-sm rounded-2xl border border-navy-700/50 bg-navy-950/90 backdrop-blur-xl shadow-2xl p-5 space-y-4 pointer-events-auto overflow-hidden relative"
+                        >
+                            {/* Header */}
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-navy-900 rounded-xl flex items-center justify-center shrink-0 border border-navy-700/50 shadow-inner">
+                                        <Bell className="w-6 h-6 text-accent animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-extrabold text-white text-base">Enable Notifications</h3>
+                                        <p className="text-[11px] text-gray-400">Never miss a NIF NAV update</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleDismissNotifPrompt}
+                                    className="p-1 rounded-full bg-navy-800 text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-xs text-gray-300 leading-relaxed">
+                                Get real-time updates of NIF NAV delivered straight to your device as soon as they are updated.
+                            </p>
+
+                            {/* Actions */}
+                            <div className="flex flex-col gap-2 pt-1">
                                 <button
                                     onClick={requestNotificationPermission}
-                                    className="w-full py-2.5 rounded-xl bg-navy-800/80 hover:bg-navy-800 border border-navy-700/50 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/25"
                                 >
-                                    <Bell className="w-4 h-4 text-yellow-400" /> Enable NAV Alerts
+                                    <Bell className="w-4 h-4 text-white" /> Turn On Notifications
                                 </button>
-                            )}
 
-                            {notificationPermission === "granted" && (
-                                <div className="text-[10px] text-green-400 font-semibold flex items-center justify-center gap-1.5 py-1">
-                                    <Bell className="w-3.5 h-3.5 text-green-400 animate-bounce" /> Real-time NAV update notifications enabled!
-                                </div>
-                            )}
-
-                            <button
-                                onClick={handleDismiss}
-                                className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all text-center"
-                            >
-                                Maybe Later
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+                                <button
+                                    onClick={handleDismissNotifPrompt}
+                                    className="w-full py-2 rounded-xl text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all text-center"
+                                >
+                                    Maybe Later
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </>
     );
 }
 
