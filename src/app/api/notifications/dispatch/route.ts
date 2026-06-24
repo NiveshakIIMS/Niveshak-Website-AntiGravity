@@ -1,4 +1,3 @@
-import "@/lib/bindCrypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { buildPushHTTPRequest } from "@pushforge/builder";
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest) {
                 failureCount++;
                 debugLogs.push({
                     id: row.id,
-                    error: err.message || String(err)
+                    error: err.stack || err.message || String(err)
                 });
             }
         });
