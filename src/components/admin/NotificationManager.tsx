@@ -188,7 +188,7 @@ export default function NotificationManager() {
             const token = session?.access_token;
             if (!token) {
                 console.error("No active user session to dispatch push notification.");
-                return;
+                return null;
             }
 
             // Strip HTML for native OS notifications
@@ -210,12 +210,15 @@ export default function NotificationManager() {
 
             if (!response.ok) {
                 console.error("Failed to dispatch push notification:", await response.text());
+                return null;
             } else {
                 const resData = await response.json();
                 console.log("Push notification dispatched successfully:", resData);
+                return resData;
             }
         } catch (err) {
             console.error("Error dispatching push notification:", err);
+            return null;
         }
     };
 
@@ -245,9 +248,13 @@ export default function NotificationManager() {
             });
 
             // Dispatch to offline background push subscribers
-            await dispatchPushNotification(title, body);
+            const pushResult = await dispatchPushNotification(title, body);
 
-            alert("NIF NAV Notification dispatched successfully!");
+            if (pushResult && pushResult.success) {
+                alert(`NIF NAV Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s)`);
+            } else {
+                alert("NIF NAV Notification triggered on site, but background push did not find any active subscriptions (or dispatch failed).");
+            }
         } catch (err: any) {
             console.error("Failed to send NAV notification:", err);
             alert(`Failed to dispatch notification: ${err.message || "Unknown error"}`);
@@ -272,9 +279,13 @@ export default function NotificationManager() {
             });
 
             // Dispatch to offline background push subscribers
-            await dispatchPushNotification(customTitle, customBody);
+            const pushResult = await dispatchPushNotification(customTitle, customBody);
 
-            alert("Custom Notification dispatched successfully!");
+            if (pushResult && pushResult.success) {
+                alert(`Custom Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s)`);
+            } else {
+                alert("Custom Notification triggered on site, but background push did not find any active subscriptions (or dispatch failed).");
+            }
             setCustomTitle("");
             setCustomBody("");
         } catch (err: any) {

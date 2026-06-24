@@ -31,7 +31,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Database configuration missing" }, { status: 500 });
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Initialize Supabase Client with the admin's token so queries run on behalf of the admin.
+        // This allows RLS select and delete checks on tables (like push_subscriptions) to succeed
+        // even when SUPABASE_SERVICE_ROLE_KEY is not defined in environment variables.
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+            global: {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        });
 
         // Verify token with Supabase Auth
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);

@@ -45,10 +45,11 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const payload = event.data.json();
+      const origin = self.location.origin;
       const options = {
         body: payload.body,
-        icon: '/pwa-icon.png?v=2',
-        badge: '/pwa-icon.png?v=2',
+        icon: origin + '/pwa-icon.png?v=2',
+        badge: origin + '/pwa-icon.png?v=2',
         vibrate: [100, 50, 100],
         data: {
           url: payload.url || '/'
@@ -59,11 +60,12 @@ self.addEventListener('push', (event) => {
       );
     } catch (e) {
       const text = event.data.text();
+      const origin = self.location.origin;
       event.waitUntil(
         self.registration.showNotification('Niveshak Update', {
           body: text,
-          icon: '/pwa-icon.png?v=2',
-          badge: '/pwa-icon.png?v=2'
+          icon: origin + '/pwa-icon.png?v=2',
+          badge: origin + '/pwa-icon.png?v=2'
         })
       );
     }
