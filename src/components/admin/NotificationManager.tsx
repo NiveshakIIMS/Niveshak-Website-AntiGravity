@@ -278,7 +278,13 @@ export default function NotificationManager() {
             const pushResult = await dispatchPushNotification(title, body);
 
             if (pushResult && pushResult.success) {
-                alert(`NIF NAV Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s)`);
+                let logStr = "";
+                if (pushResult.debugLogs && pushResult.debugLogs.length > 0) {
+                    logStr = "\n\nDebug logs:\n" + pushResult.debugLogs.map((log: any) => 
+                        `- Endpoint: ${log.endpoint}\n  Status: ${log.status || "Error"}\n  Response/Error: ${log.response || log.error}`
+                    ).join("\n");
+                }
+                alert(`NIF NAV Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s) (failed: ${pushResult.failed})${logStr}`);
             } else {
                 alert("NIF NAV Notification triggered on site, but background push did not find any active subscriptions (or dispatch failed).");
             }
@@ -309,7 +315,13 @@ export default function NotificationManager() {
             const pushResult = await dispatchPushNotification(customTitle, customBody);
 
             if (pushResult && pushResult.success) {
-                alert(`Custom Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s)`);
+                let logStr = "";
+                if (pushResult.debugLogs && pushResult.debugLogs.length > 0) {
+                    logStr = "\n\nDebug logs:\n" + pushResult.debugLogs.map((log: any) => 
+                        `- Endpoint: ${log.endpoint}\n  Status: ${log.status || "Error"}\n  Response/Error: ${log.response || log.error}`
+                    ).join("\n");
+                }
+                alert(`Custom Notification dispatched successfully!\n- In-app trigger activated\n- Background push sent to ${pushResult.dispatched} device(s) (failed: ${pushResult.failed})${logStr}`);
             } else {
                 alert("Custom Notification triggered on site, but background push did not find any active subscriptions (or dispatch failed).");
             }

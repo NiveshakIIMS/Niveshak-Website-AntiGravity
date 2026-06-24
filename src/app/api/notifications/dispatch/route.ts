@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         let successCount = 0;
         let failureCount = 0;
         const toDeleteIds: string[] = [];
+        const debugLogs: any[] = [];
 
         // 4. Send dispatches concurrently
         const pushPromises = subscriptions.map(async (row) => {
@@ -95,6 +96,15 @@ export async function POST(request: NextRequest) {
                     body: pushBody
                 });
 
+                const status = pushResponse.status;
+                const responseText = await pushResponse.text();
+                debugLogs.push({
+                    id: row.id,
+                    endpoint: endpoint.substring(0, 45) + "...",
+                    status,
+                    response: responseText
+                });
+
                 if (pushResponse.ok) {
                     successCount++;
                 } else {
@@ -102,13 +112,15 @@ export async function POST(request: NextRequest) {
                     // Cleanup expired subscriptions (404 Not Found, 410 Gone)
                     if (pushResponse.status === 404 || pushResponse.status === 410) {
                         toDeleteIds.push(row.id);
-                    } else {
-                        console.error(`Subscription dispatch failed with status ${pushResponse.status}: ${await pushResponse.text()}`);
                     }
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`Error sending push notification to row ${row.id}:`, err);
                 failureCount++;
+                debugLogs.push({
+                    id: row.id,
+                    error: err.message || String(err)
+                });
             }
         });
 
@@ -130,7 +142,8 @@ export async function POST(request: NextRequest) {
             success: true,
             dispatched: successCount,
             failed: failureCount,
-            cleanedUp: toDeleteIds.length
+            cleanedUp: toDeleteIds.length,
+            debugLogs
         });
     } catch (err: any) {
         console.error("Dispatch route error:", err);
