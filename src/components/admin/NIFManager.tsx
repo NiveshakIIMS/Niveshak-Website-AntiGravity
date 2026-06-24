@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, TrendingUp, Save, BarChart3, Calendar } from "lucide-react";
 import { dataService, NAVData, calculateTradingYears, formatDateDDMMYYYY } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
@@ -26,12 +27,38 @@ export default function NIFManager() {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     });
+                    
+                    const title = "NIF NAV Updated 📈";
+                    const body = `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`;
+
                     await dataService.triggerNotification({
                         type: "auto_nav",
-                        title: "NIF NAV Updated 📈",
-                        body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
+                        title,
+                        body,
                         timestamp: Date.now()
                     });
+
+                    // Dispatch system-level push notifications to offline background devices
+                    try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        if (token) {
+                            await fetch("/api/notifications/dispatch", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    title,
+                                    body,
+                                    url: "/"
+                                })
+                            });
+                        }
+                    } catch (pushErr) {
+                        console.error("Failed to dispatch push notification automatically:", pushErr);
+                    }
                 }
             }
         } catch (err) {

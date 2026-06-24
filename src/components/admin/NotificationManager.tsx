@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Bell, Calendar, Send, Sparkles, Check, Info, Settings, FileText, AlertCircle } from "lucide-react";
 import { dataService, NotificationConfig, NAVData, formatDateDDMMYYYY } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 
 const COMMON_EMOJIS = ["📢", "📈", "🔔", "🚀", "💡", "🔥", "🏆", "📊", "💰", "🎓", "🎉", "⭐️"];
 
@@ -82,6 +83,43 @@ export default function NotificationManager() {
         }
     };
 
+    const dispatchPushNotification = async (title: string, body: string, url: string = "/") => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                console.error("No active user session to dispatch push notification.");
+                return;
+            }
+
+            // Strip HTML for native OS notifications
+            const plainTitle = title.replace(/<[^>]*>/g, "");
+            const plainBody = body.replace(/<[^>]*>/g, "");
+
+            const response = await fetch("/api/notifications/dispatch", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: plainTitle,
+                    body: plainBody,
+                    url
+                })
+            });
+
+            if (!response.ok) {
+                console.error("Failed to dispatch push notification:", await response.text());
+            } else {
+                const resData = await response.json();
+                console.log("Push notification dispatched successfully:", resData);
+            }
+        } catch (err) {
+            console.error("Error dispatching push notification:", err);
+        }
+    };
+
     const handleSendNavNotification = async () => {
         const selectedEntry = navData.find(d => d.date === selectedNavDate);
         if (!selectedEntry) {
@@ -97,12 +135,18 @@ export default function NotificationManager() {
                 maximumFractionDigits: 2
             });
 
+            const title = "NIF NAV Alert 📈";
+            const body = `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`;
+
             await dataService.triggerNotification({
                 type: "manual_nav",
-                title: "NIF NAV Alert 📈",
-                body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
+                title,
+                body,
                 timestamp: Date.now()
             });
+
+            // Dispatch to offline background push subscribers
+            await dispatchPushNotification(title, body);
 
             alert("NIF NAV Notification dispatched successfully!");
         } catch (err: any) {
@@ -127,6 +171,9 @@ export default function NotificationManager() {
                 body: customBody,
                 timestamp: Date.now()
             });
+
+            // Dispatch to offline background push subscribers
+            await dispatchPushNotification(customTitle, customBody);
 
             alert("Custom Notification dispatched successfully!");
             setCustomTitle("");

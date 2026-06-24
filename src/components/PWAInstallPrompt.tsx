@@ -13,6 +13,19 @@ declare global {
     }
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 export default function PWAInstallPrompt() {
     const [isVisible, setIsVisible] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
@@ -322,6 +335,56 @@ export default function PWAInstallPrompt() {
         };
     }, [notificationPermission]);
 
+    const subscribeToWebPush = async () => {
+        if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
+
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            
+            // Check if subscription already exists
+            let subscription = await registration.pushManager.getSubscription();
+            
+            const vapidPublicKey = "BKV3GvX2qXDFWovEJxzmJTazvUPesyEdUl183qPp7nnVViZOdy8kXTlWVnE-2Dr9mb0xCjJ9IBZtO338dXfBAdI";
+            const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+            if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedKey
+                });
+                console.log("New push subscription created:", subscription);
+            } else {
+                console.log("Existing push subscription found:", subscription);
+            }
+
+            // Send subscription to backend
+            const response = await fetch("/api/notifications/subscribe", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ subscription })
+            });
+
+            if (!response.ok) {
+                console.error("Failed to register subscription on server:", await response.text());
+            } else {
+                console.log("Subscription registered on server successfully");
+            }
+        } catch (err) {
+            console.error("Failed to subscribe user to Web Push:", err);
+        }
+    };
+
+    // Automatically trigger Web Push subscription when permission is granted
+    useEffect(() => {
+        if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) return;
+        if (notificationPermission === "granted") {
+            subscribeToWebPush();
+        }
+    }, [notificationPermission]);
+
     // 3. Handlers
     const handleInstallAndroid = async () => {
         const promptEvent = deferredPrompt || window.deferredPrompt;
@@ -357,6 +420,7 @@ export default function PWAInstallPrompt() {
                     body: "You will now receive alerts whenever the NIF NAV is updated.",
                     icon: "/pwa-icon.png?v=2"
                 });
+                await subscribeToWebPush();
             } else if (permission === "denied") {
                 alert("Notifications are blocked. Please enable notification permissions in your browser or site settings to receive NAV updates.");
                 setShowNotificationPrompt(false);
