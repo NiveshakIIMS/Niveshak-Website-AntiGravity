@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, Settings, LogOut, FileText, ArrowLeft, Image as ImageIcon, Database, Award, X, Calculator } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, Settings, LogOut, FileText, ArrowLeft, Image as ImageIcon, Database, Award, X, Calculator, Bell } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -26,6 +26,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, onLogout, isOpen
         { id: "redemption", label: "Redemption Info", icon: <BookOpen className="w-5 h-5" /> },
         { id: "resources", label: "Resources", icon: <FileText className="w-5 h-5" /> },
         { id: "social", label: "Social Links", icon: <Users className="w-5 h-5" /> },
+        { id: "notifications", label: "Notifications", icon: <Bell className="w-5 h-5" /> },
     ];
 
     return (

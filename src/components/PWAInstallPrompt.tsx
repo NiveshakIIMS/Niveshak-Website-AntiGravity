@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Share, PlusSquare, Bell, BellOff, ArrowUp } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { dataService, formatDateDDMMYYYY } from "@/services/dataService";
 
 declare global {
     interface Window {
@@ -21,6 +22,7 @@ export default function PWAInstallPrompt() {
     const [notificationPermission, setNotificationPermission] = useState<string>("default");
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const [isNotifDismissedThisSession, setIsNotifDismissedThisSession] = useState(false);
+    const [activeInAppNotification, setActiveInAppNotification] = useState<any>(null);
 
     // 1. Detect environment and installation status
     useEffect(() => {
@@ -146,75 +148,176 @@ export default function PWAInstallPrompt() {
         };
     }, []);
 
-    // 3. Setup Supabase Realtime Subscription for NAV updates
+    const displayNotification = (payload: any) => {
+        if (!payload || !payload.title || !payload.body) return;
+
+        // Save timestamp in localStorage
+        localStorage.setItem("niveshak_last_notif_timestamp", payload.timestamp.toString());
+
+        // 1. Show native OS notification if allowed
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                // Strip HTML tags for native banner
+                const plainTitle = payload.title.replace(/<[^>]*>/g, "");
+                const plainBody = payload.body.replace(/<[^>]*>/g, "");
+                
+                new Notification(plainTitle, {
+                    body: plainBody,
+                    icon: "/pwa-icon.png?v=2",
+                    badge: "/pwa-icon.png?v=2",
+                    tag: `niveshak-push-${payload.timestamp}`
+                });
+            } catch (err) {
+                console.error("Failed to show native browser notification:", err);
+            }
+        }
+
+        // 2. Show in-app notification banner
+        setActiveInAppNotification(payload);
+    };
+
+    // Auto-dismiss in-app banner after 8s
+    useEffect(() => {
+        if (!activeInAppNotification) return;
+        const timer = setTimeout(() => {
+            setActiveInAppNotification(null);
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [activeInAppNotification]);
+
+    // Daily Auto-Timer Notification Check
     useEffect(() => {
         if (typeof window === "undefined") return;
-        if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-        let updateBuffer: any[] = [];
-        let processTimeout: NodeJS.Timeout | null = null;
-
-        const formatDateDDMMYYYY = (dateStr: string) => {
-            if (!dateStr) return "";
+        const checkDailyAutoTimer = async () => {
             try {
-                const parts = dateStr.split('T')[0].split('-');
-                if (parts.length === 3) {
-                    const [y, m, d] = parts;
-                    return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+                const config = await dataService.getNotificationConfig();
+                if (!config.autoTimerEnabled || !config.autoTimerTime) return;
+
+                // Check if already shown today
+                const todayStr = new Date().toDateString();
+                const lastShownToday = localStorage.getItem("niveshak_last_daily_timer_shown_date");
+                if (lastShownToday === todayStr) return;
+
+                // Check if current time is past the scheduled time
+                const [targetHr, targetMin] = config.autoTimerTime.split(":").map(Number);
+                const now = new Date();
+                const currentHr = now.getHours();
+                const currentMin = now.getMinutes();
+
+                const isPastTime = currentHr > targetHr || (currentHr === targetHr && currentMin >= targetMin);
+                if (!isPastTime) return;
+
+                // Fetch latest NIF NAV
+                const navList = await dataService.getNAVData();
+                if (navList.length === 0) return;
+                
+                // Sort descending and get latest
+                const sorted = [...navList].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                const latestEntry = sorted[0];
+                if (!latestEntry) return;
+
+                const formattedDate = formatDateDDMMYYYY(latestEntry.date);
+                const formattedValue = Number(latestEntry.value).toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                // Display it locally
+                const dailyPayload = {
+                    type: "auto_nav",
+                    title: "Daily NIF NAV Update 📊",
+                    body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
+                    timestamp: Date.now()
+                };
+
+                // Trigger notifications
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(dailyPayload.title, {
+                        body: dailyPayload.body,
+                        icon: "/pwa-icon.png?v=2",
+                        badge: "/pwa-icon.png?v=2",
+                        tag: `niveshak-daily-${todayStr}`
+                    });
                 }
-                const d = new Date(dateStr);
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const year = d.getFullYear();
-                return `${day}-${month}-${year}`;
-            } catch {
-                return "";
+                
+                setActiveInAppNotification(dailyPayload);
+                localStorage.setItem("niveshak_last_daily_timer_shown_date", todayStr);
+
+            } catch (err) {
+                console.error("Daily timer check failed:", err);
             }
         };
 
-        const processUpdates = () => {
-            // Sort chronologically (oldest first)
-            updateBuffer.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Run check on mount
+        checkDailyAutoTimer();
 
-            updateBuffer.forEach((newNAV) => {
-                try {
-                    const formattedDate = formatDateDDMMYYYY(newNAV.date);
-                    const formattedValue = Number(newNAV.value).toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                    new Notification("Niveshak NAV Updated 📈", {
-                        body: `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`,
-                        icon: "/pwa-icon.png?v=2",
-                        badge: "/pwa-icon.png?v=2",
-                        tag: `niveshak-nav-update-${newNAV.date}`
-                    });
-                } catch (err) {
-                    console.error("Error displaying notification:", err);
-                }
-            });
-
-            updateBuffer = [];
+        // Also run when browser tab becomes active
+        const handleVisibilityCheck = () => {
+            if (document.visibilityState === "visible") {
+                checkDailyAutoTimer();
+            }
         };
+        document.addEventListener("visibilitychange", handleVisibilityCheck);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityCheck);
+        };
+    }, []);
 
+    // 3. Setup Supabase Realtime Subscription for Notification Triggers
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        // Fetch latest trigger on mount to check if it's new
+        const checkLatestTrigger = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('site_settings')
+                    .select('value')
+                    .eq('id', 'notification_trigger')
+                    .single();
+                if (!error && data && data.value) {
+                    const payload = JSON.parse(data.value);
+                    const lastShown = localStorage.getItem("niveshak_last_notif_timestamp");
+                    const lastShownTs = lastShown ? parseInt(lastShown) : 0;
+                    
+                    // If the notification was triggered within the last 5 minutes and is new, display it
+                    if (payload.timestamp > lastShownTs && Date.now() - payload.timestamp < 5 * 60 * 1000) {
+                        displayNotification(payload);
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking latest notification trigger:", err);
+            }
+        };
+        checkLatestTrigger();
+
+        // Subscribe to site_settings table changes for notification triggers
         const channel = supabase
-            .channel("nav-updates-realtime")
+            .channel("notification-triggers-realtime")
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "nav_data" },
+                { 
+                    event: "*", 
+                    schema: "public", 
+                    table: "site_settings", 
+                    filter: "id=eq.notification_trigger" 
+                },
                 (payload) => {
-                    const newNAV = payload.new as any;
-                    if (newNAV && newNAV.value && newNAV.date) {
-                        updateBuffer.push(newNAV);
-                        if (processTimeout) clearTimeout(processTimeout);
-                        processTimeout = setTimeout(processUpdates, 300);
+                    const row = payload.new as any;
+                    if (row && row.value) {
+                        try {
+                            const parsed = JSON.parse(row.value);
+                            displayNotification(parsed);
+                        } catch (err) {
+                            console.error("Failed to parse realtime notification trigger:", err);
+                        }
                     }
                 }
             )
             .subscribe();
 
         return () => {
-            if (processTimeout) clearTimeout(processTimeout);
             supabase.removeChannel(channel);
         };
     }, [notificationPermission]);
@@ -268,16 +371,30 @@ export default function PWAInstallPrompt() {
         setIsNotifDismissedThisSession(true);
     };
 
-    // If on desktop or already installed (and not explicitly opened via menu), don't render
+    // If on desktop or already installed (and not explicitly opened via menu), don't render PWA alerts
     const isMobile = useMemo(() => isIOS || isAndroid, [isIOS, isAndroid]);
-    if (!isMobile) return null;
 
-    const shouldShowNotifBanner = showNotificationPrompt && !isVisible && !isNotifDismissedThisSession && notificationPermission !== "granted";
+    const shouldShowNotifBanner = isMobile && showNotificationPrompt && !isVisible && !isNotifDismissedThisSession && notificationPermission !== "granted";
+
+    const formatRichText = (text: string) => {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/g, '<strong class="font-bold text-white">$1</strong>')
+            .replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/g, '<strong class="font-bold text-white">$1</strong>')
+            .replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/g, '<em class="italic text-gray-200">$1</em>')
+            .replace(/&lt;em&gt;(.*?)&lt;\/em&gt;/g, '<em class="italic text-gray-200">$1</em>')
+            .replace(/&lt;span class="text-accent"&gt;(.*?)&lt;\/span&gt;/g, '<span class="text-sky-400 font-bold font-semibold">$1</span>')
+            .replace(/&lt;span className="text-accent"&gt;(.*?)&lt;\/span&gt;/g, '<span class="text-sky-400 font-bold font-semibold">$1</span>');
+    };
 
     return (
         <>
+            {/* PWA Installation Sheet */}
             <AnimatePresence>
-                {isVisible && (
+                {isMobile && isVisible && (
                     <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 flex justify-center items-end pointer-events-none md:hidden">
                         <motion.div
                             initial={{ opacity: 0, y: 50, scale: 0.95 }}
@@ -368,6 +485,7 @@ export default function PWAInstallPrompt() {
                 )}
             </AnimatePresence>
 
+            {/* PWA Custom Notification Permission Prompt */}
             <AnimatePresence>
                 {shouldShowNotifBanner && (
                     <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 flex justify-center items-end pointer-events-none md:hidden">
@@ -418,6 +536,46 @@ export default function PWAInstallPrompt() {
                                     Maybe Later
                                 </button>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* In-App Floating Notification Toast (Desktop & Mobile) */}
+            <AnimatePresence>
+                {activeInAppNotification && (
+                    <div className="fixed top-4 inset-x-4 sm:left-auto sm:right-4 z-[99999] flex justify-center sm:justify-end pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="w-full max-w-sm rounded-2xl border border-navy-700/50 bg-navy-950/95 backdrop-blur-xl shadow-2xl p-4 flex gap-3 pointer-events-auto relative overflow-hidden"
+                        >
+                            {/* Icon */}
+                            <div className="w-10 h-10 bg-navy-900 rounded-xl flex items-center justify-center shrink-0 border border-navy-800 shadow-inner">
+                                <Bell className="w-5 h-5 text-accent animate-pulse" />
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0 pr-4">
+                                <h4 
+                                    className="font-extrabold text-white text-sm leading-snug"
+                                    dangerouslySetInnerHTML={{ __html: formatRichText(activeInAppNotification.title) }}
+                                />
+                                <p 
+                                    className="text-xs text-gray-300 mt-1 leading-normal"
+                                    dangerouslySetInnerHTML={{ __html: formatRichText(activeInAppNotification.body) }}
+                                />
+                            </div>
+
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setActiveInAppNotification(null)}
+                                className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:text-white hover:bg-navy-800 transition-colors"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
                         </motion.div>
                     </div>
                 )}
