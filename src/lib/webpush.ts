@@ -1,6 +1,6 @@
 // Native Web Push encryption implementation for Cloudflare Workers (Edge runtime)
 // Resolves "Illegal invocation" errors by avoiding third-party libraries that destructure SubtleCrypto methods.
-// All Web Crypto calls are invoked directly on the native namespace (globalThis.crypto / globalThis.crypto.subtle).
+// All Web Crypto calls are dynamically bound to the native namespaces at execution time to ensure correct 'this' context.
 
 export interface PushSubscriptionKeys {
     p256dh: string;
@@ -38,6 +38,29 @@ export interface VapidKey {
     crv: string;
     d: string;
 }
+
+// Helper to dynamically retrieve and bind subtle crypto methods at execution time.
+// This prevents bundlers (Webpack/Turbopack) from rewriting or destructuring them statically.
+const getSubtle = () => {
+    const s = globalThis.crypto.subtle;
+    return {
+        importKey: (s.importKey as any).bind(s),
+        exportKey: (s.exportKey as any).bind(s),
+        generateKey: (s.generateKey as any).bind(s),
+        deriveKey: (s.deriveKey as any).bind(s),
+        deriveBits: (s.deriveBits as any).bind(s),
+        encrypt: (s.encrypt as any).bind(s),
+        decrypt: (s.decrypt as any).bind(s),
+        sign: (s.sign as any).bind(s),
+        verify: (s.verify as any).bind(s),
+        digest: (s.digest as any).bind(s),
+    };
+};
+
+const getRandomValues = (array: any) => {
+    const c = globalThis.crypto;
+    return (c.getRandomValues as any).bind(c)(array);
+};
 
 const stringFromArrayBuffer = (s: ArrayBuffer | Uint8Array): string => {
     let result = '';
@@ -140,7 +163,7 @@ const importClientKeys = async (keys: PushSubscriptionKeys) => {
         throw new Error(`Invalid p256dh key: expected uncompressed point format (0x04 prefix) but got 0x${decodedKey[0].toString(16).padStart(2, '0')}`);
     }
 
-    const p256 = await globalThis.crypto.subtle.importKey(
+    const p256 = await getSubtle().importKey(
         'jwk',
         {
             kty: 'EC',
@@ -157,12 +180,12 @@ const importClientKeys = async (keys: PushSubscriptionKeys) => {
 };
 
 const deriveSharedSecret = async (clientPublicKey: CryptoKey, localPrivateKey: CryptoKey): Promise<CryptoKey> => {
-    const sharedSecretBytes = await globalThis.crypto.subtle.deriveBits(
+    const sharedSecretBytes = await getSubtle().deriveBits(
         { name: 'ECDH', public: clientPublicKey },
         localPrivateKey,
         256
     );
-    return globalThis.crypto.subtle.importKey(
+    return getSubtle().importKey(
         'raw',
         sharedSecretBytes,
         { name: 'HKDF' },
@@ -172,7 +195,7 @@ const deriveSharedSecret = async (clientPublicKey: CryptoKey, localPrivateKey: C
 };
 
 const derivePseudoRandomKey = async (auth: ArrayBuffer, sharedSecret: CryptoKey): Promise<CryptoKey> => {
-    const pseudoRandomKeyBytes = await globalThis.crypto.subtle.deriveBits(
+    const pseudoRandomKeyBytes = await getSubtle().deriveBits(
         {
             name: 'HKDF',
             hash: 'SHA-256',
@@ -182,7 +205,7 @@ const derivePseudoRandomKey = async (auth: ArrayBuffer, sharedSecret: CryptoKey)
         sharedSecret,
         256
     );
-    return globalThis.crypto.subtle.importKey(
+    return getSubtle().importKey(
         'raw',
         pseudoRandomKeyBytes,
         'HKDF',
@@ -193,8 +216,8 @@ const derivePseudoRandomKey = async (auth: ArrayBuffer, sharedSecret: CryptoKey)
 
 const createContext = async (clientPublicKey: CryptoKey, localPublicKey: CryptoKey): Promise<Uint8Array> => {
     const [clientKeyBytes, localKeyBytes] = await Promise.all([
-        globalThis.crypto.subtle.exportKey('raw', clientPublicKey),
-        globalThis.crypto.subtle.exportKey('raw', localPublicKey),
+        getSubtle().exportKey('raw', clientPublicKey),
+        getSubtle().exportKey('raw', localPublicKey),
     ]);
     return concatTypedArrays([
         new TextEncoder().encode('P-256\0'),
@@ -210,7 +233,7 @@ const deriveNonce = async (pseudoRandomKey: CryptoKey, salt: any, context: Uint8
         new TextEncoder().encode('Content-Encoding: nonce\0'),
         context,
     ]);
-    return globalThis.crypto.subtle.deriveBits(
+    return getSubtle().deriveBits(
         { name: 'HKDF', hash: 'SHA-256', salt, info: nonceInfo } as any,
         pseudoRandomKey,
         12 * 8
@@ -222,12 +245,12 @@ const deriveContentEncryptionKey = async (pseudoRandomKey: CryptoKey, salt: any,
         new TextEncoder().encode('Content-Encoding: aesgcm\0'),
         context,
     ]);
-    const bits = await globalThis.crypto.subtle.deriveBits(
+    const bits = await getSubtle().deriveBits(
         { name: 'HKDF', hash: 'SHA-256', salt, info } as any,
         pseudoRandomKey,
         16 * 8
     );
-    return globalThis.crypto.subtle.importKey(
+    return getSubtle().importKey(
         'raw',
         bits,
         'AES-GCM',
@@ -266,7 +289,7 @@ export const encryptPayload = async (
     const contentEncryptionKey = await deriveContentEncryptionKey(pseudoRandomKey, salt, context);
     const encodedPayload = new TextEncoder().encode(payload);
     const paddedPayload = padPayload(encodedPayload);
-    return globalThis.crypto.subtle.encrypt(
+    return getSubtle().encrypt(
         { name: 'AES-GCM', iv: nonce },
         contentEncryptionKey,
         paddedPayload as any
@@ -282,7 +305,7 @@ export const createJwt = async (jwk: VapidKey, jwtData: any): Promise<string> =>
     const base64JwtData = base64UrlEncode(JSON.stringify(jwtData));
     const unsignedToken = `${base64JwtInfo}.${base64JwtData}`;
 
-    const privateKey = await globalThis.crypto.subtle.importKey(
+    const privateKey = await getSubtle().importKey(
         'jwk',
         jwk,
         { name: 'ECDSA', namedCurve: 'P-256' },
@@ -290,7 +313,7 @@ export const createJwt = async (jwk: VapidKey, jwtData: any): Promise<string> =>
         ['sign']
     );
 
-    const signature = await globalThis.crypto.subtle.sign(
+    const signature = await getSubtle().sign(
         { name: 'ECDSA', hash: { name: 'SHA-256' } },
         privateKey,
         new TextEncoder().encode(unsignedToken)
@@ -305,8 +328,8 @@ export const vapidHeaders = async (
     salt: any,
     localPublicKey: CryptoKey
 ): Promise<Record<string, string>> => {
-    const localPublicKeyBase64 = await globalThis.crypto.subtle.exportKey('raw', localPublicKey)
-        .then((bytes) => base64UrlEncode(bytes));
+    const localPublicKeyBase64 = await getSubtle().exportKey('raw', localPublicKey)
+        .then((bytes: any) => base64UrlEncode(bytes));
     
     const serverPublicKey = base64UrlEncode(`\x04${base64Decode(base64UrlDecodeString(options.jwk.x))}${base64Decode(base64UrlDecodeString(options.jwk.y))}`);
     const jwt = await createJwt(options.jwk, options.jwt);
@@ -370,12 +393,12 @@ export async function buildPushHTTPRequest(options: {
         topic: options.message.options?.topic,
     };
 
-    const salt = globalThis.crypto.getRandomValues(new Uint8Array(16));
-    const localKeys = await globalThis.crypto.subtle.generateKey(
+    const salt = getRandomValues(new Uint8Array(16));
+    const localKeys = await getSubtle().generateKey(
         { name: 'ECDH', namedCurve: 'P-256' },
         true,
         ['deriveBits']
-    );
+    ) as CryptoKeyPair;
 
     const body = await encryptPayload(localKeys, salt, buildOptions.payload, options.subscription);
     const headers = await vapidHeaders(buildOptions, body.byteLength, salt, localKeys.publicKey);
