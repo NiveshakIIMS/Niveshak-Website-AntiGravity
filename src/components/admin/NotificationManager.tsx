@@ -7,6 +7,19 @@ import { Save, Bell, Calendar, Send, Sparkles, Check, Info, Settings, FileText, 
 import { dataService, NotificationConfig, NAVData, formatDateDDMMYYYY } from "@/services/dataService";
 import { supabase } from "@/lib/supabaseClient";
 
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 const COMMON_EMOJIS = ["📢", "📈", "🔔", "🚀", "💡", "🔥", "🏆", "📊", "💰", "🎓", "🎉", "⭐️"];
 
 export default function NotificationManager() {
@@ -40,9 +53,95 @@ export default function NotificationManager() {
     const titleRef = useRef<HTMLInputElement>(null);
     const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+    // Diagnostics State
+    const [permissionStatus, setPermissionStatus] = useState<string>("default");
+    const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+    const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
+
+    const checkSubscriptionStatus = async () => {
+        if (typeof window === "undefined") return;
+        if (!("Notification" in window)) {
+            setPermissionStatus("not-supported");
+            return;
+        }
+        setPermissionStatus(Notification.permission);
+
+        if (!("serviceWorker" in navigator)) return;
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const sub = await registration.pushManager.getSubscription();
+            setIsSubscribed(!!sub);
+        } catch (err: any) {
+            console.error("Failed to check subscription:", err);
+        }
+    };
+
     useEffect(() => {
         loadData();
+        checkSubscriptionStatus();
     }, []);
+
+    const testAndSubscribePush = async () => {
+        setDiagnosticError(null);
+        if (typeof window === "undefined") return;
+
+        if (!("Notification" in window)) {
+            setDiagnosticError("Notifications are not supported by this browser.");
+            return;
+        }
+
+        if (!("serviceWorker" in navigator)) {
+            setDiagnosticError("Service workers are not supported by this browser.");
+            return;
+        }
+
+        try {
+            // 1. Request Permission
+            const permission = await Notification.requestPermission();
+            setPermissionStatus(permission);
+            if (permission !== "granted") {
+                setDiagnosticError(`Permission denied or dismissed (${permission}). Please enable notification permissions in your browser settings.`);
+                return;
+            }
+
+            // 2. Get SW registration
+            const registration = await navigator.serviceWorker.ready;
+
+            // 3. Get / Re-create subscription
+            let sub = await registration.pushManager.getSubscription();
+            if (sub) {
+                // Unsubscribe first to force fresh keys
+                await sub.unsubscribe();
+            }
+
+            const vapidPublicKey = "BKV3GvX2qXDFWovEJxzmJTazvUPesyEdUl183qPp7nnVViZOdy8kXTlWVnE-2Dr9mb0xCjJ9IBZtO338dXfBAdI";
+            const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+            sub = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedKey
+            });
+
+            setIsSubscribed(true);
+
+            // 4. Sync with server
+            const res = await fetch("/api/notifications/subscribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ subscription: sub.toJSON() })
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                setDiagnosticError(`Server rejected subscription: ${text}`);
+            } else {
+                alert("Browser successfully subscribed! You will now receive system notifications.");
+            }
+        } catch (err: any) {
+            console.error(err);
+            setDiagnosticError(err.message || String(err));
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -449,6 +548,50 @@ export default function NotificationManager() {
                                         </motion.div>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Browser Push Diagnostics */}
+                            <div className="bg-card rounded-2xl border border-border p-6 space-y-6">
+                                <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                                    <Bell className="w-5 h-5 text-muted-foreground" />
+                                    Browser Push Diagnostics
+                                </h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Check your browser's push subscription status. If you are not receiving notifications, use the button below to force a re-subscription and display any hidden errors.
+                                </p>
+
+                                <div className="p-4 bg-muted/40 border border-border rounded-xl space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="font-semibold text-muted-foreground">Notification Permission:</span>
+                                        <span className={`font-bold ${
+                                            permissionStatus === "granted" ? "text-green-500" :
+                                            permissionStatus === "denied" ? "text-red-500" : "text-yellow-500"
+                                        }`}>
+                                            {permissionStatus.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="font-semibold text-muted-foreground">Push Subscription:</span>
+                                        <span className={`font-bold ${
+                                            isSubscribed ? "text-green-500" : "text-yellow-500"
+                                        }`}>
+                                            {isSubscribed ? "ACTIVE" : "INACTIVE"}
+                                        </span>
+                                    </div>
+                                    {diagnosticError && (
+                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-500 break-words font-mono">
+                                            <strong>Error:</strong> {diagnosticError}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={testAndSubscribePush}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-navy-800 hover:bg-navy-700 border border-navy-700/50 text-foreground rounded-xl text-sm font-semibold transition-all cursor-pointer"
+                                >
+                                    <Sparkles className="w-4 h-4 text-accent" />
+                                    Force Re-Subscribe & Test Browser
+                                </button>
                             </div>
                         </motion.div>
                     )}

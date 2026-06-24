@@ -13,14 +13,14 @@ export async function POST(request: NextRequest) {
         }
 
         const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
             return NextResponse.json({ error: "Database configuration missing" }, { status: 500 });
         }
 
-        // Initialize Supabase Client with service key or anon key depending on access needs.
-        // We use the anon key here because RLS permits public inserts.
+        // Initialize Supabase Client. We prioritize the service role key on the server
+        // to securely bypass client-side RLS insert constraints.
         const supabase = createClient(supabaseUrl, supabaseKey);
         
         const { error } = await supabase
