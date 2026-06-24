@@ -348,15 +348,21 @@ export default function PWAInstallPrompt() {
             const vapidPublicKey = "BKV3GvX2qXDFWovEJxzmJTazvUPesyEdUl183qPp7nnVViZOdy8kXTlWVnE-2Dr9mb0xCjJ9IBZtO338dXfBAdI";
             const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
 
-            if (!subscription) {
-                subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: convertedKey
-                });
-                console.log("New push subscription created:", subscription);
-            } else {
-                console.log("Existing push subscription found:", subscription);
+            // Unsubscribe existing registration to force fresh keys and prevent VAPID key mismatches
+            if (subscription) {
+                try {
+                    await subscription.unsubscribe();
+                    console.log("Unsubscribed stale push subscription successfully");
+                } catch (unsubErr) {
+                    console.error("Failed to unsubscribe stale push subscription:", unsubErr);
+                }
             }
+
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedKey
+            });
+            console.log("Fresh push subscription registered:", subscription);
 
             // Send subscription to backend
             const response = await fetch("/api/notifications/subscribe", {

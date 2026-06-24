@@ -45,6 +45,7 @@ export default function Navbar() {
                 navigator.serviceWorker.register("/sw.js").then(
                     (registration) => {
                         console.log("ServiceWorker registered successfully with scope: ", registration.scope);
+                        registration.update();
                     },
                     (err) => {
                         console.log("ServiceWorker registration failed: ", err);

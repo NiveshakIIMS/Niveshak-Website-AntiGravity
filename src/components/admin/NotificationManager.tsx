@@ -57,6 +57,31 @@ export default function NotificationManager() {
     const [permissionStatus, setPermissionStatus] = useState<string>("default");
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
+    const [registeredCount, setRegisteredCount] = useState<number | null>(null);
+    const [loadingCount, setLoadingCount] = useState<boolean>(false);
+
+    const fetchRegisteredCount = async () => {
+        try {
+            setLoadingCount(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) return;
+
+            const res = await fetch("/api/notifications/status", {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRegisteredCount(data.count);
+            }
+        } catch (err) {
+            console.error("Failed to fetch registered subscriptions count:", err);
+        } finally {
+            setLoadingCount(false);
+        }
+    };
 
     const checkSubscriptionStatus = async () => {
         if (typeof window === "undefined") return;
@@ -71,6 +96,7 @@ export default function NotificationManager() {
             const registration = await navigator.serviceWorker.ready;
             const sub = await registration.pushManager.getSubscription();
             setIsSubscribed(!!sub);
+            await fetchRegisteredCount();
         } catch (err: any) {
             console.error("Failed to check subscription:", err);
         }
@@ -136,6 +162,7 @@ export default function NotificationManager() {
                 setDiagnosticError(`Server rejected subscription: ${text}`);
             } else {
                 alert("Browser successfully subscribed! You will now receive system notifications.");
+                await checkSubscriptionStatus();
             }
         } catch (err: any) {
             console.error(err);
@@ -587,6 +614,12 @@ export default function NotificationManager() {
                                             isSubscribed ? "text-green-500" : "text-yellow-500"
                                         }`}>
                                             {isSubscribed ? "ACTIVE" : "INACTIVE"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="font-semibold text-muted-foreground">Total Database Subscriptions:</span>
+                                        <span className="font-bold text-blue-500">
+                                            {loadingCount ? "Loading..." : registeredCount !== null ? `${registeredCount} active device(s)` : "Unavailable"}
                                         </span>
                                     </div>
                                     {diagnosticError && (
