@@ -1,9 +1,6 @@
-import { patchCrypto } from "@/lib/patchCrypto";
-patchCrypto();
-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { buildPushHTTPRequest } from "@pushforge/builder";
+import { buildPushHTTPRequest } from "@/lib/webpush";
 
 export const runtime = "edge";
 
