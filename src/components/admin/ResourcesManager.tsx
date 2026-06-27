@@ -7,6 +7,7 @@ import { dataService, Resource } from "@/services/dataService";
 import { uploadService } from "@/services/uploadService";
 import MediaInput from "./MediaInput";
 import { formatDateIndian } from "@/lib/dateUtils";
+import AdminButton from "./AdminButton";
 
 export default function ResourcesManager() {
     const [resources, setResources] = useState<Resource[]>([]);
@@ -136,18 +137,18 @@ export default function ResourcesManager() {
                         <p className="text-muted-foreground">Manage documents, links, and folders.</p>
                     </div>
                     <div className="flex gap-2">
-                        <button
+                        <AdminButton
                             onClick={() => { resetForm(); setCurrentResource(prev => ({ ...prev, type: 'folder' })); setIsEditing(true); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg shadow-blue-600/20"
+                            icon={<Plus className="w-5 h-5" />}
                         >
-                            <Plus className="w-5 h-5" /> New Folder
-                        </button>
-                        <button
+                            New Folder
+                        </AdminButton>
+                        <AdminButton
                             onClick={() => { resetForm(); setIsEditing(true); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold shadow-md hover:shadow-lg shadow-blue-600/20"
+                            icon={<Plus className="w-5 h-5" />}
                         >
-                            <Plus className="w-5 h-5" /> Add Resource
-                        </button>
+                            Add Resource
+                        </AdminButton>
                     </div>
                 </div>
 
@@ -207,18 +208,18 @@ export default function ResourcesManager() {
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-bold text-foreground truncate">{resource.title}</h3>
                                             <div className="flex gap-1">
-                                                <button
+                                                <AdminButton
                                                     onClick={(e) => { e.stopPropagation(); setCurrentResource(resource); setIsEditing(true); }}
-                                                    className="p-1.5 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                                                >
-                                                    <FileText className="w-4 h-4" /> {/* Edit Icon reused */}
-                                                </button>
-                                                <button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    icon={<FileText className="w-4 h-4" />}
+                                                />
+                                                <AdminButton
                                                     onClick={(e) => { e.stopPropagation(); handleDelete(resource.id); }}
-                                                    className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" /> {/* Delete Icon reused X or Trash */}
-                                                </button>
+                                                    size="sm"
+                                                    variant="danger"
+                                                    icon={<X className="w-4 h-4" />}
+                                                />
                                             </div>
                                         </div>
                                         <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{resource.description || (resource.type === 'folder' ? "Folder" : "No description")}</p>
@@ -352,16 +353,16 @@ export default function ResourcesManager() {
                                 )}
                             </div>
 
-                            <div className="p-4 border-t border-border flex justify-end gap-2 bg-muted/10">
-                                <button onClick={() => setIsEditing(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted">Cancel</button>
-                                <button
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
-                                >
-                                    {saving && <Loader2 className="w-3 h-3 animate-spin" />} Save
-                                </button>
-                            </div>
+                             <div className="p-4 border-t border-border flex justify-end gap-2 bg-muted/10">
+                                 <AdminButton onClick={() => setIsEditing(false)} variant="secondary">Cancel</AdminButton>
+                                 <AdminButton
+                                     onClick={handleSave}
+                                     isLoading={saving}
+                                     icon={<Save className="w-4 h-4" />}
+                                 >
+                                     Save
+                                 </AdminButton>
+                             </div>
                         </motion.div>
                     </motion.div>
                 )}

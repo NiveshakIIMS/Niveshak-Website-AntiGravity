@@ -7,6 +7,7 @@ import { dataService, NAVData, calculateTradingYears } from "@/services/dataServ
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
 import * as XLSX from "xlsx";
+import AdminButton from "./AdminButton";
 
 export default function NIFManager() {
     const [data, setData] = useState<NAVData[]>([]);
@@ -293,9 +294,9 @@ export default function NIFManager() {
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             title="Upload Excel File"
                         />
-                        <button className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-medium transition-all shadow-sm">
-                            <Save className="w-5 h-5" /> Bulk Upload Excel
-                        </button>
+                        <AdminButton variant="success" icon={<Save className="w-5 h-5" />} type="button">
+                            Bulk Upload Excel
+                        </AdminButton>
                     </div>
                 </div>
             </div>
@@ -347,7 +348,7 @@ export default function NIFManager() {
                                     placeholder="18329.15"
                                 />
                             </div>
-                            <button onClick={addEntry} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95">Add Data Point</button>
+                            <AdminButton onClick={addEntry} variant="primary" className="w-full">Add Data Point</AdminButton>
                         </div>
                     </motion.div>
 
@@ -496,16 +497,18 @@ export default function NIFManager() {
                                         </button>
                                     </div>
                                 ))}
-                                <button
-                                    onClick={async () => {
-                                        const newAlloc = [...(metrics.assetAllocation || []), { name: "New Asset", value: 0, color: "#000000" }];
-                                        const newMetrics = { ...metrics, assetAllocation: newAlloc };
-                                        await updateMetricsStateAndDb(newMetrics);
-                                    }}
-                                    className="w-full py-2 border-2 border-dashed border-gray-200 dark:border-navy-700 rounded-xl text-gray-400 font-bold hover:border-purple-500 hover:text-purple-500 transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" /> Add Asset Class
-                                </button>
+                                <AdminButton
+                                     onClick={async () => {
+                                         const newAlloc = [...(metrics.assetAllocation || []), { name: "New Asset", value: 0, color: "#000000" }];
+                                         const newMetrics = { ...metrics, assetAllocation: newAlloc };
+                                         await updateMetricsStateAndDb(newMetrics);
+                                     }}
+                                     variant="secondary"
+                                     className="w-full"
+                                     icon={<Plus className="w-4 h-4" />}
+                                 >
+                                     Add Asset Class
+                                 </AdminButton>
                             </div>
                         </div>
                     </motion.div>
@@ -563,12 +566,12 @@ export default function NIFManager() {
                             <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs">{data.length} entries</span>
                         </h3>
                         <div className="flex gap-2">
-                            <button onClick={() => setIsMaximized(true)} className="p-2 hover:bg-muted rounded-lg text-blue-500 text-xs font-bold transition-colors">Maximize</button>
-                            {data.length > 0 && (
-                                <button onClick={deleteAll} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-500 text-xs font-bold transition-colors flex items-center gap-1">
-                                    <Trash2 className="w-3.5 h-3.5" /> Clear All
-                                </button>
-                            )}
+                             <AdminButton onClick={() => setIsMaximized(true)} size="sm" variant="secondary">Maximize</AdminButton>
+                             {data.length > 0 && (
+                                 <AdminButton onClick={deleteAll} size="sm" variant="danger" icon={<Trash2 className="w-3.5 h-3.5" />}>
+                                     Clear All
+                                 </AdminButton>
+                             )}
                         </div>
                     </div>
 
@@ -589,7 +592,7 @@ export default function NIFManager() {
                                             <p className="text-[10px] text-muted-foreground font-semibold">Nifty: ₹ {Number(d.nifty50).toLocaleString('en-IN')}</p>
                                         )}
                                     </div>
-                                    <button onClick={() => deleteEntry(d.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2"><Trash2 className="w-4 h-4" /></button>
+                                    <AdminButton onClick={() => deleteEntry(d.id)} size="sm" variant="ghost" icon={<Trash2 className="w-4 h-4" />} title="Delete" className="text-gray-300 hover:text-red-500" />
                                 </div>
                             </div>
                         ))}
@@ -605,7 +608,7 @@ export default function NIFManager() {
                                     <h2 className="text-2xl font-bold text-foreground">Historical NAV Data</h2>
                                     <p className="text-muted-foreground">Manage full history • Sorted latest first</p>
                                 </div>
-                                <button onClick={() => setIsMaximized(false)} className="px-5 py-2 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition-opacity">Close</button>
+                                <AdminButton onClick={() => setIsMaximized(false)} variant="secondary">Close</AdminButton>
                             </div>
 
                              <div className="flex-1 overflow-auto p-0 custom-scrollbar">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Save, FileText, Layout, Info, Plus, Trash2, Type, Image as ImageIcon, AlignLeft, ArrowUp, ArrowDown, Maximize2, X, Check, List } from "lucide-react";
 import { dataService, AboutContent, ContentBlock, AboutSection } from "@/services/dataService";
 import MediaInput from "./MediaInput";
+import AdminButton from "./AdminButton";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from 'next/dynamic';
 
@@ -177,9 +178,9 @@ export default function AboutManager() {
                     </h2>
                     <p className="text-muted-foreground mt-1">Update company mission, vision, and history.</p>
                 </div>
-                <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 transition-transform hover:-translate-y-0.5 font-bold">
-                    <Save className="w-5 h-5" /> Save Changes
-                </button>
+                <AdminButton onClick={handleSave} variant="success" icon={<Save className="w-5 h-5" />}>
+                    Save Changes
+                </AdminButton>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -210,9 +211,9 @@ export default function AboutManager() {
                             <List className="w-5 h-5 text-muted-foreground" />
                             <h3 className="font-bold text-lg text-card-foreground">Content Sections</h3>
                         </div>
-                        <button onClick={addSection} className="text-xs flex items-center gap-1 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 px-3 py-1.5 rounded-lg hover:bg-green-200 transition-colors font-bold">
-                            <Plus className="w-3 h-3" /> Add Section
-                        </button>
+                        <AdminButton onClick={addSection} size="sm" variant="success" icon={<Plus className="w-3 h-3" />}>
+                            Add Section
+                        </AdminButton>
                     </div>
 
                     <div className="space-y-6">
@@ -257,9 +258,9 @@ export default function AboutManager() {
                                 <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1"><Info className="w-3 h-3" /> Info Cards</span>
-                                        <button onClick={() => addCardToSection(sIdx)} className="text-[10px] flex items-center gap-1 bg-blue-100 text-blue-600 dark:bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-200 transition-colors font-bold">
-                                            <Plus className="w-3 h-3" /> Add Card
-                                        </button>
+                                        <AdminButton onClick={() => addCardToSection(sIdx)} size="sm" variant="primary" icon={<Plus className="w-3 h-3" />}>
+                                            Add Card
+                                        </AdminButton>
                                     </div>
 
                                     <div className="space-y-3">

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import MFAVerification from "@/components/admin/MFAVerification";
+import AdminButton from "@/components/admin/AdminButton";
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -120,12 +121,14 @@ export default function AdminPage() {
                 >
                     <MFAVerification onVerifySuccess={handleMFASuccess} />
                     <div className="mt-8 text-center">
-                        <button
+                        <AdminButton
                             onClick={() => supabase.auth.signOut()}
-                            className="text-sm text-red-500 hover:underline"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-600"
                         >
                             Log Out / Cancel
-                        </button>
+                        </AdminButton>
                     </div>
                 </motion.div>
             </div>
@@ -184,19 +187,13 @@ export default function AdminPage() {
                         </div>
                     </div>
 
-                    <button
+                    <AdminButton
                         type="submit"
-                        disabled={isLoggingIn}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        isLoading={isLoggingIn}
+                        className="w-full py-3"
                     >
-                        {isLoggingIn ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" /> Signing In...
-                            </>
-                        ) : (
-                            "Sign In"
-                        )}
-                    </button>
+                        Sign In
+                    </AdminButton>
 
                     <div className="mt-6 text-center">
                         <Link href="/" className="text-sm text-muted-foreground hover:text-blue-500 transition-colors inline-flex items-center gap-2">

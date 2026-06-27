@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit2, Award, X, Linkedin, Mail, UploadCloud, Loader2 } f
 import { dataService, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminButton from "./AdminButton";
 import * as XLSX from "xlsx";
 import { uploadService } from "@/services/uploadService";
 
@@ -214,9 +215,9 @@ export default function HallOfFameManager() {
                         <span className="font-medium whitespace-nowrap">Import Excel</span>
                         <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleExcelUpload} disabled={isUploadingExcel} />
                     </label>
-                    <button onClick={startNew} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all hover:-translate-y-0.5 whitespace-nowrap">
-                        <Plus className="w-5 h-5" /> Add Alumni
-                    </button>
+                    <AdminButton onClick={startNew} icon={<Plus className="w-5 h-5" />}>
+                        Add Alumni
+                    </AdminButton>
                 </div>
             </div>
 
@@ -291,7 +292,7 @@ export default function HallOfFameManager() {
 
                             {/* Footer */}
                             <div className="p-6 border-t border-border bg-card rounded-b-2xl">
-                                <button onClick={handleSave} className="w-full py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-colors shadow-lg shadow-amber-600/20">Save Alumni</button>
+                                <AdminButton onClick={handleSave} variant="success" className="w-full">Save Alumni</AdminButton>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -333,12 +334,8 @@ export default function HallOfFameManager() {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => startEdit(member)} className="p-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => handleDelete(member.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <AdminButton onClick={() => startEdit(member)} size="sm" variant="secondary" icon={<Edit2 className="w-4 h-4" />} title="Edit" />
+                                            <AdminButton onClick={() => handleDelete(member.id)} size="sm" variant="danger" icon={<Trash2 className="w-4 h-4" />} title="Delete" />
                                         </div>
                                     </div>
 

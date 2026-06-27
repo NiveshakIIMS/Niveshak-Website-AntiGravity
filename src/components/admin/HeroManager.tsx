@@ -6,6 +6,7 @@ import { dataService, HeroSlide } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
 import { isVideoUrl } from "@/lib/utils";
+import AdminButton from "./AdminButton";
 
 export default function HeroManager() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -72,12 +73,12 @@ export default function HeroManager() {
                     </h2>
                     <p className="text-muted-foreground mt-1">Manage the rotating banner on the homepage.</p>
                 </div>
-                <button
+                <AdminButton
                     onClick={handleAdd}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5"
+                    icon={<Plus className="w-5 h-5" />}
                 >
-                    <Plus className="w-5 h-5" /> Add Slide
-                </button>
+                    Add Slide
+                </AdminButton>
             </div>
 
             <div className="space-y-6">
@@ -204,42 +205,40 @@ export default function HeroManager() {
                                     {/* Sorting Controls */}
                                     {!isEditing && (
                                         <div className="flex gap-2 mb-2 pb-2 border-b border-border">
-                                            <button
+                                            <AdminButton
                                                 onClick={() => moveSlide(index, -1)}
                                                 disabled={index === 0}
-                                                className="flex-1 py-1.5 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                                                size="sm"
+                                                icon={<ArrowUp className="w-4 h-4" />}
                                                 title="Move Up"
-                                            >
-                                                <ArrowUp className="w-4 h-4" />
-                                            </button>
-                                            <button
+                                            />
+                                            <AdminButton
                                                 onClick={() => moveSlide(index, 1)}
                                                 disabled={index === slides.length - 1}
-                                                className="flex-1 py-1.5 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                                                size="sm"
+                                                icon={<ArrowDown className="w-4 h-4" />}
                                                 title="Move Down"
-                                            >
-                                                <ArrowDown className="w-4 h-4" />
-                                            </button>
+                                            />
                                         </div>
                                     )}
 
                                     {isEditing === slide.id ? (
                                         <>
-                                            <button onClick={handleSave} className="flex items-center justify-center gap-2 w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20">
-                                                <Check className="w-4 h-4" /> Save
-                                            </button>
-                                            <button onClick={() => { setIsEditing(null); setEditForm(null); }} className="flex items-center justify-center gap-2 w-full py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors">
-                                                <X className="w-4 h-4" /> Cancel
-                                            </button>
+                                            <AdminButton onClick={handleSave} variant="success" size="sm" icon={<Check className="w-4 h-4" />}>
+                                                Save
+                                            </AdminButton>
+                                            <AdminButton onClick={() => { setIsEditing(null); setEditForm(null); }} variant="secondary" size="sm" icon={<X className="w-4 h-4" />}>
+                                                Cancel
+                                            </AdminButton>
                                         </>
                                     ) : (
-                                        <button onClick={() => { setIsEditing(slide.id); setEditForm(slide); }} className="w-full py-2 bg-card border border-border text-foreground rounded-lg hover:bg-muted transition-colors font-medium">
+                                        <AdminButton onClick={() => { setIsEditing(slide.id); setEditForm(slide); }} variant="secondary" size="sm">
                                             Edit
-                                        </button>
+                                        </AdminButton>
                                     )}
-                                    <button onClick={() => handleDelete(slide.id)} className="w-full py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <AdminButton onClick={() => handleDelete(slide.id)} variant="danger" size="sm" icon={<Trash2 className="w-4 h-4" />}>
+                                        Delete
+                                    </AdminButton>
                                 </div>
                             </div>
                         </motion.div>

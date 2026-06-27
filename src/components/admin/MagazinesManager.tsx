@@ -7,6 +7,7 @@ import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { sanitizeString, validateUrl } from "@/lib/validation";
+import AdminButton from "./AdminButton";
 
 export default function MagazinesManager() {
     const [magazines, setMagazines] = useState<Magazine[]>([]);
@@ -80,7 +81,7 @@ export default function MagazinesManager() {
             </div>
 
             <div className="space-y-6">
-                <button onClick={startNewMag} className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 shadow-lg shadow-orange-600/20 font-medium transition-all hover:-translate-y-0.5"><Plus className="w-4 h-4" /> Add Magazine</button>
+                <AdminButton onClick={startNewMag} icon={<Plus className="w-4 h-4" />}>Add Magazine</AdminButton>
 
                 <AnimatePresence>
                     {isEditing && magForm && (
@@ -118,8 +119,8 @@ export default function MagazinesManager() {
                                 </div>
                                 <input placeholder="PDF Link (Drive/OneDrive - View Only)" value={magForm.pdfUrl} onChange={e => setMagForm({ ...magForm, pdfUrl: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none" />
                                 <div className="flex gap-3 pt-2">
-                                    <button onClick={saveMag} className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save Details</button>
-                                    <button onClick={() => setIsEditing(null)} className="px-5 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground font-medium">Cancel</button>
+                                    <AdminButton onClick={saveMag} variant="success">Save Details</AdminButton>
+                                    <AdminButton onClick={() => setIsEditing(null)} variant="secondary">Cancel</AdminButton>
                                 </div>
                             </div>
                         </motion.div>
@@ -135,9 +136,9 @@ export default function MagazinesManager() {
                                     <h4 className="font-bold text-foreground line-clamp-1">{mag.title}</h4>
                                     <p className="text-sm font-medium text-orange-500">{mag.issueMonth} {mag.issueYear}</p>
 
-                                    <div className="mt-auto flex gap-2">
-                                        <button onClick={() => { setMagForm(mag); setIsEditing("edit"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg text-xs hover:bg-blue-100">Edit</button>
-                                        <button onClick={() => deleteMag(mag.id)} className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg text-xs hover:bg-red-100">Delete</button>
+                                    <div className="mt-auto flex gap-2 pt-4">
+                                        <AdminButton onClick={() => { setMagForm(mag); setIsEditing("edit"); }} size="sm" variant="secondary">Edit</AdminButton>
+                                        <AdminButton onClick={() => deleteMag(mag.id)} size="sm" variant="danger">Delete</AdminButton>
                                     </div>
                                 </div>
                             </motion.div>

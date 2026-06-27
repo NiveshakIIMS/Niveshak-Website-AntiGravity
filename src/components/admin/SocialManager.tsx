@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Plus, Trash2, GripVertical, Check, X, Linkedin, Instagram, Facebook, Twitter, Youtube, Mail, Link as LinkIcon, Globe } from "lucide-react";
 import { dataService, SocialLink } from "@/services/dataService";
+import AdminButton from "./AdminButton";
 
 const PLATFORMS = [
     { id: "linkedin", label: "LinkedIn", icon: Linkedin, color: "text-blue-600" },
@@ -108,16 +109,14 @@ export default function SocialManager() {
                     <p className="text-muted-foreground">Manage your social icons in the website footer.</p>
                 </div>
                 {isDirty && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                    <AdminButton
                         onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg hover:shadow-green-600/20"
+                        isLoading={saving}
+                        variant="success"
+                        icon={<Save className="w-5 h-5" />}
                     >
-                        {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5" />}
                         Save Changes
-                    </motion.button>
+                    </AdminButton>
                 )}
             </div>
 
@@ -152,13 +151,13 @@ export default function SocialManager() {
                         onChange={(e) => setNewUrl(e.target.value)}
                         className="flex-1 p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button
+                    <AdminButton
                         onClick={addLink}
                         disabled={!newUrl}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        icon={<Plus className="w-5 h-5" />}
                     >
-                        <Plus className="w-5 h-5" /> Add
-                    </button>
+                        Add
+                    </AdminButton>
                 </div>
             </div>
 
@@ -192,20 +191,20 @@ export default function SocialManager() {
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <button
+                                    <AdminButton
                                         onClick={() => toggleActive(link.id)}
-                                        className={`p-2 rounded-lg transition-colors ${link.isActive ? 'text-green-500 hover:bg-green-500/10' : 'text-gray-400 hover:bg-gray-500/10'}`}
+                                        size="sm"
+                                        variant="secondary"
+                                        icon={link.isActive ? <Check className="w-4 h-4 text-green-500" /> : <X className="w-4 h-4" />}
                                         title={link.isActive ? "Hide" : "Show"}
-                                    >
-                                        {link.isActive ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                                    </button>
-                                    <button
+                                    />
+                                    <AdminButton
                                         onClick={() => removeLink(link.id)}
-                                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        size="sm"
+                                        variant="danger"
+                                        icon={<Trash2 className="w-4 h-4" />}
                                         title="Delete"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    />
                                 </div>
                             </motion.div>
                         );

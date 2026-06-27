@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Calendar, Save, Calculator, AlertCircle, Edit3 } from "lucide-react";
 import { dataService, NAVData, NIFInvestment } from "@/services/dataService";
 import { motion } from "framer-motion";
+import AdminButton from "./AdminButton";
 
 export default function NIFCalculatorManager() {
     const [investments, setInvestments] = useState<NIFInvestment[]>([]);
@@ -275,7 +276,7 @@ export default function NIFCalculatorManager() {
 
                         <div className="flex gap-2 pt-2">
                             {isEditing && (
-                                <button
+                                <AdminButton
                                     type="button"
                                     onClick={() => {
                                         setIsEditing(false);
@@ -284,17 +285,19 @@ export default function NIFCalculatorManager() {
                                         setNavValue("");
                                         setAutofillNote("");
                                     }}
-                                    className="flex-1 py-3 bg-muted text-foreground font-bold rounded-xl hover:bg-muted/80 transition-colors"
+                                    variant="secondary"
+                                    className="flex-1"
                                 >
                                     Cancel
-                                </button>
+                                </AdminButton>
                             )}
-                            <button
+                            <AdminButton
                                 type="submit"
-                                className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                                variant="primary"
+                                className="flex-1"
                             >
                                 {isEditing ? "Update" : "Save Record"}
-                            </button>
+                            </AdminButton>
                         </div>
                     </form>
                 </motion.div>
@@ -338,20 +341,20 @@ export default function NIFCalculatorManager() {
                                             ₹ {inv.navValue.toFixed(4)}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                            <button 
+                                            <AdminButton 
                                                 onClick={() => handleEdit(inv)} 
-                                                className="p-2 text-muted-foreground hover:text-blue-500 rounded-lg hover:bg-background transition-colors"
+                                                size="sm"
+                                                variant="secondary"
+                                                icon={<Edit3 className="w-4 h-4" />}
                                                 title="Edit"
-                                            >
-                                                <Edit3 className="w-4 h-4" />
-                                            </button>
-                                            <button 
+                                            />
+                                            <AdminButton 
                                                 onClick={() => handleDelete(inv.year)} 
-                                                className="p-2 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-background transition-colors"
+                                                size="sm"
+                                                variant="danger"
+                                                icon={<Trash2 className="w-4 h-4" />}
                                                 title="Delete"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            />
                                         </div>
                                     </div>
                                 </div>

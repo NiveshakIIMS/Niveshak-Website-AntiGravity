@@ -19,6 +19,8 @@ import RedemptionManager from "./RedemptionManager";
 import MFAEnrollment from "./MFAEnrollment";
 import { supabase } from "@/lib/supabaseClient";
 
+import AdminButton from "./AdminButton";
+
 interface AdminDashboardProps {
     setIsAuthenticated: (val: boolean) => void;
 }
@@ -98,7 +100,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
     };
 
     return (
-        <div className="flex h-screen bg-muted/20 overflow-hidden md:pt-16">
+        <div className="flex h-screen bg-muted/10 overflow-hidden md:pt-16">
             <AdminSidebar
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -113,7 +115,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
                 {/* Mobile Header overlay */}
                 <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-card/80 backdrop-blur-md border-b border-border shadow-sm flex items-center justify-between p-4 px-6 h-16">
                     <h2 className="font-bold text-lg flex items-center gap-2 text-foreground">
-                        <LayoutDashboard className="w-5 h-5 text-blue-600" />
+                        <LayoutDashboard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         Admin
                     </h2>
                     <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-muted rounded-xl text-foreground active:scale-95 transition-transform">
@@ -122,22 +124,35 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
                 </div>
 
                 <div className="p-4 md:p-8 flex-1">
-                    <div className="flex justify-end mb-6">
-                        <button
-                            onClick={() => setShowMFA(true)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-sm border ${isMFAEnabled ? "bg-green-100/50 border-green-200 text-green-700 hover:bg-green-100" : "bg-white border-border text-foreground hover:bg-muted"}`}
-                        >
-                            <ShieldCheck className={`w-4 h-4 ${isMFAEnabled ? "text-green-600" : "text-muted-foreground"}`} />
-                            {isMFAEnabled ? "2FA Active" : "Setup 2FA"}
-                        </button>
+                    {/* Welcome Header */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-card p-6 rounded-2xl border border-border shadow-sm relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.05),transparent)] pointer-events-none" />
+                        <div className="relative z-10">
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight flex items-center gap-2">
+                                Welcome Back, Admin <span className="animate-bounce">👋</span>
+                            </h1>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Manage publications, events, team bios, and NIF dashboards here.
+                            </p>
+                        </div>
+                        <div className="relative z-10 flex items-center gap-3 shrink-0">
+                            <AdminButton
+                                onClick={() => setShowMFA(true)}
+                                variant={isMFAEnabled ? "success" : "secondary"}
+                                size="sm"
+                                icon={<ShieldCheck className={`w-4 h-4 ${isMFAEnabled ? "text-white" : "text-muted-foreground"}`} />}
+                            >
+                                {isMFAEnabled ? "2FA Active" : "Setup 2FA"}
+                            </AdminButton>
+                        </div>
                     </div>
 
                     <motion.div
                         key={activeTab}
-                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.98 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 28 }}
                         className="max-w-6xl mx-auto"
                     >
                         <div className="bg-card rounded-2xl shadow-xl border border-border overflow-visible ring-1 ring-gray-900/5">

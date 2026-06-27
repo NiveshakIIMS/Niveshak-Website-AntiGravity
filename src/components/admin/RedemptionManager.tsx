@@ -6,6 +6,7 @@ import { Plus, Trash2, Save, BookOpen, ArrowUp, ArrowDown, X, Link as LinkIcon }
 import { dataService, RedemptionCard } from "@/services/dataService";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from 'next/dynamic';
+import AdminButton from "./AdminButton";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import 'react-quill-new/dist/quill.snow.css';
@@ -128,12 +129,12 @@ export default function RedemptionManager() {
                         <p className="text-muted-foreground text-sm">Manage redemption information flashcards</p>
                     </div>
                 </div>
-                <button
+                <AdminButton
                     onClick={startNew}
-                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-5 py-2.5 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all shadow-lg shadow-purple-500/25"
+                    icon={<Plus className="w-5 h-5" />}
                 >
-                    <Plus className="w-5 h-5" /> Add Card
-                </button>
+                    Add Card
+                </AdminButton>
             </div>
 
             {/* Redeem Link Editor */}
@@ -150,13 +151,13 @@ export default function RedemptionManager() {
                         placeholder="https://forms.google.com/..."
                         className="flex-1 p-3 rounded-lg bg-muted border border-border focus:ring-2 focus:ring-accent outline-none text-foreground"
                     />
-                    <button
+                    <AdminButton
                         onClick={handleSaveLink}
-                        disabled={linkSaving}
-                        className="flex items-center gap-2 bg-accent text-white px-5 py-2.5 rounded-xl hover:bg-accent/90 transition-all disabled:opacity-50"
+                        isLoading={linkSaving}
+                        icon={<Save className="w-4 h-4" />}
                     >
-                        <Save className="w-4 h-4" /> {linkSaving ? "Saving..." : "Save Link"}
-                    </button>
+                        Save Link
+                    </AdminButton>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">This link will be used for the "Redeem Now" button on the redemption page.</p>
             </div>
@@ -201,7 +202,7 @@ export default function RedemptionManager() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-2">Content (Rich Text)</label>
-                                    <div className="rounded-lg overflow-hidden border border-border bg-white">
+                                    <div className="rounded-lg overflow-hidden border border-border bg-background text-foreground">
                                         <ReactQuill
                                             theme="snow"
                                             value={formData.content}
@@ -228,18 +229,19 @@ export default function RedemptionManager() {
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
-                                <button
+                                <AdminButton
                                     onClick={() => { setEditingId(null); setFormData(null); }}
-                                    className="px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                                    variant="secondary"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     onClick={handleSave}
-                                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-5 py-2.5 rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all"
+                                    variant="success"
+                                    icon={<Save className="w-4 h-4" />}
                                 >
-                                    <Save className="w-4 h-4" /> Save Card
-                                </button>
+                                    Save Card
+                                </AdminButton>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -277,36 +279,36 @@ export default function RedemptionManager() {
                                     />
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                    <button
+                                    <AdminButton
                                         onClick={() => moveCard(idx, -1)}
                                         disabled={idx === 0}
-                                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-30"
+                                        size="sm"
+                                        variant="secondary"
+                                        icon={<ArrowUp className="w-4 h-4" />}
                                         title="Move Up"
-                                    >
-                                        <ArrowUp className="w-4 h-4" />
-                                    </button>
-                                    <button
+                                    />
+                                    <AdminButton
                                         onClick={() => moveCard(idx, 1)}
                                         disabled={idx === cards.length - 1}
-                                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-30"
+                                        size="sm"
+                                        variant="secondary"
+                                        icon={<ArrowDown className="w-4 h-4" />}
                                         title="Move Down"
-                                    >
-                                        <ArrowDown className="w-4 h-4" />
-                                    </button>
-                                    <button
+                                    />
+                                    <AdminButton
                                         onClick={() => startEdit(card)}
-                                        className="p-2 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                                        size="sm"
+                                        variant="secondary"
+                                        icon={<BookOpen className="w-4 h-4" />}
                                         title="Edit"
-                                    >
-                                        <BookOpen className="w-4 h-4" />
-                                    </button>
-                                    <button
+                                    />
+                                    <AdminButton
                                         onClick={() => handleDelete(card.id)}
-                                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                        size="sm"
+                                        variant="danger"
+                                        icon={<Trash2 className="w-4 h-4" />}
                                         title="Delete"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    />
                                 </div>
                             </div>
                         </motion.div>

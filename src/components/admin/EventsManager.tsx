@@ -10,6 +10,7 @@ import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { sanitizeString, validateUrl } from "@/lib/validation";
+import AdminButton from "./AdminButton";
 
 export default function EventsManager() {
     const [events, setEvents] = useState<Event[]>([]);
@@ -74,7 +75,7 @@ export default function EventsManager() {
             </div>
 
             <div className="space-y-6">
-                <button onClick={startNewEvent} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-medium transition-all hover:-translate-y-0.5"><Plus className="w-4 h-4" /> Add Event</button>
+                <AdminButton onClick={startNewEvent} icon={<Plus className="w-4 h-4" />}>Add Event</AdminButton>
 
                 <AnimatePresence>
                     {isEditing && eventForm && (
@@ -178,8 +179,8 @@ export default function EventsManager() {
                                 )}
 
                                 <div className="flex gap-3 pt-2">
-                                    <button onClick={saveEvent} className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save Event</button>
-                                    <button onClick={() => setIsEditing(null)} className="px-5 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground font-medium">Cancel</button>
+                                    <AdminButton onClick={saveEvent} variant="success">Save Event</AdminButton>
+                                    <AdminButton onClick={() => setIsEditing(null)} variant="secondary">Cancel</AdminButton>
                                 </div>
                             </div>
                         </motion.div>
@@ -206,8 +207,8 @@ export default function EventsManager() {
                                     </div>
                                 </div>
                                 <div className="flex gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-border">
-                                    <button onClick={() => { setEventForm(event); setIsEditing("edit"); }} className="p-2 hover:bg-muted rounded-lg text-blue-500 transition-colors"><BookOpen className="w-5 h-5" /></button>
-                                    <button onClick={() => deleteEvent(event.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
+                                    <AdminButton onClick={() => { setEventForm(event); setIsEditing("edit"); }} size="sm" variant="secondary" icon={<BookOpen className="w-4 h-4" />}>Edit</AdminButton>
+                                    <AdminButton onClick={() => deleteEvent(event.id)} size="sm" variant="danger" icon={<Trash2 className="w-4 h-4" />}>Delete</AdminButton>
                                 </div>
                             </motion.div>
                         ))}

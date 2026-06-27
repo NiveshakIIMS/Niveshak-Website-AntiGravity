@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit2, Users, Save, X, Linkedin, Mail, Award } from "luci
 import { dataService, TeamMember, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminButton from "./AdminButton";
 
 export default function TeamManager() {
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -102,9 +103,9 @@ export default function TeamManager() {
                     </h2>
                     <p className="text-muted-foreground mt-1">Manage member profiles and leadership.</p>
                 </div>
-                <button onClick={startNew} className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all hover:-translate-y-0.5">
-                    <Plus className="w-5 h-5" /> Add Member
-                </button>
+                <AdminButton onClick={startNew} icon={<Plus className="w-5 h-5" />}>
+                    Add Member
+                </AdminButton>
             </div>
 
             {/* Modal Form */}
@@ -180,7 +181,7 @@ export default function TeamManager() {
 
                             {/* Footer - Fixed */}
                             <div className="p-6 border-t border-border bg-card rounded-b-2xl">
-                                <button onClick={handleSave} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">Save Member Details</button>
+                                <AdminButton onClick={handleSave} variant="success" className="w-full">Save Member Details</AdminButton>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -210,15 +211,9 @@ export default function TeamManager() {
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => startEdit(member)} className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Edit">
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => handleMoveToHallOfFame(member)} className="p-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" title="Move to Hall of Fame">
-                                        <Award className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(member.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <AdminButton onClick={() => startEdit(member)} size="sm" variant="secondary" icon={<Edit2 className="w-4 h-4" />} title="Edit" />
+                                    <AdminButton onClick={() => handleMoveToHallOfFame(member)} size="sm" variant="warning" icon={<Award className="w-4 h-4" />} title="Move to Hall of Fame" />
+                                    <AdminButton onClick={() => handleDelete(member.id)} size="sm" variant="danger" icon={<Trash2 className="w-4 h-4" />} title="Delete" />
                                 </div>
                             </div>
 
