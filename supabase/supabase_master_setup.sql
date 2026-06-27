@@ -25,8 +25,8 @@ alter table public.site_settings enable row level security;
 -- Policies (Drop existing to redefine safely)
 drop policy if exists "Public Read Settings" on public.site_settings;
 drop policy if exists "Admin All Settings" on public.site_settings;
-create policy "Public Read Settings" on public.site_settings for select to public using (true);
-create policy "Admin All Settings" on public.site_settings for all to authenticated using (true) with check (true);
+create policy "Public Read Settings" on public.site_settings for select using (true);
+create policy "Admin All Settings" on public.site_settings for all using (auth.role() = 'authenticated');
 
 -- Seed site_settings safely (Do nothing if exists)
 insert into public.site_settings (id, social_links) values ('settings', '[]') ON CONFLICT (id) DO NOTHING;
@@ -279,6 +279,34 @@ create table if not exists public.redemption_cards (
 -- 4. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ============================================
 
+-- Clean up any existing policies (under any name) on public tables to prevent conflicts
+DO $$ 
+DECLARE
+    t text;
+    pol record;
+BEGIN
+    FOR t IN 
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_name IN (
+            'hero_slides', 'about_content', 'about_sections', 'team_members', 
+            'magazines', 'events', 'nav_data', 'nif_metrics', 'site_settings', 
+            'notices', 'resources', 'hall_of_fame', 'redemption_cards', 
+            'nif_investments', 'trading_days'
+          )
+    LOOP
+        FOR pol IN 
+            SELECT policyname 
+            FROM pg_policies 
+            WHERE schemaname = 'public' 
+              AND tablename = t
+        LOOP
+            EXECUTE format('DROP POLICY IF EXISTS %I ON %I', pol.policyname, t);
+        END LOOP;
+    END LOOP;
+END $$;
+
 alter table public.hero_slides enable row level security;
 alter table public.about_content enable row level security;
 alter table public.team_members enable row level security;
@@ -291,112 +319,69 @@ alter table public.resources enable row level security;
 alter table public.hall_of_fame enable row level security;
 alter table public.redemption_cards enable row level security;
 
--- Drop and recreate policies to ensure latest logic
 -- HERO
-drop policy if exists "Public Read Hero" on public.hero_slides;
-drop policy if exists "Admin Write Hero" on public.hero_slides;
-drop policy if exists "Admin Update Hero" on public.hero_slides;
-drop policy if exists "Admin Delete Hero" on public.hero_slides;
-create policy "Public Read Hero" on public.hero_slides for select to public using (true);
-create policy "Admin Write Hero" on public.hero_slides for insert to authenticated with check (true);
-create policy "Admin Update Hero" on public.hero_slides for update to authenticated using (true);
-create policy "Admin Delete Hero" on public.hero_slides for delete to authenticated using (true);
+create policy "Public Read Hero" on public.hero_slides for select using (true);
+create policy "Admin Write Hero" on public.hero_slides for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update Hero" on public.hero_slides for update using (auth.role() = 'authenticated');
+create policy "Admin Delete Hero" on public.hero_slides for delete using (auth.role() = 'authenticated');
 
 -- ABOUT
-drop policy if exists "Public Read About" on public.about_content;
-drop policy if exists "Admin Write About" on public.about_content;
-drop policy if exists "Admin Update About" on public.about_content;
-create policy "Public Read About" on public.about_content for select to public using (true);
-create policy "Admin Write About" on public.about_content for insert to authenticated with check (true);
-create policy "Admin Update About" on public.about_content for update to authenticated using (true);
+create policy "Public Read About" on public.about_content for select using (true);
+create policy "Admin Write About" on public.about_content for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update About" on public.about_content for update using (auth.role() = 'authenticated');
 
 -- TEAM
-drop policy if exists "Public Read Team" on public.team_members;
-drop policy if exists "Admin Write Team" on public.team_members;
-drop policy if exists "Admin Update Team" on public.team_members;
-drop policy if exists "Admin Delete Team" on public.team_members;
-create policy "Public Read Team" on public.team_members for select to public using (true);
-create policy "Admin Write Team" on public.team_members for insert to authenticated with check (true);
-create policy "Admin Update Team" on public.team_members for update to authenticated using (true);
-create policy "Admin Delete Team" on public.team_members for delete to authenticated using (true);
+create policy "Public Read Team" on public.team_members for select using (true);
+create policy "Admin Write Team" on public.team_members for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update Team" on public.team_members for update using (auth.role() = 'authenticated');
+create policy "Admin Delete Team" on public.team_members for delete using (auth.role() = 'authenticated');
 
 -- MAGAZINES
-drop policy if exists "Public Read Magazines" on public.magazines;
-drop policy if exists "Admin Write Magazines" on public.magazines;
-drop policy if exists "Admin Update Magazines" on public.magazines;
-drop policy if exists "Admin Delete Magazines" on public.magazines;
-create policy "Public Read Magazines" on public.magazines for select to public using (true);
-create policy "Admin Write Magazines" on public.magazines for insert to authenticated with check (true);
-create policy "Admin Update Magazines" on public.magazines for update to authenticated using (true);
-create policy "Admin Delete Magazines" on public.magazines for delete to authenticated using (true);
+create policy "Public Read Magazines" on public.magazines for select using (true);
+create policy "Admin Write Magazines" on public.magazines for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update Magazines" on public.magazines for update using (auth.role() = 'authenticated');
+create policy "Admin Delete Magazines" on public.magazines for delete using (auth.role() = 'authenticated');
 
 -- EVENTS
-drop policy if exists "Public Read Events" on public.events;
-drop policy if exists "Admin Write Events" on public.events;
-drop policy if exists "Admin Update Events" on public.events;
-drop policy if exists "Admin Delete Events" on public.events;
-create policy "Public Read Events" on public.events for select to public using (true);
-create policy "Admin Write Events" on public.events for insert to authenticated with check (true);
-create policy "Admin Update Events" on public.events for update to authenticated using (true);
-create policy "Admin Delete Events" on public.events for delete to authenticated using (true);
+create policy "Public Read Events" on public.events for select using (true);
+create policy "Admin Write Events" on public.events for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update Events" on public.events for update using (auth.role() = 'authenticated');
+create policy "Admin Delete Events" on public.events for delete using (auth.role() = 'authenticated');
 
 -- NAV
-drop policy if exists "Public Read NAV" on public.nav_data;
-drop policy if exists "Admin Write NAV" on public.nav_data;
-drop policy if exists "Admin Update NAV" on public.nav_data;
-drop policy if exists "Admin Delete NAV" on public.nav_data;
-create policy "Public Read NAV" on public.nav_data for select to public using (true);
-create policy "Admin Write NAV" on public.nav_data for insert to authenticated with check (true);
-create policy "Admin Update NAV" on public.nav_data for update to authenticated using (true);
-create policy "Admin Delete NAV" on public.nav_data for delete to authenticated using (true);
+create policy "Public Read NAV" on public.nav_data for select using (true);
+create policy "Admin Write NAV" on public.nav_data for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update NAV" on public.nav_data for update using (auth.role() = 'authenticated');
+create policy "Admin Delete NAV" on public.nav_data for delete using (auth.role() = 'authenticated');
 
 -- NIF
-drop policy if exists "Public Read NIF" on public.nif_metrics;
-drop policy if exists "Admin Write NIF" on public.nif_metrics;
-drop policy if exists "Admin Update NIF" on public.nif_metrics;
-create policy "Public Read NIF" on public.nif_metrics for select to public using (true);
-create policy "Admin Write NIF" on public.nif_metrics for insert to authenticated with check (true);
-create policy "Admin Update NIF" on public.nif_metrics for update to authenticated using (true);
+create policy "Public Read NIF" on public.nif_metrics for select using (true);
+create policy "Admin Write NIF" on public.nif_metrics for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update NIF" on public.nif_metrics for update using (auth.role() = 'authenticated');
 
 -- NOTICES
-drop policy if exists "Public Read Notices" on public.notices;
-drop policy if exists "Admin Write Notices" on public.notices;
-drop policy if exists "Admin Update Notices" on public.notices;
-drop policy if exists "Admin Delete Notices" on public.notices;
-create policy "Public Read Notices" on public.notices for select to public using (true);
-create policy "Admin Write Notices" on public.notices for insert to authenticated with check (true);
-create policy "Admin Update Notices" on public.notices for update to authenticated using (true);
-create policy "Admin Delete Notices" on public.notices for delete to authenticated using (true);
+create policy "Public Read Notices" on public.notices for select using (true);
+create policy "Admin Write Notices" on public.notices for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update Notices" on public.notices for update using (auth.role() = 'authenticated');
+create policy "Admin Delete Notices" on public.notices for delete using (auth.role() = 'authenticated');
 
 -- RESOURCES
-drop policy if exists "Allow public read access" on public.resources;
-drop policy if exists "Allow authenticated insert" on public.resources;
-drop policy if exists "Allow authenticated update" on public.resources;
-drop policy if exists "Allow authenticated delete" on public.resources;
 create policy "Allow public read access" on public.resources for select using (true);
 create policy "Allow authenticated insert" on public.resources for insert with check (auth.role() = 'authenticated');
 create policy "Allow authenticated update" on public.resources for update using (auth.role() = 'authenticated');
 create policy "Allow authenticated delete" on public.resources for delete using (auth.role() = 'authenticated');
 
 -- HALL OF FAME
-drop policy if exists "Public Read HallOfFame" on public.hall_of_fame;
-drop policy if exists "Admin Write HallOfFame" on public.hall_of_fame;
-drop policy if exists "Admin Update HallOfFame" on public.hall_of_fame;
-drop policy if exists "Admin Delete HallOfFame" on public.hall_of_fame;
-create policy "Public Read HallOfFame" on public.hall_of_fame for select to public using (true);
-create policy "Admin Write HallOfFame" on public.hall_of_fame for insert to authenticated with check (true);
-create policy "Admin Update HallOfFame" on public.hall_of_fame for update to authenticated using (true);
-create policy "Admin Delete HallOfFame" on public.hall_of_fame for delete to authenticated using (true);
+create policy "Public Read HallOfFame" on public.hall_of_fame for select using (true);
+create policy "Admin Write HallOfFame" on public.hall_of_fame for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update HallOfFame" on public.hall_of_fame for update using (auth.role() = 'authenticated');
+create policy "Admin Delete HallOfFame" on public.hall_of_fame for delete using (auth.role() = 'authenticated');
 
 -- REDEMPTION CARDS
-drop policy if exists "Public Read RedemptionCards" on public.redemption_cards;
-drop policy if exists "Admin Write RedemptionCards" on public.redemption_cards;
-drop policy if exists "Admin Update RedemptionCards" on public.redemption_cards;
-drop policy if exists "Admin Delete RedemptionCards" on public.redemption_cards;
-create policy "Public Read RedemptionCards" on public.redemption_cards for select to public using (true);
-create policy "Admin Write RedemptionCards" on public.redemption_cards for insert to authenticated with check (true);
-create policy "Admin Update RedemptionCards" on public.redemption_cards for update to authenticated using (true);
-create policy "Admin Delete RedemptionCards" on public.redemption_cards for delete to authenticated using (true);
+create policy "Public Read RedemptionCards" on public.redemption_cards for select using (true);
+create policy "Admin Write RedemptionCards" on public.redemption_cards for insert with check (auth.role() = 'authenticated');
+create policy "Admin Update RedemptionCards" on public.redemption_cards for update using (auth.role() = 'authenticated');
+create policy "Admin Delete RedemptionCards" on public.redemption_cards for delete using (auth.role() = 'authenticated');
 
 -- ============================================
 -- 5. INDEXES

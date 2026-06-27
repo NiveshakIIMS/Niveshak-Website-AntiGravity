@@ -59,7 +59,7 @@ export default function MagazinesSection({
         const fetchFreshMagazines = () => {
             dataService.getMagazines()
                 .then((loadedMagazines) => {
-                    if (loadedMagazines && loadedMagazines.length > 0) {
+                    if (loadedMagazines) {
                         setMagazines(loadedMagazines);
                         const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
                         setYears(distinctYears as string[]);
