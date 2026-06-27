@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen, Info, ArrowRight } from "lucide-react";
 import { dataService, AboutContent } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AboutSectionProps {
     initialData: AboutContent;
@@ -14,9 +15,35 @@ export default function AboutSection({ initialData }: AboutSectionProps) {
     const [content, setContent] = useState<AboutContent>(initialData);
 
     useEffect(() => {
-        dataService.getAbout().then(data => {
-            if (data) setContent(data);
-        });
+        const fetchFreshAbout = () => {
+            dataService.getAbout().then(data => {
+                if (data) setContent(data);
+            });
+        };
+
+        fetchFreshAbout();
+
+        const channel = supabase
+            .channel("realtime-about-section")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "about_content" },
+                () => {
+                    fetchFreshAbout();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "about_sections" },
+                () => {
+                    fetchFreshAbout();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     // Default Icons for the 3 cards

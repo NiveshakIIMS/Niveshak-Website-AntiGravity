@@ -3,8 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, TrendingUp, Save, BarChart3, Calendar } from "lucide-react";
-import { dataService, NAVData, calculateTradingYears, formatDateDDMMYYYY } from "@/services/dataService";
-import { supabase } from "@/lib/supabaseClient";
+import { dataService, NAVData, calculateTradingYears } from "@/services/dataService";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
@@ -15,56 +14,6 @@ export default function NIFManager() {
     const [metrics, setMetrics] = useState<any>({ annualizedReturn: "", totalAUM: "", ytdReturn: "" });
     const [newEntry, setNewEntry] = useState({ date: "", value: "", nifty50: "" });
     const [tradingDays, setTradingDays] = useState<{ [year: number]: number }>({});
-
-    const checkAndTriggerAutoNAVNotification = async (latestDataArray: NAVData[]) => {
-        try {
-            const config = await dataService.getNotificationConfig();
-            if (config.autoSendOnNavUpdate && latestDataArray.length > 0) {
-                const latestEntry = [...latestDataArray].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                if (latestEntry) {
-                    const formattedDate = formatDateDDMMYYYY(latestEntry.date);
-                    const formattedValue = Number(latestEntry.value).toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                    
-                    const title = "NIF NAV Updated 📈";
-                    const body = `NIF NAV as of ${formattedDate} is ₹ ${formattedValue}`;
-
-                    await dataService.triggerNotification({
-                        type: "auto_nav",
-                        title,
-                        body,
-                        timestamp: Date.now()
-                    });
-
-                    // Dispatch system-level push notifications to offline background devices
-                    try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const token = session?.access_token;
-                        if (token) {
-                            await fetch("/api/notifications/dispatch", {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "Authorization": `Bearer ${token}`
-                                },
-                                body: JSON.stringify({
-                                    title,
-                                    body,
-                                    url: "/"
-                                })
-                            });
-                        }
-                    } catch (pushErr) {
-                        console.error("Failed to dispatch push notification automatically:", pushErr);
-                    }
-                }
-            }
-        } catch (err) {
-            console.error("Failed to check or trigger auto NAV notification:", err);
-        }
-    };
 
     useEffect(() => {
         Promise.all([
@@ -244,7 +193,6 @@ export default function NIFManager() {
                 try {
                     await dataService.saveNAVData(newData);
                     setData(newData);
-                    checkAndTriggerAutoNAVNotification(newData);
                     alert(`Upload Complete!\nAdded: ${addedCount}\nUpdated: ${updatedCount}`);
                 } catch (error: any) {
                     console.error("Excel Upload Save Error:", error);
@@ -284,7 +232,6 @@ export default function NIFManager() {
         try {
             await dataService.saveNAVData(newData);
             setData(newData);
-            checkAndTriggerAutoNAVNotification(newData);
             setNewEntry({ date: "", value: "", nifty50: "" });
         } catch (error: any) {
             console.error("Add Entry Save Error:", error);

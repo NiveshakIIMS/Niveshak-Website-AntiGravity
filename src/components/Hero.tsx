@@ -7,6 +7,7 @@ import { ArrowRight, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { dataService, HeroSlide } from "@/services/dataService";
 import { isVideoUrl } from "@/lib/utils";
+import { supabase } from "@/lib/supabaseClient";
 
 import { useLogo } from "@/context/LogoContext";
 
@@ -55,7 +56,22 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
         // Initial check and event listener
         handleScroll();
         window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
+
+        const channel = supabase
+            .channel("realtime-hero")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "hero_slides" },
+                () => {
+                    loadSlides();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            supabase.removeChannel(channel);
+        };
     }, [setLogoInNav]);
 
     // Timer for Logo Transition

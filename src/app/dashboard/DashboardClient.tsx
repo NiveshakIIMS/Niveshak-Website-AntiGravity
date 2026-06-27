@@ -8,6 +8,7 @@ import { getUTCDateInfo } from "@/lib/dateUtils";
 import NAVChart from "@/components/dashboard/NAVChart";
 import { TrendingUp, TrendingDown, Activity, PieChart as PieChartIcon, ArrowUpRight, BookOpen, Calculator } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { supabase } from "@/lib/supabaseClient";
 
 interface DashboardClientProps {
     initialNAVData?: NAVData[];
@@ -43,26 +44,73 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
     const [tradingDays, setTradingDays] = useState<{ [year: number]: number }>({});
 
     useEffect(() => {
-        const load = async () => {
+        const loadDays = async () => {
             try {
-                const [nav, met, days] = await Promise.all([
-                    dataService.getNAVData(),
-                    dataService.getNIFMetrics(),
-                    dataService.getTradingDays()
-                ]);
-                if (nav && nav.length > 0) setNavData(nav);
-                if (met) setMetrics(met);
-
+                const days = await dataService.getTradingDays();
                 const daysObj: { [year: number]: number } = {};
                 days.forEach(d => {
                     daysObj[d.year] = d.days;
                 });
                 setTradingDays(daysObj);
             } catch (err) {
-                console.error("Failed to load fresh dashboard data:", err);
+                console.error("Error loading trading days:", err);
             }
         };
-        load();
+
+        const loadNAV = async () => {
+            try {
+                const nav = await dataService.getNAVData();
+                if (nav && nav.length > 0) setNavData(nav);
+            } catch (err) {
+                console.error("Error loading NAV:", err);
+            }
+        };
+
+        const loadMetrics = async () => {
+            try {
+                const met = await dataService.getNIFMetrics();
+                if (met) setMetrics(met);
+            } catch (err) {
+                console.error("Error loading metrics:", err);
+            }
+        };
+
+        const loadAll = () => {
+            loadNAV();
+            loadMetrics();
+            loadDays();
+        };
+
+        loadAll();
+
+        const channel = supabase
+            .channel("realtime-dashboard")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "nav_data" },
+                () => {
+                    loadNAV();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "nif_metrics" },
+                () => {
+                    loadMetrics();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "trading_days" },
+                () => {
+                    loadDays();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const latestNAV = navData.length > 0 ? [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;

@@ -5,6 +5,7 @@ import { BookOpen, FileText, ArrowRight, ArrowDownUp, Loader2 } from "lucide-rea
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { dataService, Magazine } from "@/services/dataService";
 import Image from "next/image";
+import { supabase } from "@/lib/supabaseClient";
 
 interface MagazinesSectionProps {
     limit?: number;
@@ -55,16 +56,35 @@ export default function MagazinesSection({
             setIsLoading(true);
         }
 
-        dataService.getMagazines()
-            .then((loadedMagazines) => {
-                if (loadedMagazines && loadedMagazines.length > 0) {
-                    setMagazines(loadedMagazines);
-                    const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
-                    setYears(distinctYears as string[]);
+        const fetchFreshMagazines = () => {
+            dataService.getMagazines()
+                .then((loadedMagazines) => {
+                    if (loadedMagazines && loadedMagazines.length > 0) {
+                        setMagazines(loadedMagazines);
+                        const distinctYears = Array.from(new Set(loadedMagazines.map(m => m.issueYear).filter(Boolean))).sort().reverse();
+                        setYears(distinctYears as string[]);
+                    }
+                })
+                .catch(err => console.error("Error fetching magazines in background:", err))
+                .finally(() => setIsLoading(false));
+        };
+
+        fetchFreshMagazines();
+
+        const channel = supabase
+            .channel("realtime-magazines")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "magazines" },
+                () => {
+                    fetchFreshMagazines();
                 }
-            })
-            .catch(err => console.error("Error fetching magazines in background:", err))
-            .finally(() => setIsLoading(false));
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialMagazines]);
 
     // Derived State (useMemo)

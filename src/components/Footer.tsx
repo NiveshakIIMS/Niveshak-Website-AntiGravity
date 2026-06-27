@@ -4,16 +4,36 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Youtube, Check, Copy, Globe } from "lucide-react";
 import { dataService, SocialLink } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Footer() {
     const [links, setLinks] = useState<SocialLink[]>([]);
 
     useEffect(() => {
-        dataService.getSiteSettings().then(settings => {
-            if (settings.socialLinks) {
-                setLinks(settings.socialLinks.filter(l => l.isActive));
-            }
-        });
+        const fetchFreshSettings = () => {
+            dataService.getSiteSettings().then(settings => {
+                if (settings.socialLinks) {
+                    setLinks(settings.socialLinks.filter(l => l.isActive));
+                }
+            });
+        };
+
+        fetchFreshSettings();
+
+        const channel = supabase
+            .channel("realtime-footer")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "site_settings" },
+                () => {
+                    fetchFreshSettings();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const getIcon = (platform: string) => {

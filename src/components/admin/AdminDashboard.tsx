@@ -16,7 +16,6 @@ import NoticesManager from "./NoticesManager";
 import ResourcesManager from "./ResourcesManager";
 import HallOfFameManager from "./HallOfFameManager";
 import RedemptionManager from "./RedemptionManager";
-import NotificationManager from "./NotificationManager";
 import MFAEnrollment from "./MFAEnrollment";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -92,7 +91,6 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
             case "nif_calculator": return <NIFCalculatorManager />;
             case "redemption": return <RedemptionManager />;
             case "social": return <SocialManager />;
-            case "notifications": return <NotificationManager />;
             case "notices": return <NoticesManager />;
             case "resources": return <ResourcesManager />;
             default: return <HeroManager />;

@@ -6,6 +6,7 @@ import NoticeCard from "@/components/NoticeCard";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabaseClient";
 
 interface NoticesClientProps {
     initialNotices?: Notice[];
@@ -22,13 +23,32 @@ export default function NoticesClient({ initialNotices = [] }: NoticesClientProp
             setNotices(initialNotices);
         }
 
-        dataService.getNotices()
-            .then(freshNotices => {
-                if (freshNotices && freshNotices.length > 0) {
-                    setNotices(freshNotices);
+        const fetchFreshNotices = () => {
+            dataService.getNotices()
+                .then(freshNotices => {
+                    if (freshNotices && freshNotices.length > 0) {
+                        setNotices(freshNotices);
+                    }
+                })
+                .catch(err => console.error("Error fetching notices in background:", err));
+        };
+
+        fetchFreshNotices();
+
+        const channel = supabase
+            .channel("realtime-notices")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "notices" },
+                () => {
+                    fetchFreshNotices();
                 }
-            })
-            .catch(err => console.error("Error fetching notices in background:", err));
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialNotices]);
 
     // Extract years

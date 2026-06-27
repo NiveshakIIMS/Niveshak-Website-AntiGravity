@@ -5,6 +5,7 @@ import { formatDateIndian } from "@/lib/dateUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService, Resource } from "@/services/dataService";
 import { FileText, Link as LinkIcon, Download, ExternalLink, Calendar, Folder, Search, Grid, List, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface ResourcesSectionProps {
     resources?: Resource[];
@@ -25,12 +26,31 @@ export default function ResourcesSection({ resources: initialResources = [], sho
             setIsLoading(true);
         }
 
-        dataService.getResources().then(freshResources => {
-            if (freshResources && freshResources.length > 0) {
-                setResources(freshResources);
-            }
-        }).catch(err => console.error("Error fetching resources in background:", err))
-          .finally(() => setIsLoading(false));
+        const fetchFreshResources = () => {
+            dataService.getResources().then(freshResources => {
+                if (freshResources && freshResources.length > 0) {
+                    setResources(freshResources);
+                }
+            }).catch(err => console.error("Error fetching resources in background:", err))
+              .finally(() => setIsLoading(false));
+        };
+
+        fetchFreshResources();
+
+        const channel = supabase
+            .channel("realtime-resources")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "resources" },
+                () => {
+                    fetchFreshResources();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialResources]);
     // State
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);

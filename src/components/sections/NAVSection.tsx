@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { dataService, NAVData, NIFMetrics } from "@/services/dataService";
 import { getUTCDateInfo } from "@/lib/dateUtils";
+import { supabase } from "@/lib/supabaseClient";
 
 interface NAVSectionProps {
     initialNAVData?: NAVData[];
@@ -32,24 +33,53 @@ export default function NAVSection({ initialNAVData = [], initialMetrics = null 
     const [metrics, setMetrics] = useState<NIFMetrics | null>(initialMetrics);
 
     useEffect(() => {
-        const loadData = async () => {
+        const loadNAV = async () => {
             try {
-                const [navData, metricsData] = await Promise.all([
-                    dataService.getNAVData(),
-                    dataService.getNIFMetrics()
-                ]);
+                const navData = await dataService.getNAVData();
                 if (navData && navData.length > 0) {
                     const sorted = [...navData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                     setLatestNAV(sorted[0]);
                 }
+            } catch (err) {
+                console.error("Failed to load NAV in background:", err);
+            }
+        };
+
+        const loadMetrics = async () => {
+            try {
+                const metricsData = await dataService.getNIFMetrics();
                 if (metricsData) {
                     setMetrics(metricsData);
                 }
             } catch (err) {
-                console.error("Failed to load fresh NAV Section data:", err);
+                console.error("Failed to load metrics in background:", err);
             }
         };
-        loadData();
+
+        loadNAV();
+        loadMetrics();
+
+        const channel = supabase
+            .channel("realtime-nav-section")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "nav_data" },
+                () => {
+                    loadNAV();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "nif_metrics" },
+                () => {
+                    loadMetrics();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     if (!latestNAV) return null;

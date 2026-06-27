@@ -137,19 +137,6 @@ export interface SiteSettings {
     socialLinks: SocialLink[];
 }
 
-export interface NotificationConfig {
-    autoSendOnNavUpdate: boolean;
-    autoTimerEnabled: boolean;
-    autoTimerTime: string;
-}
-
-export interface NotificationPayload {
-    type: "manual_nav" | "custom" | "auto_nav";
-    title: string;
-    body: string;
-    timestamp: number;
-}
-
 export interface Resource {
     id: string;
     title: string;
@@ -881,68 +868,8 @@ export const dataService = {
             console.error("Save Trading Days Error", error);
             throw error;
         }
-    },
-
-    getNotificationConfig: async (): Promise<NotificationConfig> => {
-        const { data, error } = await supabase.from('site_settings').select('value').eq('id', 'notification_config').single();
-        if (error || !data || !data.value) {
-            return {
-                autoSendOnNavUpdate: false,
-                autoTimerEnabled: false,
-                autoTimerTime: "18:00"
-            };
-        }
-        try {
-            return JSON.parse(data.value);
-        } catch {
-            return {
-                autoSendOnNavUpdate: false,
-                autoTimerEnabled: false,
-                autoTimerTime: "18:00"
-            };
-        }
-    },
-
-    saveNotificationConfig: async (config: NotificationConfig) => {
-        const { error } = await supabase.from('site_settings').upsert(
-            { id: 'notification_config', value: JSON.stringify(config), updated_at: new Date().toISOString() },
-            { onConflict: 'id' }
-        );
-        if (error) {
-            console.error("Save Notification Config Error:", error);
-            throw error;
-        }
-    },
-
-    triggerNotification: async (payload: NotificationPayload) => {
-        const { error } = await supabase.from('site_settings').upsert(
-            { id: 'notification_trigger', value: JSON.stringify(payload), updated_at: new Date().toISOString() },
-            { onConflict: 'id' }
-        );
-        if (error) {
-            console.error("Trigger Notification Error:", error);
-            throw error;
-        }
     }
 };
-
-export function formatDateDDMMYYYY(dateStr: string): string {
-    if (!dateStr) return "";
-    try {
-        const parts = dateStr.split('T')[0].split('-');
-        if (parts.length === 3) {
-            const [y, m, d] = parts;
-            return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
-        }
-        const d = new Date(dateStr);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}-${month}-${year}`;
-    } catch {
-        return "";
-    }
-}
 
 export function calculateTradingYears(
     startDateStr: string,

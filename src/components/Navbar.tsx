@@ -41,24 +41,16 @@ export default function Navbar() {
     // Register Service Worker for PWA
     useEffect(() => {
         if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-            const registerSW = () => {
+            window.addEventListener("load", () => {
                 navigator.serviceWorker.register("/sw.js").then(
                     (registration) => {
                         console.log("ServiceWorker registered successfully with scope: ", registration.scope);
-                        registration.update();
                     },
                     (err) => {
                         console.log("ServiceWorker registration failed: ", err);
                     }
                 );
-            };
-
-            if (document.readyState === "complete" || document.readyState === "interactive") {
-                registerSW();
-            } else {
-                window.addEventListener("load", registerSW);
-                return () => window.removeEventListener("load", registerSW);
-            }
+            });
         }
     }, []);
 

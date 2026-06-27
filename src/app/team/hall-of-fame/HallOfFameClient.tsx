@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { dataService, HallOfFameMember } from "@/services/dataService";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 
 interface HallOfFameClientProps {
     initialMembers?: HallOfFameMember[];
@@ -28,14 +29,33 @@ export default function HallOfFameClient({ initialMembers = [] }: HallOfFameClie
             setLoading(true);
         }
 
-        dataService.getHallOfFame()
-            .then(data => {
-                if (data && data.length > 0) {
-                    setMembers(data);
+        const fetchFreshHOF = () => {
+            dataService.getHallOfFame()
+                .then(data => {
+                    if (data && data.length > 0) {
+                        setMembers(data);
+                    }
+                })
+                .catch(err => console.error("Error fetching Hall of Fame in background:", err))
+                .finally(() => setLoading(false));
+        };
+
+        fetchFreshHOF();
+
+        const channel = supabase
+            .channel("realtime-hall-of-fame")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "hall_of_fame" },
+                () => {
+                    fetchFreshHOF();
                 }
-            })
-            .catch(err => console.error("Error fetching Hall of Fame in background:", err))
-            .finally(() => setLoading(false));
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialMembers]);
 
     // Get unique batches for filter dropdown

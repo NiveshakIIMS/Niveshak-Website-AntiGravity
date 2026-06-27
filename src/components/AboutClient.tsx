@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Target, Users, BookOpen } from "lucide-react";
 import { dataService, AboutContent } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AboutClientProps {
     data: AboutContent;
@@ -13,11 +14,37 @@ export default function AboutClient({ data: initialData }: AboutClientProps) {
     const [data, setData] = useState<AboutContent>(initialData);
 
     useEffect(() => {
-        dataService.getAbout().then(freshData => {
-            if (freshData) {
-                setData(freshData);
-            }
-        }).catch(err => console.error("Error fetching about data in background:", err));
+        const fetchFreshAbout = () => {
+            dataService.getAbout().then(freshData => {
+                if (freshData) {
+                    setData(freshData);
+                }
+            }).catch(err => console.error("Error fetching about data in background:", err));
+        };
+
+        fetchFreshAbout();
+
+        const channel = supabase
+            .channel("realtime-about")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "about_content" },
+                () => {
+                    fetchFreshAbout();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "about_sections" },
+                () => {
+                    fetchFreshAbout();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const icons = [

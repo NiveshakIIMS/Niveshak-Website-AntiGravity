@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { dataService, Event } from "@/services/dataService";
 import EventCard from "@/components/EventCard";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface EventsSectionProps {
     initialEvents?: Event[];
@@ -51,6 +52,21 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
             }
         };
         loadEvents();
+
+        const channel = supabase
+            .channel("realtime-events-section")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "events" },
+                () => {
+                    loadEvents();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialEvents]);
     return (
 

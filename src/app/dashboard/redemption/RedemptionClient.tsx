@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabaseClient";
 
 interface RedemptionClientProps {
     initialCards?: RedemptionCard[];
@@ -18,21 +19,54 @@ export default function RedemptionClient({ initialCards = [], initialRedeemLink 
     const [loading, setLoading] = useState(initialCards.length === 0);
 
     useEffect(() => {
-        const load = async () => {
+        const loadCards = async () => {
             try {
-                const [cardsData, link] = await Promise.all([
-                    dataService.getRedemptionCards(),
-                    dataService.getRedemptionLink()
-                ]);
+                const cardsData = await dataService.getRedemptionCards();
                 if (cardsData && cardsData.length > 0) setCards(cardsData);
-                if (link) setRedeemLink(link);
             } catch (err) {
-                console.error("Error fetching redemption in background:", err);
+                console.error("Error fetching redemption cards in background:", err);
             } finally {
                 setLoading(false);
             }
         };
-        load();
+
+        const loadLink = async () => {
+            try {
+                const link = await dataService.getRedemptionLink();
+                if (link) setRedeemLink(link);
+            } catch (err) {
+                console.error("Error fetching redemption link in background:", err);
+            }
+        };
+
+        const loadAll = () => {
+            loadCards();
+            loadLink();
+        };
+
+        loadAll();
+
+        const channel = supabase
+            .channel("realtime-redemption")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "redemption_cards" },
+                () => {
+                    loadCards();
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "site_settings" },
+                () => {
+                    loadLink();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     return (

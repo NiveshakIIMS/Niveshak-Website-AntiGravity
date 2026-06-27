@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import { useState, useEffect } from "react";
 import { dataService, Event } from "@/services/dataService";
 import EventCard from "@/components/EventCard";
+import { supabase } from "@/lib/supabaseClient";
 
 interface EventsClientProps {
     initialEvents?: Event[];
@@ -20,13 +21,32 @@ export default function EventsClient({ initialEvents = [] }: EventsClientProps) 
             setEvents(initialEvents);
         }
 
-        dataService.getEvents()
-            .then(freshEvents => {
-                if (freshEvents && freshEvents.length > 0) {
-                    setEvents(freshEvents);
+        const fetchFreshEvents = () => {
+            dataService.getEvents()
+                .then(freshEvents => {
+                    if (freshEvents && freshEvents.length > 0) {
+                        setEvents(freshEvents);
+                    }
+                })
+                .catch(err => console.error("Error fetching events in background:", err));
+        };
+
+        fetchFreshEvents();
+
+        const channel = supabase
+            .channel("realtime-events")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "events" },
+                () => {
+                    fetchFreshEvents();
                 }
-            })
-            .catch(err => console.error("Error fetching events in background:", err));
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialEvents]);
 
     // Extract years

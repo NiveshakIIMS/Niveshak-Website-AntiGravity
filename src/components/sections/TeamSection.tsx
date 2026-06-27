@@ -5,6 +5,7 @@ import { Linkedin, Mail, Copy, Check, Award, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { dataService, TeamMember } from "@/services/dataService";
+import { supabase } from "@/lib/supabaseClient";
 
 interface TeamSectionProps {
     showTitle?: boolean;
@@ -24,14 +25,33 @@ export default function TeamSection({ showTitle = true, showHallOfFame = false, 
             setIsLoading(true);
         }
 
-        dataService.getTeam()
-            .then(freshMembers => {
-                if (freshMembers && freshMembers.length > 0) {
-                    setMembers(freshMembers);
+        const fetchFreshTeam = () => {
+            dataService.getTeam()
+                .then(freshMembers => {
+                    if (freshMembers && freshMembers.length > 0) {
+                        setMembers(freshMembers);
+                    }
+                })
+                .catch(err => console.error("Error fetching team in background:", err))
+                .finally(() => setIsLoading(false));
+        };
+
+        fetchFreshTeam();
+
+        const channel = supabase
+            .channel("realtime-team")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "team_members" },
+                () => {
+                    fetchFreshTeam();
                 }
-            })
-            .catch(err => console.error("Error fetching team in background:", err))
-            .finally(() => setIsLoading(false));
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialMembers]);
 
     const facultyMembers = members.filter(m => m.category === "Faculty Mentor").sort((a, b) => a.name.localeCompare(b.name));

@@ -6,6 +6,7 @@ import { ArrowRight, Bell, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { dataService, Notice } from "@/services/dataService";
 import NoticeCard from "../NoticeCard";
+import { supabase } from "@/lib/supabaseClient";
 
 interface NoticesSectionProps {
     initialNotices?: Notice[];
@@ -30,20 +31,39 @@ export default function NoticesSection({ initialNotices = [] }: NoticesSectionPr
             setIsLoading(true);
         }
 
-        dataService.getNotices().then(data => {
-            if (data && data.length > 0) {
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
+        const loadNotices = () => {
+            dataService.getNotices().then(data => {
+                if (data && data.length > 0) {
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
 
-                const activeNotices = data.filter(n => {
-                    const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
-                    return checkDate >= now;
-                });
+                    const activeNotices = data.filter(n => {
+                        const checkDate = n.expiryDate ? new Date(n.expiryDate) : new Date(n.date);
+                        return checkDate >= now;
+                    });
 
-                setNotices(activeNotices.slice(0, 4));
-            }
-        }).catch(err => console.error("Error fetching notices in background:", err))
-          .finally(() => setIsLoading(false));
+                    setNotices(activeNotices.slice(0, 4));
+                }
+            }).catch(err => console.error("Error fetching notices in background:", err))
+              .finally(() => setIsLoading(false));
+        };
+
+        loadNotices();
+
+        const channel = supabase
+            .channel("realtime-notices-section")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "notices" },
+                () => {
+                    loadNotices();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [initialNotices]);
 
     if (isLoading) {
