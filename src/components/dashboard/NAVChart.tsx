@@ -299,6 +299,9 @@ const ChartView = ({
     filterMode: FilterMode;
     chartType: "indexed" | "comparison" | "nif" | "nifty";
 }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+
     // Determine Axis and Data configurations based on mode
     const isOverall = filterMode === "OVERALL";
     const showNIF = chartType === "indexed" || chartType === "comparison" || chartType === "nif";
@@ -332,6 +335,10 @@ const ChartView = ({
             };
         });
     }, [processedData]);
+
+    if (!mounted) {
+        return <div className="w-full h-[350px] bg-muted/20 animate-pulse rounded-2xl flex items-center justify-center text-muted-foreground text-sm">Loading Chart Data...</div>;
+    }
 
     return (
         <div style={{ width: '100%', height: '100%' }}>

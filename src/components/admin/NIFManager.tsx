@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, TrendingUp, Save, BarChart3, Calendar } from "lucide-react";
 import { dataService, NAVData, calculateTradingYears } from "@/services/dataService";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
 import { formatDateIndian } from "@/lib/dateUtils";
 import * as XLSX from "xlsx";

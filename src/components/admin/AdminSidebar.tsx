@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, Settings, LogOut, FileText, ArrowLeft, Image as ImageIcon, Database, Award, X, Calculator } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, Settings, LogOut, FileText, ArrowLeft, Image as ImageIcon, Award, X, Calculator } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

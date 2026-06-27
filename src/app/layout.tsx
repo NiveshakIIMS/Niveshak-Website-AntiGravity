@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
-
 import { LogoProvider } from "@/context/LogoContext";
-
-const inter = Inter({ subsets: ["latin"] });
+import Navbar from "@/components/Navbar";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export const metadata: Metadata = {
   title: "Niveshak - Finance Club of IIM Shillong",
   description: "The official website of Niveshak, the Finance Club of IIM Shillong. Featuring financial dashboard, magazines, and events.",
 };
-
-import Navbar from "@/components/Navbar";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export default function RootLayout({
   children,
@@ -23,6 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json?v=2" />
         <meta name="theme-color" content="#0d1b2a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -48,7 +46,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans">
         <ThemeProvider>
           <LogoProvider>
             <Navbar />
