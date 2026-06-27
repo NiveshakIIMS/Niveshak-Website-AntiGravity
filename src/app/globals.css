@@ -29,6 +29,10 @@
     --muted: #f3f4f6;
     --muted-foreground: #6b7280;
     --border: #e5e7eb;
+    --input: #e5e7eb;
+    --ring: #00A8E8;
+    --secondary: #f3f4f6;
+    --secondary-foreground: #0D1B2A;
   }
 
   .dark {
@@ -44,6 +48,10 @@
     --muted: #262626;
     --muted-foreground: #a3a3a3;
     --border: #262626;
+    --input: #404040;
+    --ring: #00A8E8;
+    --secondary: #262626;
+    --secondary-foreground: #ffffff;
   }
 
   /* Inherit color-scheme on inputs to force native widgets/scrollbars to match the active theme.
@@ -57,6 +65,16 @@
   option {
     background-color: var(--card);
     color: var(--foreground);
+  }
+
+  /* Ensure SVG icons (Lucide etc.) always use the current text color — prevents black icons on dark bg */
+  svg {
+    fill: currentColor;
+  }
+  /* Lucide icons use stroke, not fill — so reset fill to none and let stroke inherit */
+  svg.lucide {
+    fill: none;
+    stroke: currentColor;
   }
 
   /* Browser calendar/time picker indicator adjustment and contrast visibility */
@@ -133,6 +151,13 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 
   --color-navy-950: #060D17;
   --color-navy-900: #0D1B2A;

@@ -208,7 +208,7 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                 <>
                     <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-muted/30 transition-colors group relative overflow-hidden">
                         <input type="file" accept={accept} className="hidden" onChange={handleFileUpload} />
-                        <div className="p-3 bg-muted rounded-full group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors mb-2">
+                        <div className="p-3 bg-muted rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-blue-600 transition-colors mb-2">
                             {isProcessing ? (
                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                             ) : (

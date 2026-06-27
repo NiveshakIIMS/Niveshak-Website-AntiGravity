@@ -285,7 +285,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
                                         </div>
                                         <div className="p-5">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${resource.type === 'folder' ? 'bg-blue-100 text-blue-700' : 'bg-muted text-muted-foreground'
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${resource.type === 'folder' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-muted text-muted-foreground'
                                                     }`}>
                                                     {resource.type}
                                                 </span>
@@ -298,7 +298,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
                                 ) : (
                                     /* List View */
                                     <>
-                                        <div className={`w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center ${resource.type === 'folder' ? 'bg-blue-100 text-blue-600' : 'bg-muted text-muted-foreground'}`}>
+                                        <div className={`w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center ${resource.type === 'folder' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-muted text-muted-foreground'}`}>
                                             {resource.type === 'folder' ? <Folder className="w-6 h-6" /> : (resource.type === 'file' ? <FileText className="w-6 h-6" /> : <LinkIcon className="w-6 h-6" />)}
                                         </div>
                                         <div className="flex-1 min-w-0">

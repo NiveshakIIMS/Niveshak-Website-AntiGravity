@@ -227,7 +227,7 @@ export default function AboutManager() {
                                     <div className="flex items-center gap-1">
                                         <button onClick={() => moveSection(sIdx, -1)} disabled={sIdx === 0} className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-blue-500 disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
                                         <button onClick={() => moveSection(sIdx, 1)} disabled={sIdx === (data.sections?.length || 0) - 1} className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-blue-500 disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
-                                        <button onClick={() => deleteSection(sIdx)} className="p-1.5 hover:bg-red-100 text-muted-foreground hover:text-red-600 rounded disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
+                                        <button onClick={() => deleteSection(sIdx)} className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 rounded disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 </div>
 
@@ -282,7 +282,7 @@ export default function AboutManager() {
                                                         placeholder="Card details..."
                                                     />
                                                 </div>
-                                                <button onClick={() => deleteCardFromSection(sIdx, cIdx)} className="p-1 hover:bg-red-100 text-red-400 hover:text-red-500 rounded opacity-50 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => deleteCardFromSection(sIdx, cIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-500 dark:hover:text-red-400 rounded opacity-50 group-hover:opacity-100 transition-opacity">
                                                     <X className="w-3 h-3" />
                                                 </button>
                                             </div>

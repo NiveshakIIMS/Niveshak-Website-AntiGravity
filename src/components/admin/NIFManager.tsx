@@ -404,7 +404,7 @@ export default function NIFManager() {
                                 <div className="space-y-1">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold text-muted-foreground uppercase">Ann. Return (%)</label>
-                                        <label className="text-[10px] cursor-pointer flex items-center gap-1 select-none font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">
+                                        <label className="text-[10px] cursor-pointer flex items-center gap-1 select-none font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
                                             <input
                                                 type="checkbox"
                                                 checked={!!metrics.isAutoReturn}

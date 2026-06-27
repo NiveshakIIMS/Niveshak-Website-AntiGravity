@@ -198,7 +198,7 @@ export default function EventsManager() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h4 className="font-bold text-lg text-foreground">{event.title}</h4>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${event.type === "Live" ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground"}`}>{event.type}</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${event.type === "Live" ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400" : "bg-muted text-muted-foreground"}`}>{event.type}</span>
                                         </div>
                                         <p className="text-sm text-muted-foreground flex gap-3 mt-1">
                                             <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDateIndian(event.date)}</span>

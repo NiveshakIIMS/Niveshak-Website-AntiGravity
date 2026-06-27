@@ -176,7 +176,7 @@ export default function AdminDashboard({ setIsAuthenticated }: AdminDashboardPro
                                     <p className="text-muted-foreground text-sm">Your account is secured. If you wish to disable it, click the button below.</p>
                                 </div>
                                 <div className="flex flex-col gap-3">
-                                    <button onClick={handleDisableMFA} className="px-6 py-2.5 bg-red-100/50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl font-medium transition-colors">Disable 2FA</button>
+                                    <button onClick={handleDisableMFA} className="px-6 py-2.5 bg-red-100/50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl font-medium transition-colors">Disable 2FA</button>
                                     <button onClick={() => setShowMFA(false)} className="px-6 py-2.5 bg-muted hover:bg-muted/80 text-foreground rounded-xl font-medium transition-colors">Close</button>
                                 </div>
                             </div>

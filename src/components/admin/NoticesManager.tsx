@@ -117,9 +117,9 @@ export default function NoticesManager() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${notice.category === "Urgent" ? "bg-red-100 text-red-600" :
-                                            notice.category === "Promotion" ? "bg-purple-100 text-purple-600" :
-                                                "bg-blue-100 text-blue-600"
+                                        <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${notice.category === "Urgent" ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400" :
+                                            notice.category === "Promotion" ? "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400" :
+                                                "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
                                             }`}>
                                             {notice.category}
                                         </span>
