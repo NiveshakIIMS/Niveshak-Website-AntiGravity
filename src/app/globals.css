@@ -46,16 +46,29 @@
     --border: #262626;
   }
 
-  /* Browser calendar/time picker indicator adjustment */
-  ::-webkit-calendar-picker-indicator {
+  /* Inherit color-scheme on inputs to force native widgets/scrollbars to match the active theme */
+  input, select, textarea {
+    color-scheme: inherit;
+  }
+
+  /* Browser calendar/time picker indicator adjustment and contrast visibility */
+  input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     border-radius: 4px;
     padding: 2px;
     transition: opacity 0.2s;
   }
   
-  .dark ::-webkit-calendar-picker-indicator {
-    filter: invert(1);
+  .dark input::-webkit-calendar-picker-indicator,
+  .dark input::-webkit-search-cancel-button,
+  .dark input::-webkit-clear-button {
+    filter: invert(1) !important;
+  }
+
+  .light input::-webkit-calendar-picker-indicator,
+  .light input::-webkit-search-cancel-button,
+  .light input::-webkit-clear-button {
+    filter: none !important;
   }
 
   /* Quill Snow Editor Dark Mode overrides */
@@ -80,6 +93,13 @@
   .dark .ql-snow .ql-picker-options {
     background-color: var(--card) !important;
     border-color: var(--border) !important;
+  }
+  .dark .ql-snow .ql-picker-options .ql-picker-item {
+    color: var(--foreground) !important;
+  }
+  .dark .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+    color: var(--foreground) !important;
+    background-color: var(--muted) !important;
   }
 
   /* Shimmer effect animation */
