@@ -99,18 +99,25 @@ export default function Navbar() {
                         {/* Desktop Navigation & Actions */}
                         <div className="hidden md:flex items-center gap-3 lg:gap-4">
                             {/* Nav Items Container */}
-                            <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm">
+                            <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm relative">
                                 {navItems.map((item) => {
                                     const active = isActive(item.href);
                                     return (
                                         <Link
                                             key={item.name}
                                             href={item.href}
-                                            className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm whitespace-nowrap ${active
-                                                ? "bg-white text-navy-900 shadow-md scale-105"
-                                                : "text-gray-300 hover:text-white hover:bg-navy-800"
+                                            className={`relative px-3 lg:px-4 py-1.5 lg:py-2 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-colors duration-300 whitespace-nowrap z-10 ${active
+                                                ? "text-navy-900"
+                                                : "text-gray-300 hover:text-white hover:bg-navy-800/30"
                                                 }`}
                                         >
+                                            {active && (
+                                                <motion.div
+                                                    layoutId="activeTabNavbar"
+                                                    className="absolute inset-0 bg-white rounded-full -z-10 shadow-md"
+                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                />
+                                            )}
                                             {item.name}
                                         </Link>
                                     );
