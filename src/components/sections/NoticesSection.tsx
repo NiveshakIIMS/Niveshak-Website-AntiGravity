@@ -102,31 +102,49 @@ export default function NoticesSection({ initialNotices = [] }: NoticesSectionPr
         <section className="py-20 relative overflow-hidden">
             <div className="container mx-auto px-4 relative z-10">
                 {/* Header */}
-                <div className="text-center mb-12">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6 }}
+                    className="text-center mb-12"
+                >
                     <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
                         Notice <span className="text-accent">Board</span>
                     </h2>
                     <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                         Stay updated with the latest announcements, events, and opportunities from Niveshak.
                     </p>
-                </div>
+                </motion.div>
 
-                <div className={notices.length < 3
-                    ? "flex flex-wrap justify-center gap-6"
-                    : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"}>
+                <motion.div 
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.7, delay: 0.1 }}
+                    className={notices.length < 3
+                        ? "flex flex-wrap justify-center gap-6"
+                        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"}
+                >
                     {notices.map((notice, idx) => (
                         <div key={notice.id} className={notices.length < 3 ? "w-full max-w-sm min-w-[280px]" : "w-full"}>
                             <NoticeCard notice={notice} idx={idx} />
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* View All Button */}
-                <div className="mt-12 text-center">
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-12 text-center"
+                >
                     <Link href="/notices" className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-accent text-white font-semibold hover:bg-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         View All Notices <ArrowRight className="w-5 h-5" />
                     </Link>
-                </div>
+                </motion.div>
             </div>
 
             {/* Background Decorations */}

@@ -5,6 +5,7 @@ import { dataService, Event } from "@/services/dataService";
 import EventCard from "@/components/EventCard";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { motion } from "framer-motion";
 
 interface EventsSectionProps {
     initialEvents?: Event[];
@@ -72,10 +73,16 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
 
         <section id="events" className="py-20 px-4 bg-background transition-colors">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6 }}
+                    className="text-center mb-16"
+                >
                     <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Events & <span className="text-accent">Activities</span></h2>
                     <p className="text-lg text-muted-foreground">Join us for learning and competition</p>
-                </div>
+                </motion.div>
 
                 {isLoading ? (
                     <div className="flex justify-center items-center py-12">
@@ -84,20 +91,32 @@ export default function EventsSection({ initialEvents = [] }: EventsSectionProps
                 ) : events.length === 0 ? (
                     <div className="text-center text-muted-foreground">No upcoming events scheduled. Stay tuned!</div>
                 ) : (
-                    <div className={`${events.length < 3 ? 'flex flex-wrap justify-center' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 justify-items-center'} gap-8 max-w-5xl mx-auto`}>
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 0.7, delay: 0.1 }}
+                        className={`${events.length < 3 ? 'flex flex-wrap justify-center' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 justify-items-center'} gap-8 max-w-5xl mx-auto`}
+                    >
                         {events.map((event) => (
-                            <div key={event.id} className={events.length < 3 ? "w-full max-w-md" : "w-full max-w-md"}>
+                            <div key={event.id} className="w-full max-w-md animate-glow-subtle">
                                 <EventCard event={event} />
                             </div>
                         ))}
-                    </div>
+                    </motion.div>
                 )}
 
-                <div className="mt-10 text-center">
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-10 text-center"
+                >
                     <a href="/events" className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-accent text-white font-semibold hover:bg-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         View All Events <ArrowRight className="w-5 h-5" />
                     </a>
-                </div>
+                </motion.div>
             </div>
         </section>
     );

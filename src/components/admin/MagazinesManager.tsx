@@ -117,7 +117,6 @@ export default function MagazinesManager() {
                                     />
                                 </div>
                                 <input placeholder="PDF Link (Drive/OneDrive - View Only)" value={magForm.pdfUrl} onChange={e => setMagForm({ ...magForm, pdfUrl: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none" />
-                                <input placeholder="FlipHTML5 / Read Online URL" value={magForm.flipUrl || ""} onChange={e => setMagForm({ ...magForm, flipUrl: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none" />
                                 <div className="flex gap-3 pt-2">
                                     <button onClick={saveMag} className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Save Details</button>
                                     <button onClick={() => setIsEditing(null)} className="px-5 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground font-medium">Cancel</button>

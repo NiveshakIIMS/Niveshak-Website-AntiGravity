@@ -202,15 +202,16 @@ export const dataService = {
         }));
     },
     saveHeroSlides: async (slides: HeroSlide[]) => {
-        // Full replace logic can be complex in SQL. Simple strategy: Upsert all. 
-        // Note: This doesn't delete removed slides. For verify simple app, we can Delete All then Insert All transactionally or just Upsert.
-        // Better: Delete all rows and re-insert? A bit heavy but clean for "List Management".
-
-        // Strategy: Delete All -> Insert All (Cleanest for re-ordering)
-        await supabase.from('hero_slides').delete().neq('id', '0');
+        const { data: dbData } = await supabase.from('hero_slides').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = slides.map(s => s.id);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+        
+        if (idsToDelete.length > 0) {
+            await supabase.from('hero_slides').delete().in('id', idsToDelete);
+        }
 
         const rows = slides.map(s => {
-            // Check if URL is R2 to preserve metadata (simple check)
             const isR2 = s.imageUrl.startsWith(R2_DOMAIN);
             const mediaKey = isR2 ? s.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
             return {
@@ -227,8 +228,10 @@ export const dataService = {
             };
         });
 
-        const { error } = await supabase.from('hero_slides').insert(rows);
-        if (error) console.error("Save Hero Error", error);
+        if (rows.length > 0) {
+            const { error } = await supabase.from('hero_slides').upsert(rows);
+            if (error) console.error("Save Hero Error", error);
+        }
     },
 
     // --- About (Singleton ID='about' + Sections) ---
@@ -333,7 +336,15 @@ export const dataService = {
         }));
     },
     saveTeam: async (members: TeamMember[]) => {
-        await supabase.from('team_members').delete().neq('id', '0');
+        const { data: dbData } = await supabase.from('team_members').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = members.map(m => m.id);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+        
+        if (idsToDelete.length > 0) {
+            await supabase.from('team_members').delete().in('id', idsToDelete);
+        }
+
         const rows = members.map(m => {
             const isR2 = m.imageUrl.startsWith(R2_DOMAIN);
             const mediaKey = isR2 ? m.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
@@ -350,8 +361,11 @@ export const dataService = {
                 media_key: mediaKey
             };
         });
-        const { error } = await supabase.from('team_members').insert(rows);
-        if (error) console.error("Save Team Error", error);
+        
+        if (rows.length > 0) {
+            const { error } = await supabase.from('team_members').upsert(rows);
+            if (error) console.error("Save Team Error", error);
+        }
     },
 
     // --- Magazines ---
@@ -371,7 +385,15 @@ export const dataService = {
         }));
     },
     saveMagazines: async (mags: Magazine[]) => {
-        await supabase.from('magazines').delete().neq('id', '0');
+        const { data: dbData } = await supabase.from('magazines').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = mags.map(m => m.id);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+        
+        if (idsToDelete.length > 0) {
+            await supabase.from('magazines').delete().in('id', idsToDelete);
+        }
+
         const rows = mags.map(m => {
             const isR2Cover = m.coverUrl.startsWith(R2_DOMAIN);
             const coverKey = isR2Cover ? m.coverUrl.replace(`${R2_DOMAIN}/`, '') : null;
@@ -388,15 +410,16 @@ export const dataService = {
                 cover_url: m.coverUrl,
                 pdf_url: m.pdfUrl,
                 flip_url: m.flipUrl,
-                storage_provider: (isR2Cover || isR2Pdf) ? 'r2' : 'legacy', // Simplified logic, ideally granular but schema has one provider column usually? 
-                // Wait, schema has one storage_provider. We assume if one is R2, we mark as R2. 
-                // Actually for read, we check media_key presence. Provider column is mostly metadata.
+                storage_provider: (isR2Cover || isR2Pdf) ? 'r2' : 'legacy',
                 media_key: coverKey,
                 pdf_media_key: pdfKey
             };
         });
-        const { error } = await supabase.from('magazines').insert(rows);
-        if (error) console.error("Save Mags Error", error);
+
+        if (rows.length > 0) {
+            const { error } = await supabase.from('magazines').upsert(rows);
+            if (error) console.error("Save Mags Error", error);
+        }
     },
 
     // --- Events ---
@@ -447,7 +470,15 @@ export const dataService = {
         });
     },
     saveEvents: async (events: Event[]) => {
-        await supabase.from('events').delete().neq('id', '0');
+        const { data: dbData } = await supabase.from('events').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = events.map(e => e.id);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+        
+        if (idsToDelete.length > 0) {
+            await supabase.from('events').delete().in('id', idsToDelete);
+        }
+
         const rows = events.map(e => {
             const isR2 = e.imageUrl.startsWith(R2_DOMAIN);
             const mediaKey = isR2 ? e.imageUrl.replace(`${R2_DOMAIN}/`, '') : null;
@@ -471,8 +502,11 @@ export const dataService = {
                 media_key: mediaKey
             };
         });
-        const { error } = await supabase.from('events').insert(rows);
-        if (error) console.error("Save Events Error", error);
+
+        if (rows.length > 0) {
+            const { error } = await supabase.from('events').upsert(rows);
+            if (error) console.error("Save Events Error", error);
+        }
     },
 
     // --- NIF ---
@@ -603,9 +637,14 @@ export const dataService = {
         }));
     },
     saveNotices: async (notices: Notice[]) => {
-        // Full replace strategy for simplicity in Admin UI list management
-        // Note: For large datasets, upsert is better. For this scale, delete-insert is fine to keep order/cleanups easy.
-        await supabase.from('notices').delete().neq('id', '0');
+        const { data: dbData } = await supabase.from('notices').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = notices.map(n => n.id);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+        
+        if (idsToDelete.length > 0) {
+            await supabase.from('notices').delete().in('id', idsToDelete);
+        }
 
         const rows = notices.map(n => {
             const isR2 = n.imageUrl && n.imageUrl.startsWith(R2_DOMAIN);
@@ -626,8 +665,10 @@ export const dataService = {
             };
         });
 
-        const { error } = await supabase.from('notices').insert(rows);
-        if (error) console.error("Save Notices Error", error);
+        if (rows.length > 0) {
+            const { error } = await supabase.from('notices').upsert(rows);
+            if (error) console.error("Save Notices Error", error);
+        }
     },
 
     // --- Resources ---
