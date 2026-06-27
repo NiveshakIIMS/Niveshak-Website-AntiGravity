@@ -161,7 +161,7 @@ export default function NoticesManager() {
                                         <input
                                             value={form.title}
                                             onChange={e => setForm({ ...form, title: e.target.value })}
-                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-bold"
+                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground font-bold"
                                             placeholder="Notice Headline"
                                         />
                                     </div>
@@ -170,7 +170,7 @@ export default function NoticesManager() {
                                         <select
                                             value={form.category}
                                             onChange={e => setForm({ ...form, category: e.target.value })}
-                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground"
                                         >
                                             <option value="General">General</option>
                                             <option value="Promotion">Promotion</option>
@@ -185,7 +185,7 @@ export default function NoticesManager() {
                                     <textarea
                                         value={form.content}
                                         onChange={e => setForm({ ...form, content: e.target.value })}
-                                        className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]"
+                                        className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px] text-foreground"
                                         placeholder="Write the full notice content here..."
                                     />
                                 </div>
@@ -198,7 +198,7 @@ export default function NoticesManager() {
                                                 type="date"
                                                 value={form.date}
                                                 onChange={e => setForm({ ...form, date: e.target.value })}
-                                                className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                                className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground"
                                             />
                                             <TimePicker
                                                 value={form.time || ""}
@@ -213,7 +213,7 @@ export default function NoticesManager() {
                                             type="date"
                                             value={form.expiryDate || ""}
                                             onChange={e => setForm({ ...form, expiryDate: e.target.value })}
-                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground"
                                         />
                                     </div>
                                 </div>
@@ -232,7 +232,7 @@ export default function NoticesManager() {
                                         <input
                                             value={form.linkLabel}
                                             onChange={e => setForm({ ...form, linkLabel: e.target.value })}
-                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                            className="w-full p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground"
                                             placeholder="e.g. Register Now"
                                         />
                                     </div>
@@ -243,7 +243,7 @@ export default function NoticesManager() {
                                             <input
                                                 value={form.link || ""}
                                                 onChange={e => setForm({ ...form, link: e.target.value })}
-                                                className="w-full pl-9 p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                                className="w-full pl-9 p-2.5 bg-background border border-input rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-foreground"
                                                 placeholder="https://..."
                                             />
                                         </div>

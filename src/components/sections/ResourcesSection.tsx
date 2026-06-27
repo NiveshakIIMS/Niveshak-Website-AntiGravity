@@ -217,7 +217,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as any)}
-                                className="bg-transparent text-sm font-medium outline-none cursor-pointer"
+                                className="bg-background text-foreground text-sm font-medium outline-none cursor-pointer rounded px-1"
                             >
                                 <option value="date">Newest First</option>
                                 <option value="name">A-Z</option>

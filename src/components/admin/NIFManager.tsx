@@ -470,7 +470,7 @@ export default function NIFManager() {
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
                                                 await updateMetricsStateAndDb(newMetrics);
                                             }}
-                                            className="flex-1 p-2 border border-input rounded-lg bg-background text-sm"
+                                            className="flex-1 p-2 border border-input rounded-lg bg-background text-foreground text-sm"
                                             placeholder="Category"
                                         />
                                         <input
@@ -482,7 +482,7 @@ export default function NIFManager() {
                                                 const newMetrics = { ...metrics, assetAllocation: newAlloc };
                                                 await updateMetricsStateAndDb(newMetrics);
                                             }}
-                                            className="w-20 p-2 border border-input rounded-lg bg-background text-sm"
+                                            className="w-20 p-2 border border-input rounded-lg bg-background text-foreground text-sm"
                                             placeholder="%"
                                         />
                                         <button

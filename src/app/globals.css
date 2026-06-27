@@ -46,9 +46,17 @@
     --border: #262626;
   }
 
-  /* Inherit color-scheme on inputs to force native widgets/scrollbars to match the active theme */
+  /* Inherit color-scheme on inputs to force native widgets/scrollbars to match the active theme.
+     Also set explicit foreground color so any component that forgets text-foreground still works. */
   input, select, textarea {
     color-scheme: inherit;
+    color: var(--foreground);
+  }
+
+  /* Ensure <option> elements inside selects have proper background/foreground in both themes */
+  option {
+    background-color: var(--card);
+    color: var(--foreground);
   }
 
   /* Browser calendar/time picker indicator adjustment and contrast visibility */

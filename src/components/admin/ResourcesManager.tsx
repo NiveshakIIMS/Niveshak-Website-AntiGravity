@@ -286,7 +286,7 @@ export default function ResourcesManager() {
                                         type="text"
                                         value={currentResource.title}
                                         onChange={e => setCurrentResource({ ...currentResource, title: e.target.value })}
-                                        className="w-full p-2 border border-input rounded-lg bg-background"
+                                        className="w-full p-2 border border-input rounded-lg bg-background text-foreground"
                                         placeholder="Name..."
                                         autoFocus
                                     />
@@ -300,7 +300,7 @@ export default function ResourcesManager() {
                                                 type="date"
                                                 value={formatDateIndian(currentResource.date)}
                                                 onChange={e => setCurrentResource({ ...currentResource, date: e.target.value })}
-                                                className="w-full p-2 border border-input rounded-lg bg-background"
+                                                className="w-full p-2 border border-input rounded-lg bg-background text-foreground"
                                             />
                                         </div>
                                         <div>
@@ -319,7 +319,7 @@ export default function ResourcesManager() {
                                     <textarea
                                         value={currentResource.description}
                                         onChange={e => setCurrentResource({ ...currentResource, description: e.target.value })}
-                                        className="w-full p-2 border border-input rounded-lg bg-background h-20"
+                                        className="w-full p-2 border border-input rounded-lg bg-background text-foreground h-20"
                                         placeholder="Optional..."
                                     />
                                 </div>
@@ -346,7 +346,7 @@ export default function ResourcesManager() {
                                             type="url"
                                             value={currentResource.url}
                                             onChange={e => setCurrentResource({ ...currentResource, url: e.target.value })}
-                                            className="w-full p-2 border border-input rounded-lg bg-background"
+                                            className="w-full p-2 border border-input rounded-lg bg-background text-foreground"
                                             placeholder="https://..."
                                         />
                                     </div>

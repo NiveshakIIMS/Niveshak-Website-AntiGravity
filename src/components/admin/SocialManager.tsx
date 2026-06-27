@@ -127,7 +127,7 @@ export default function SocialManager() {
                     <select
                         value={newPlatform}
                         onChange={(e) => setNewPlatform(e.target.value as any)}
-                        className="p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto min-w-[150px]"
+                        className="p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto min-w-[150px] text-foreground"
                     >
                         {PLATFORMS.map(p => (
                             <option key={p.id} value={p.id}>{p.label}</option>
@@ -140,7 +140,7 @@ export default function SocialManager() {
                             placeholder="Platform Name (e.g. Threads)"
                             value={customLabel}
                             onChange={(e) => setCustomLabel(e.target.value)}
-                            className="p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-48"
+                            className="p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-48 text-foreground"
                         />
                     )}
 
@@ -149,7 +149,7 @@ export default function SocialManager() {
                         placeholder={newPlatform === 'email' ? "niveshak@example.com" : "https://..."}
                         value={newUrl}
                         onChange={(e) => setNewUrl(e.target.value)}
-                        className="flex-1 p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 p-3 rounded-xl bg-background border border-border outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                     />
                     <AdminButton
                         onClick={addLink}
