@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Magazine } from "@/services/dataService";
 
 interface MagazineReaderProps {
@@ -31,75 +32,6 @@ function loadPdfjs(): Promise<any> {
     return pdfjsPromise;
 }
 
-const scriptPromises: { [src: string]: Promise<void> | undefined } = {};
-
-function isGlobalDefined(name: string): boolean {
-    if (typeof window === 'undefined') return false;
-    const parts = name.split(".");
-    let current: any = window;
-    for (const part of parts) {
-        if (current[part] === undefined) return false;
-        current = current[part];
-    }
-    return true;
-}
-
-function loadScript(src: string, globalCheck?: string): Promise<void> {
-    if (typeof window === 'undefined') return Promise.resolve();
-
-    if (globalCheck && isGlobalDefined(globalCheck)) {
-        return Promise.resolve();
-    }
-
-    if (scriptPromises[src]) {
-        return scriptPromises[src];
-    }
-
-    const promise = new Promise<void>((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-            if (globalCheck && isGlobalDefined(globalCheck)) {
-                resolve();
-                return;
-            }
-            const existingScript = existing as HTMLScriptElement;
-            if (existingScript.dataset.loaded === "true") {
-                resolve();
-            } else {
-                const checkInterval = setInterval(() => {
-                    if (globalCheck && isGlobalDefined(globalCheck)) {
-                        clearInterval(checkInterval);
-                        resolve();
-                    }
-                }, 100);
-
-                existingScript.addEventListener("load", () => {
-                    clearInterval(checkInterval);
-                    existingScript.dataset.loaded = "true";
-                    resolve();
-                });
-                existingScript.addEventListener("error", (err) => {
-                    clearInterval(checkInterval);
-                    reject(err);
-                });
-            }
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.onload = () => {
-            script.dataset.loaded = "true";
-            resolve();
-        };
-        script.onerror = (err) => reject(err);
-        document.head.appendChild(script);
-    });
-
-    scriptPromises[src] = promise;
-    return promise;
-}
-
 export default function MagazineReader({ magazine, onClose }: MagazineReaderProps) {
     const [pdf, setPdf] = useState<any>(null);
     const [numPages, setNumPages] = useState<number>(0);
@@ -109,10 +41,21 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-    const mountRef = useRef<HTMLDivElement | null>(null);
+    // 3D Flip Anim States (Framer Motion Native)
+    const [isFlipping, setIsFlipping] = useState<boolean>(false);
+    const [animationTrigger, setAnimationTrigger] = useState<boolean>(false);
+    const [direction, setDirection] = useState<"next" | "prev">("next");
+
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const renderTasksRef = useRef<{ [key: number]: any }>({});
+    const bookWrapperRef = useRef<HTMLDivElement | null>(null);
+    const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
+    const canvasRightRef = useRef<HTMLCanvasElement | null>(null);
+    const canvasFlipFrontRef = useRef<HTMLCanvasElement | null>(null);
+    const canvasFlipBackRef = useRef<HTMLCanvasElement | null>(null);
+
+    const renderTasksRef = useRef<{ [key: string]: any }>({});
     
+    // Pinch Gestures Refs
     const initialTouchDistanceRef = useRef<number | null>(null);
     const initialScaleRef = useRef<number>(1.0);
     const currentRatioRef = useRef<number>(1.0);
@@ -141,6 +84,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 setPdf(loadedPdf);
                 setNumPages(loadedPdf.numPages);
                 setCurrentPage(1);
+                setIsLoading(false);
             })
             .catch((err) => {
                 console.error("PDF load error:", err);
@@ -216,10 +160,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         pageNum: number, 
         canvas: HTMLCanvasElement, 
         pageWidth: number, 
-        pageHeight: number
+        pageHeight: number,
+        taskKey: string
     ) => {
-        if (renderTasksRef.current[pageNum]) {
-            renderTasksRef.current[pageNum].cancel();
+        if (renderTasksRef.current[taskKey]) {
+            renderTasksRef.current[taskKey].cancel();
         }
 
         try {
@@ -258,9 +203,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     canvasContext: ctx,
                     viewport: finalViewport
                 });
-                renderTasksRef.current[pageNum] = renderTask;
+                renderTasksRef.current[taskKey] = renderTask;
                 await renderTask.promise;
-                delete renderTasksRef.current[pageNum];
+                delete renderTasksRef.current[taskKey];
             }
         } catch (e: any) {
             if (e.name !== "RenderingCancelledException") {
@@ -269,171 +214,119 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // Helper: Pre-render visible pages and adjacent buffers
-    const renderViewPages = async (pdfDoc: any, view: number[]) => {
-        if (!pdfDoc) return;
+    // Render Static Pages when not flipping
+    useEffect(() => {
+        if (!pdf || isFlipping || isLoading) return;
+
+        const renderStaticView = async () => {
+            const dims = getBookDimensions();
+            const pageWidth = isMobile ? dims.width : (dims.width / 2);
+            const pageHeight = dims.height;
+
+            if (isMobile) {
+                if (canvasLeftRef.current) {
+                    await renderPageToCanvas(pdf, currentPage, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
+                }
+            } else {
+                const renderPromises = [];
+                if (currentPage === 1) {
+                    // Cover page is centered on the right
+                    if (canvasRightRef.current) {
+                        renderPromises.push(renderPageToCanvas(pdf, 1, canvasRightRef.current, pageWidth, pageHeight, "rightStatic"));
+                    }
+                } else {
+                    if (canvasLeftRef.current && currentPage <= numPages) {
+                        renderPromises.push(renderPageToCanvas(pdf, currentPage, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic"));
+                    }
+                    if (canvasRightRef.current && currentPage + 1 <= numPages) {
+                        renderPromises.push(renderPageToCanvas(pdf, currentPage + 1, canvasRightRef.current, pageWidth, pageHeight, "rightStatic"));
+                    }
+                }
+                await Promise.all(renderPromises);
+            }
+        };
+
+        renderStaticView();
+    }, [pdf, currentPage, scale, isMobile, isFlipping, isLoading]);
+
+    // 4. Trigger Flip Turn Animation (Render-First, Animate-Second)
+    const startFlip = async (dir: "next" | "prev") => {
+        if (isFlipping || isLoading || !pdf) return;
 
         const dims = getBookDimensions();
         const pageWidth = isMobile ? dims.width : (dims.width / 2);
         const pageHeight = dims.height;
 
-        const visiblePages = view.filter(p => p > 0 && p <= numPages);
-        
-        const adjacentPages: number[] = [];
-        visiblePages.forEach(p => {
-            if (p - 1 > 0 && !visiblePages.includes(p - 1)) adjacentPages.push(p - 1);
-            if (p - 2 > 0 && !visiblePages.includes(p - 2)) adjacentPages.push(p - 2);
-            if (p + 1 <= numPages && !visiblePages.includes(p + 1)) adjacentPages.push(p + 1);
-            if (p + 2 <= numPages && !visiblePages.includes(p + 2)) adjacentPages.push(p + 2);
-        });
+        setDirection(dir);
+        setIsFlipping(true);
 
-        const uniqueAdjacent = Array.from(new Set(adjacentPages));
+        if (dir === "next") {
+            const currentLeft = currentPage;
+            const currentRight = isMobile ? currentLeft : currentLeft + 1;
+            const targetLeft = isMobile ? currentLeft + 1 : (currentLeft === 1 ? 2 : currentLeft + 2);
+            const targetRight = targetLeft + 1;
 
-        // 1. Priority: Render currently visible pages
-        await Promise.all(
-            visiblePages.map(p => {
-                const canvas = document.getElementById(`canvas-page-${p}`) as HTMLCanvasElement;
-                if (canvas) {
-                    return renderPageToCanvas(pdfDoc, p, canvas, pageWidth, pageHeight);
-                }
-                return Promise.resolve();
-            })
-        );
+            const renderPromises = [
+                // Render Front moving sheet (current right page)
+                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
+                // Render Back moving sheet (target left page)
+                canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
+                // Render static right page under the flip
+                (canvasRightRef.current && targetRight <= numPages && !isMobile) ? renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
+            ];
+            await Promise.all(renderPromises);
+        } else {
+            const currentLeft = currentPage;
+            const targetLeft = isMobile ? currentLeft - 1 : (currentLeft === 2 ? 1 : currentLeft - 2);
+            const targetRight = targetLeft + 1;
 
-        // 2. Background: Pre-render adjacent pages
-        uniqueAdjacent.forEach(p => {
-            const canvas = document.getElementById(`canvas-page-${p}`) as HTMLCanvasElement;
-            if (canvas) {
-                renderPageToCanvas(pdfDoc, p, canvas, pageWidth, pageHeight);
-            }
-        });
+            const renderPromises = [
+                // Render Front moving sheet (current left page)
+                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentLeft, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
+                // Render Back moving sheet (target right page)
+                canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
+                // Render static left page under the flip
+                (canvasLeftRef.current && targetLeft > 1 && !isMobile) ? renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic") : Promise.resolve()
+            ];
+            await Promise.all(renderPromises);
+        }
+
+        // Once pages are rendered, trigger rotation
+        setAnimationTrigger(true);
     };
 
-    // 4. Initialize and control turn.js flipbook (Isolated inside DOM parent to avoid React conflicts)
-    useEffect(() => {
-        if (!pdf || !mountRef.current) return;
+    const handleAnimationComplete = () => {
+        if (!isFlipping) return;
 
-        let active = true;
-        let $flipbook: any = null;
-
-        const initBook = async () => {
-            setIsLoading(true);
-
-            // 1. Load jQuery
-            await loadScript("https://code.jquery.com/jquery-3.6.0.min.js", "jQuery");
-            if (!active) return;
-
-            // 2. Load turn.js
-            await loadScript("/js/turn.js", "jQuery.fn.turn");
-            if (!active) return;
-
-            const $ = (window as any).$;
-            if (!$) return;
-
-            // 3. Clear any previous mount content to isolate turn.js DOM completely
-            mountRef.current!.innerHTML = "";
-
-            // 4. Construct flipbook container dynamically
-            const fb = document.createElement("div");
-            fb.id = "flipbook";
-            fb.className = "shadow-2xl";
-            mountRef.current!.appendChild(fb);
-
-            // 5. Append page elements dynamically
-            for (let i = 1; i <= numPages; i++) {
-                const pageDiv = document.createElement("div");
-                pageDiv.className = "page bg-white relative overflow-hidden";
-                pageDiv.style.width = "100%";
-                pageDiv.style.height = "100%";
-
-                const canvas = document.createElement("canvas");
-                canvas.id = `canvas-page-${i}`;
-                canvas.className = "block mx-auto";
-                pageDiv.appendChild(canvas);
-
-                const gloss = document.createElement("div");
-                gloss.className = "absolute inset-0 magazine-gloss pointer-events-none z-20";
-                pageDiv.appendChild(gloss);
-
-                // Spine Crease shadow for interior pages
-                if (i > 1 && i < numPages) {
-                    const crease = document.createElement("div");
-                    crease.className = `absolute top-0 bottom-0 w-8 pointer-events-none z-10 ${
-                        i % 2 === 0 
-                            ? 'right-0 bg-gradient-to-l from-black/8 to-transparent' 
-                            : 'left-0 bg-gradient-to-r from-black/8 to-transparent'
-                    }`;
-                    pageDiv.appendChild(crease);
-                }
-
-                fb.appendChild(pageDiv);
-            }
-
-            $flipbook = $(fb);
-            const dims = getBookDimensions();
-
-            // 6. Initialize turnbook
-            $flipbook.turn({
-                width: dims.width,
-                height: dims.height,
-                autoCenter: true,
-                display: isMobile ? "single" : "double",
-                duration: 600,
-                acceleration: true,
-                gradients: true,
-                when: {
-                    turning: (event: any, page: number, view: number[]) => {
-                        renderViewPages(pdf, view);
-                    },
-                    turned: (event: any, page: number, view: number[]) => {
-                        setCurrentPage(page);
-                        renderViewPages(pdf, view);
-                    }
-                }
-            });
-
-            // 7. Initial render view
-            const initialView = $flipbook.turn("view");
-            await renderViewPages(pdf, initialView);
-            setIsLoading(false);
-        };
-
-        initBook();
-
-        return () => {
-            active = false;
-            Object.values(renderTasksRef.current).forEach(task => task.cancel());
-            if ($flipbook && $flipbook.length && $flipbook.turn("is")) {
-                try {
-                    $flipbook.turn("destroy");
-                } catch (e) {
-                    console.error("Failed to destroy turnbook", e);
-                }
-            }
-        };
-    }, [pdf, isMobile]);
-
-    // 5. Handle Zoom size adjustments
-    useEffect(() => {
-        if (!pdf || isLoading) return;
-        const $ = (window as any).$;
-        if (!$ || !mountRef.current) return;
-
-        const fbEl = document.getElementById("flipbook");
-        if (fbEl) {
-            const dims = getBookDimensions();
-            const $fb = $(fbEl);
-            if ($fb.length && $fb.turn("is")) {
-                $fb.turn("size", dims.width, dims.height);
-                $fb.turn("disable", scale > 1.0);
-
-                const currentView = $fb.turn("view");
-                renderViewPages(pdf, currentView);
-            }
+        // Commit page index update
+        if (direction === "next") {
+            const targetPg = isMobile 
+                ? currentPage + 1 
+                : (currentPage === 1 ? 2 : currentPage + 2);
+            setCurrentPage(targetPg);
+        } else {
+            const targetPg = isMobile 
+                ? currentPage - 1 
+                : (currentPage === 2 ? 1 : currentPage - 2);
+            setCurrentPage(targetPg);
         }
-    }, [scale]);
 
-    // 6. Mobile Touch Pinch-to-zoom Gesture Handler
+        setAnimationTrigger(false);
+        setIsFlipping(false);
+    };
+
+    const nextPage = () => {
+        const isLastPage = isMobile ? currentPage === numPages : currentPage + 1 >= numPages;
+        if (isLastPage) return;
+        startFlip("next");
+    };
+
+    const prevPage = () => {
+        if (currentPage === 1) return;
+        startFlip("prev");
+    };
+
+    // 5. Mobile Touch Pinch-to-zoom Gesture Handler
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -460,19 +353,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const ratio = dist / initialTouchDistanceRef.current;
                 currentRatioRef.current = ratio;
 
-                const fbEl = document.getElementById("flipbook");
-                if (fbEl) {
-                    fbEl.style.transform = `scale(${ratio})`;
-                    fbEl.style.transformOrigin = "center center";
+                const wrapper = bookWrapperRef.current;
+                if (wrapper) {
+                    wrapper.style.transform = `scale(${ratio})`;
+                    wrapper.style.transformOrigin = "center center";
                 }
             }
         };
 
         const handleTouchEnd = () => {
             if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
-                const fbEl = document.getElementById("flipbook");
-                if (fbEl) {
-                    fbEl.style.transform = "";
+                const wrapper = bookWrapperRef.current;
+                if (wrapper) {
+                    wrapper.style.transform = "";
                 }
 
                 const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
@@ -493,7 +386,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [scale, isLoading]);
 
-    // 7. Keyboard navigation
+    // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") nextPage();
@@ -502,29 +395,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [pdf, isLoading]);
-
-    const nextPage = () => {
-        const $ = (window as any).$;
-        const fbEl = document.getElementById("flipbook");
-        if ($ && fbEl) {
-            const $fb = $(fbEl);
-            if ($fb.length && $fb.turn("is")) {
-                $fb.turn("next");
-            }
-        }
-    };
-
-    const prevPage = () => {
-        const $ = (window as any).$;
-        const fbEl = document.getElementById("flipbook");
-        if ($ && fbEl) {
-            const $fb = $(fbEl);
-            if ($fb.length && $fb.turn("is")) {
-                $fb.turn("previous");
-            }
-        }
-    };
+    }, [pdf, currentPage, isLoading, isFlipping]);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -540,6 +411,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const next = currentPage + 1;
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
+
+    const dims = getBookDimensions();
+    const bookWidth = dims.width;
+    const bookHeight = dims.height;
+    const pageWidth = isMobile ? bookWidth : (bookWidth / 2);
 
     return (
         <div className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none">
@@ -567,7 +443,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         <ZoomIn className="w-5 h-5 text-gray-300" />
                     </button>
 
-                    <div className="h-5 w-[1px] bg-[#242424] mx-1 sm:mx-2" />
+                    <div className="h-5 w-[1px] bg-[#242424] mx-1 mx-2" />
 
                     <button
                         onClick={toggleFullscreen}
@@ -595,7 +471,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 {/* Stage Left Arrow Overlay */}
                 <button
                     onClick={prevPage}
-                    disabled={isLoading || currentPage === 1}
+                    disabled={isLoading || currentPage === 1 || isFlipping}
                     className="absolute left-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
                 >
                     <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
@@ -604,24 +480,106 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 {/* Stage Right Arrow Overlay */}
                 <button
                     onClick={nextPage}
-                    disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages)}
+                    disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages) || isFlipping}
                     className="absolute right-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
                 >
                     <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
-                {isLoading && (
-                    <div className="absolute flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
+                {isLoading ? (
+                    <div className="flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
                         <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
                         <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                     </div>
-                )}
+                ) : (
+                    /* Book Container Wrapper */
+                    <div 
+                        ref={bookWrapperRef}
+                        className="relative flex items-center justify-center shadow-2xl bg-[#141414] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out"
+                        style={{
+                            width: `${bookWidth}px`,
+                            height: `${bookHeight}px`,
+                            perspective: "2500px",
+                            transformStyle: "preserve-3d"
+                        }}
+                    >
+                        {/* LEFT STATIC PAGE */}
+                        <div 
+                            className={`relative bg-white overflow-hidden ${(!isMobile && currentPage === 1) ? "w-0 opacity-0 pointer-events-none" : ""}`}
+                            style={{
+                                width: `${pageWidth}px`,
+                                height: `${bookHeight}px`
+                            }}
+                        >
+                            <canvas ref={canvasLeftRef} className="block mx-auto" />
+                            <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                            
+                            {/* Inner Crease Shadow */}
+                            {!isMobile && currentPage > 1 && (
+                                <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-10" />
+                            )}
+                        </div>
 
-                {/* Isolated target mount where turn.js elements will build */}
-                <div 
-                    ref={mountRef}
-                    className="relative flex items-center justify-center max-w-full z-10"
-                />
+                        {/* RIGHT STATIC PAGE */}
+                        <div 
+                            className={`relative bg-white overflow-hidden ${(!isMobile && currentPage === 1) ? "mx-auto" : ""}`}
+                            style={{
+                                width: `${pageWidth}px`,
+                                height: `${bookHeight}px`,
+                                display: (isMobile || currentPage + 1 <= numPages) ? "block" : "none"
+                            }}
+                        >
+                            <canvas ref={canvasRightRef} className="block mx-auto" />
+                            <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                            
+                            {/* Inner Crease Shadow */}
+                            {!isMobile && currentPage > 1 && (
+                                <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10" />
+                            )}
+                            {/* Cover Spine creases */}
+                            {!isMobile && currentPage === 1 && (
+                                <div className="absolute top-0 left-0 bottom-0 w-[5px] bg-black/25 pointer-events-none z-10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.4)]" />
+                            )}
+                        </div>
+
+                        {/* 3D FLIPPING SHEET OVERLAY (Framer Motion) */}
+                        {isFlipping && (
+                            <motion.div
+                                className="absolute top-2 bottom-2 z-30"
+                                style={{
+                                    width: `${pageWidth}px`,
+                                    left: direction === "next" ? (isMobile ? "0px" : "50%") : "auto",
+                                    right: direction === "prev" ? (isMobile ? "0px" : "50%") : "auto",
+                                    transformOrigin: direction === "next" ? "left center" : "right center",
+                                    transformStyle: "preserve-3d"
+                                }}
+                                initial={{ rotateY: direction === "next" ? 0 : -180 }}
+                                animate={{ rotateY: animationTrigger ? (direction === "next" ? -180 : 0) : (direction === "next" ? 0 : -180) }}
+                                transition={{ duration: 0.6, ease: "easeInOut" }}
+                                onAnimationComplete={handleAnimationComplete}
+                            >
+                                {/* FRONT FACE (Visible initially) */}
+                                <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
+                                    <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
+                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    {/* Fold shadow */}
+                                    <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "right-0 bg-gradient-to-l from-black/5 to-transparent" : "left-0 bg-gradient-to-r from-black/5 to-transparent"}`} />
+                                </div>
+
+                                {/* BACK FACE (Visible after 90 degree rotation) */}
+                                <div 
+                                    className="absolute inset-0 bg-white backface-hidden z-10 shadow-2xl"
+                                    style={{ transform: "rotateY(180deg)" }}
+                                >
+                                    <canvas ref={canvasFlipBackRef} className="block w-full h-full" />
+                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    {/* Fold shadow */}
+                                    <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "left-0 bg-gradient-to-r from-black/5 to-transparent" : "right-0 bg-gradient-to-l from-black/5 to-transparent"}`} />
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Bottom Navigation Toolbar */}
@@ -632,14 +590,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 <div className="flex items-center gap-4 order-1 sm:order-2">
                     <button
                         onClick={prevPage}
-                        disabled={isLoading || currentPage === 1}
+                        disabled={isLoading || currentPage === 1 || isFlipping}
                         className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
                     >
                         <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
                     <button
                         onClick={nextPage}
-                        disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages)}
+                        disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages) || isFlipping}
                         className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
                     >
                         Next <ChevronRight className="w-4 h-4" />
@@ -647,7 +605,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </div>
 
                 <div className="text-xs text-muted-foreground hidden sm:block order-3">
-                    Tip: Click page corners or drag pages to flip, pinch to zoom
+                    Tip: Click page arrows or use Keyboard Arrow Keys to flip, pinch to zoom
                 </div>
             </div>
 
@@ -665,15 +623,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     mix-blend-mode: overlay;
                 }
                 
-                /* turn.js specific styles */
-                #flipbook {
-                    margin: 0 auto;
-                    transition: transform 0.1s ease-out;
-                }
-                
-                .turn-page {
-                    background-color: #fff;
-                    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+                .backface-hidden {
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
                 }
             `}</style>
         </div>
