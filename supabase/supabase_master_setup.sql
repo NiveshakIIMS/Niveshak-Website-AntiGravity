@@ -137,16 +137,20 @@ create table if not exists public.magazines (
   issue_year text,
   cover_url text,
   pdf_url text,
+  uploaded_pdf_url text,
   flip_url text,
   created_at timestamp with time zone default now(),
   media_key text,
   pdf_media_key text,
+  uploaded_pdf_media_key text,
   storage_provider text default 'legacy'
 );
 alter table public.magazines add column if not exists issue_month text;
 alter table public.magazines add column if not exists issue_year text;
 alter table public.magazines add column if not exists media_key text;
 alter table public.magazines add column if not exists pdf_media_key text;
+alter table public.magazines add column if not exists uploaded_pdf_url text;
+alter table public.magazines add column if not exists uploaded_pdf_media_key text;
 alter table public.magazines add column if not exists storage_provider text default 'legacy';
 
 -- 3.5 EVENTS
