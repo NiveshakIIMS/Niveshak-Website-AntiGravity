@@ -40,14 +40,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     
-    // Dynamic PDF page aspect ratio (defaults to standard A4 1.414)
+    // Dynamic PDF aspect ratio (calculated on PDF load)
     const [pageRatio, setPageRatio] = useState<number>(1.414);
 
-    // 3D CSS Hinge Flip Anim States
+    // 3D Hinge Page Flip States (Custom GPU Compositor Engine)
     const [isFlipping, setIsFlipping] = useState<boolean>(false);
     const [flipAngle, setFlipAngle] = useState<number>(0);
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
     const [direction, setDirection] = useState<"next" | "prev">("next");
+
+    // Interactive Drag-to-Flip Physics States
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const dragStartXRef = useRef<number>(0);
+    const dragCurrentXRef = useRef<number>(0);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const bookWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -58,7 +63,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     const renderTasksRef = useRef<{ [key: string]: any }>({});
     
-    // Pinch Gestures Refs
+    // Mobile Pinch Gesture tracking refs
     const initialTouchDistanceRef = useRef<number | null>(null);
     const initialScaleRef = useRef<number>(1.0);
     const currentRatioRef = useRef<number>(1.0);
@@ -85,7 +90,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const loadedPdf = await pdfjs.getDocument(proxyUrl).promise;
                 if (!active) return;
 
-                // Load first page to calculate exact PDF aspect ratio dynamically
+                // Dynamically extract aspect ratio of the first page
                 const firstPage = await loadedPdf.getPage(1);
                 const viewport = firstPage.getViewport({ scale: 1.0 });
                 const ratio = viewport.height / viewport.width;
@@ -271,7 +276,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         if (isFlipping || isLoading || !pdf) return;
 
         const dims = getBookDimensions();
-        // Since we are flipping, the layout during transition is double-page
         const pageWidth = isMobile ? dims.width : (dims.width / 2);
         const pageHeight = dims.height;
 
@@ -298,8 +302,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             // Set isFlipping ONLY after moving sheet is fully drawn, avoiding blank white flash!
             setIsFlipping(true);
 
-            // Mid-Flip Optimization: at 350ms (when moving sheet is vertical), trigger the static left canvas to pre-render page targetLeft
-            // Since it runs in the background, it completes BEFORE the 800ms flip ends, preventing landing stutter/flicker!
+            // Mid-Flip Optimization: pre-render static left page in the background
             setTimeout(() => {
                 if (canvasLeftRef.current && targetLeft <= numPages) {
                     renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
@@ -323,7 +326,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             // Set isFlipping ONLY after moving sheet is fully drawn, avoiding blank white flash!
             setIsFlipping(true);
 
-            // Mid-Flip Optimization: at 350ms, trigger static right canvas to pre-render page targetRight
+            // Mid-Flip Optimization: pre-render static right page in the background
             setTimeout(() => {
                 if (canvasRightRef.current && targetRight <= numPages) {
                     renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
@@ -331,7 +334,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }, 350);
         }
 
-        // Trigger CSS 3D folding transition in the next paint cycle (duration extended to 800ms for extra rendering head-room)
+        // Trigger CSS 3D folding transition in the next paint cycle (duration 800ms for premium physical curl)
         setTimeout(() => {
             setIsAnimating(true);
             setFlipAngle(dir === "next" ? -180 : 0);
@@ -370,7 +373,74 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         startFlip("prev");
     };
 
-    // 5. Mobile Touch Pinch-to-zoom Gesture Handler
+    // 5. Interactive Drag-to-Flip Physics Handlers
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (isFlipping || isLoading || isDragging) return;
+
+        const wrapper = bookWrapperRef.current;
+        if (!wrapper) return;
+
+        const rect = wrapper.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+
+        // Drag starting zones (outer 30% pages)
+        let side: "next" | "prev" | null = null;
+        if (clickX > width * 0.7) {
+            side = "next";
+        } else if (clickX < width * 0.3) {
+            side = "prev";
+        }
+
+        if (!side) return;
+
+        const isLastPage = isMobile ? currentPage === numPages : currentPage + 1 >= numPages;
+        if (side === "next" && isLastPage) return;
+        if (side === "prev" && currentPage === 1) return;
+
+        // Start drag capture
+        setIsDragging(true);
+        dragStartXRef.current = e.clientX;
+        dragCurrentXRef.current = e.clientX;
+
+        // Hook up pointer capture to keep tracking drag outside wrapper
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        dragCurrentXRef.current = e.clientX;
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+
+        const deltaX = dragCurrentXRef.current - dragStartXRef.current;
+        const dragDistance = Math.abs(deltaX);
+
+        if (dragDistance < 15) {
+            // Click action: trigger full smooth turn
+            if (deltaX < 0) {
+                nextPage();
+            } else {
+                prevPage();
+            }
+            return;
+        }
+
+        const threshold = window.innerWidth * 0.15; // 15% screen width swipe threshold
+        if (dragDistance > threshold) {
+            if (deltaX < 0) {
+                nextPage();
+            } else {
+                prevPage();
+            }
+        }
+    };
+
+    // 6. Mobile Touch Pinch-to-zoom Gesture Handler
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -430,6 +500,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [scale, isLoading]);
 
+    // 7. Double-click to zoom
+    const handleDoubleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setScale((s) => (s > 1.05 ? 1.0 : 1.8));
+    };
+
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -465,6 +541,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     
     // Fix: pageWidth matches bookWidth on single layout (cover / mobile), and is halved ONLY on double layout
     const pageWidth = isDoubleLayout ? (bookWidth / 2) : bookWidth;
+
+    // Peak page curl skew value in mid-flight (skew peaks at 90deg, 0 at flat points)
+    const progress = Math.abs(flipAngle) / 180;
+    const skewY = Math.sin(progress * Math.PI) * 4.0; // 4.0 degree bend curl skew
 
     return (
         <div className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none">
@@ -515,7 +595,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             {/* Reader Stage (Scroll stage container) */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-auto relative bg-[#0c0c0c]"
+                className="flex-1 overflow-auto relative bg-[#090909]"
             >
                 {/* Fixed Navigation Overlays */}
                 {/* Stage Left Arrow Overlay */}
@@ -547,21 +627,27 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         /* Book Container Wrapper */
                         <div 
                             ref={bookWrapperRef}
-                            className="relative flex items-center justify-center shadow-2xl bg-[#141414] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out"
+                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.8)] bg-[#101010] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out cursor-grab active:cursor-grabbing"
                             style={{
                                 width: `${bookWidth}px`,
                                 height: `${bookHeight}px`,
                                 perspective: "2500px",
                                 transformStyle: "preserve-3d"
                             }}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            onDoubleClick={handleDoubleClick}
                         >
                             {/* LEFT STATIC PAGE */}
                             <div 
-                                className="relative overflow-hidden"
+                                className="relative overflow-hidden transition-all duration-300"
                                 style={{
                                     width: `${pageWidth}px`,
                                     height: `${bookHeight}px`,
-                                    display: showLeftPage ? "block" : "none"
+                                    display: showLeftPage ? "block" : "none",
+                                    // 3D paper stack border edges simulating page thickness
+                                    boxShadow: showLeftPage ? "-1px 0px 0px #e5e5e5, -2px 0px 0px #dbdbdb, -3px 0px 0px #d1d1d1, -4px 0px 0px #c7c7c7, -10px 0px 20px rgba(0,0,0,0.3)" : "none"
                                 }}
                             >
                                 <canvas ref={canvasLeftRef} className="block mx-auto" />
@@ -569,17 +655,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 
                                 {/* Inner Crease Shadow */}
                                 {showLeftPage && (
-                                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/15 to-transparent pointer-events-none z-10" />
                                 )}
                             </div>
 
                             {/* RIGHT STATIC PAGE */}
                             <div 
-                                className="relative overflow-hidden"
+                                className="relative overflow-hidden transition-all duration-300"
                                 style={{
                                     width: `${pageWidth}px`,
                                     height: `${bookHeight}px`,
-                                    display: (isMobile || currentPage + 1 <= numPages || isFlipping || currentPage === 1) ? "block" : "none"
+                                    display: (isMobile || currentPage + 1 <= numPages || isFlipping || currentPage === 1) ? "block" : "none",
+                                    // 3D paper stack border edges simulating page thickness
+                                    boxShadow: (isMobile || currentPage === 1) ? "0 0 15px rgba(0,0,0,0.3)" : "1px 0px 0px #e5e5e5, 2px 0px 0px #dbdbdb, 3px 0px 0px #d1d1d1, 4px 0px 0px #c7c7c7, 10px 0px 20px rgba(0,0,0,0.3)"
                                 }}
                             >
                                 <canvas ref={canvasRightRef} className="block mx-auto" />
@@ -587,7 +675,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 
                                 {/* Inner Crease Shadow */}
                                 {isDoubleLayout && currentPage > 1 && (
-                                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/15 to-transparent pointer-events-none z-10" />
                                 )}
                                 {/* Cover Spine creases */}
                                 {!isMobile && currentPage === 1 && !isFlipping && (
@@ -597,14 +685,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                             {/* 3D FLIPPING SHEET OVERLAY (CSS 3D GPU transition - always in DOM, styled on-the-fly) */}
                             <div
-                                className="absolute top-2 bottom-2 z-30 shadow-2xl"
+                                className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                                 style={{
                                     width: `${pageWidth}px`,
                                     left: direction === "next" ? (isMobile ? "0px" : "50%") : "auto",
                                     right: direction === "prev" ? (isMobile ? "0px" : "50%") : "auto",
                                     transformOrigin: direction === "next" ? "left center" : "right center",
                                     transformStyle: "preserve-3d",
-                                    transform: `rotateY(${flipAngle}deg)`,
+                                    transform: `rotateY(${flipAngle}deg) skewY(${direction === "next" ? -skewY : skewY}deg)`,
                                     transition: isAnimating ? "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
                                     pointerEvents: "none",
                                     visibility: isFlipping ? "visible" : "hidden",
@@ -675,7 +763,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </div>
 
                 <div className="text-xs text-muted-foreground hidden sm:block order-3">
-                    Tip: Click page arrows or use Keyboard Arrow Keys to flip, pinch to zoom
+                    Tip: Drag pages or click page edges to flip, pinch or double-click to zoom
                 </div>
             </div>
 
