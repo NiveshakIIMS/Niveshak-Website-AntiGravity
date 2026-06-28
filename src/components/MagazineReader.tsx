@@ -45,6 +45,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isAnimationActive, setIsAnimationActive] = useState<boolean>(false);
     const [direction, setDirection] = useState<"next" | "prev">("next");
 
+    // Hover Corner Lift States (Affordance just like FlipHTML5)
+    const [isHoveringNext, setIsHoveringNext] = useState<boolean>(false);
+    const [isHoveringPrev, setIsHoveringPrev] = useState<boolean>(false);
+
     const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
     const canvasRightRef = useRef<HTMLCanvasElement | null>(null);
     const canvasFlippingFrontRef = useRef<HTMLCanvasElement | null>(null);
@@ -287,6 +291,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         setDirection("next");
         setIsFlipping(true);
+        setIsHoveringNext(false);
     };
 
     const prevPage = () => {
@@ -296,6 +301,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         setDirection("prev");
         setIsFlipping(true);
+        setIsHoveringPrev(false);
     };
 
     const handleFlipEnd = () => {
@@ -383,11 +389,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             <div
                 ref={containerRef}
                 className="flex-1 flex items-center justify-center overflow-auto px-4 py-8 relative"
-                style={{ perspective: "2000px" }}
+                style={{ perspective: "2200px" }}
             >
                 {/* Stage Left Arrow Overlay */}
                 <button
                     onClick={prevPage}
+                    onMouseEnter={() => { if (currentPage > 1) setIsHoveringPrev(true); }}
+                    onMouseLeave={() => setIsHoveringPrev(false)}
                     disabled={isLoading || currentPage === 1 || isFlipping}
                     className="absolute left-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
                 >
@@ -397,6 +405,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 {/* Stage Right Arrow Overlay */}
                 <button
                     onClick={nextPage}
+                    onMouseEnter={() => { 
+                        const isLastPage = isMobile ? currentPage === numPages : currentPage + 1 >= numPages;
+                        if (!isLastPage) setIsHoveringNext(true); 
+                    }}
+                    onMouseLeave={() => setIsHoveringNext(false)}
                     disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages) || isFlipping}
                     className="absolute right-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
                 >
@@ -414,16 +427,30 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         {/* Static / Background Book Pages Container */}
                         <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#141414] p-2" style={{ transformStyle: "preserve-3d" }}>
                             {isMobile ? (
-                                // Mobile view: single static page
-                                <div className="relative bg-white">
+                                // Mobile view: single static page with FlipHTML5 corner hover curl
+                                <div 
+                                    className="relative bg-white transition-transform duration-300 ease-out"
+                                    style={{
+                                        transformOrigin: "left center",
+                                        transform: isHoveringNext ? "rotateY(-7deg)" : "rotateY(0deg)",
+                                        transformStyle: "preserve-3d"
+                                    }}
+                                >
                                     <canvas ref={canvasLeftRef} className="max-w-full block shadow-inner" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
                                 </div>
                             ) : (
                                 // Desktop view: double static page
                                 <>
-                                    {/* Left static background page */}
-                                    <div className={`relative bg-white ${currentPage === 1 ? "w-0 h-0 overflow-hidden p-0 m-0 border-0" : ""}`}>
+                                    {/* Left static background page (with FlipHTML5 Hover Lift) */}
+                                    <div 
+                                        className={`relative bg-white transition-transform duration-300 ease-out ${currentPage === 1 ? "w-0 h-0 overflow-hidden p-0 m-0 border-0" : ""}`}
+                                        style={{
+                                            transformOrigin: "right center",
+                                            transform: (isHoveringPrev && !isFlipping) ? "rotateY(8deg)" : "rotateY(0deg)",
+                                            transformStyle: "preserve-3d"
+                                        }}
+                                    >
                                         <canvas ref={canvasLeftRef} className="block shadow-inner" />
                                         {currentPage > 1 && (
                                             <>
@@ -433,6 +460,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                                 <div className="absolute bottom-0 left-0 w-8 h-8 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none z-10" />
                                                 {/* Real Magazine Paper Semi-Gloss Overlay */}
                                                 <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                                
+                                                {/* Corner curl highlight for hover */}
+                                                <div className={`absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none z-20 rounded-bl-lg transition-opacity duration-300 ${isHoveringPrev ? "opacity-100" : "opacity-0"}`} />
                                             </>
                                         )}
                                     </div>
@@ -445,8 +475,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         </div>
                                     )}
 
-                                    {/* Right static background page */}
-                                    <div className="relative bg-white">
+                                    {/* Right static background page (with FlipHTML5 Hover Lift) */}
+                                    <div 
+                                        className="relative bg-white transition-transform duration-300 ease-out"
+                                        style={{
+                                            transformOrigin: "left center",
+                                            transform: (isHoveringNext && !isFlipping) ? "rotateY(-8deg)" : "rotateY(0deg)",
+                                            transformStyle: "preserve-3d"
+                                        }}
+                                    >
                                         <canvas ref={canvasRightRef} className="block shadow-inner" />
                                         {/* Crease fold Shadow */}
                                         {currentPage > 1 && (
@@ -461,45 +498,57 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         
                                         {/* Real Magazine Paper Semi-Gloss Overlay */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+
+                                        {/* Corner curl highlight for hover */}
+                                        <div className={`absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-white/20 to-transparent pointer-events-none z-20 rounded-br-lg transition-opacity duration-300 ${isHoveringNext ? "opacity-100" : "opacity-0"}`} />
                                     </div>
                                 </>
                             )}
 
-                            {/* Dynamic 3D Flipping Page Sheet */}
+                            {/* Dynamic 3D Flipping Page Sheet (FlipHTML5 Professional Page Curl Style) */}
                             {isFlipping && (
                                 <div 
-                                    className="absolute top-2 bottom-2 z-30 transition-all duration-[600ms] ease-in-out"
+                                    className="absolute top-2 bottom-2 z-30 transition-all duration-[600ms]"
                                     style={{
                                         width: isMobile ? "calc(100% - 16px)" : "calc(50% - 6px)",
                                         left: direction === "next" ? (isMobile ? "8px" : "50%") : "auto",
                                         right: direction === "prev" ? (isMobile ? "8px" : "50%") : "auto",
                                         transformOrigin: direction === "next" ? "left center" : "right center",
                                         transform: direction === "next" 
-                                            ? (isAnimationActive ? "rotateY(-180deg)" : "rotateY(0deg)")
-                                            : (isAnimationActive ? "rotateY(0deg)" : "rotateY(-180deg)"),
+                                            ? (isAnimationActive ? "rotateY(-180deg) skewY(-1.5deg)" : "rotateY(0deg) skewY(0deg)")
+                                            : (isAnimationActive ? "rotateY(0deg) skewY(0deg)" : "rotateY(-180deg) skewY(1.5deg)"),
                                         transformStyle: "preserve-3d",
                                         opacity: isAnimationActive ? 1 : 0,
                                         visibility: isAnimationActive ? "visible" : "hidden",
+                                        transitionTimingFunction: "cubic-bezier(0.2, 0.6, 0.3, 1.0)",
                                     }}
                                     onTransitionEnd={handleFlipEnd}
                                 >
                                     {/* Front Page Face (Visible from 0 to 90 degrees) */}
-                                    <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-xl border-r border-gray-200">
+                                    <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl border-r border-gray-200">
                                         <canvas ref={canvasFlippingFrontRef} className="block w-full h-full" />
                                         {/* Specular Glare paper gloss */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                        
+                                        {/* Moving Crease Shadow Overlay (FlipHTML5 Crease Effect) */}
+                                        <div className={`absolute inset-0 pointer-events-none z-30 shadow-sweep-next`} />
+
                                         {/* Page edge fold shadow */}
                                         <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l from-black/5 to-transparent pointer-events-none z-10" />
                                     </div>
 
                                     {/* Back Page Face (Visible from 90 to 180 degrees, flipped on Y axis) */}
                                     <div 
-                                        className="absolute inset-0 bg-white backface-hidden z-10 shadow-xl border-l border-gray-200" 
+                                        className="absolute inset-0 bg-white backface-hidden z-10 shadow-2xl border-l border-gray-200" 
                                         style={{ transform: "rotateY(180deg)" }}
                                     >
                                         <canvas ref={canvasFlippingBackRef} className="block w-full h-full" />
                                         {/* Specular Glare paper gloss */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+
+                                        {/* Moving Crease Shadow Overlay (FlipHTML5 Crease Effect) */}
+                                        <div className={`absolute inset-0 pointer-events-none z-30 shadow-sweep-prev`} />
+
                                         {/* Page edge fold shadow */}
                                         <div className="absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r from-black/5 to-transparent pointer-events-none z-10" />
                                     </div>
@@ -553,6 +602,46 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 .backface-hidden {
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
+                }
+
+                /* FlipHTML5 Crease Shadow Sweep Animations */
+                @keyframes nextShadowSweep {
+                    0% {
+                        background: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 80%, rgba(0,0,0,0.2) 100%);
+                    }
+                    50% {
+                        background: linear-gradient(to right, rgba(0,0,0,0) 20%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0) 100%);
+                    }
+                    100% {
+                        background: linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0) 100%);
+                    }
+                }
+                @keyframes prevShadowSweep {
+                    0% {
+                        background: linear-gradient(to left, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 80%, rgba(0,0,0,0.2) 100%);
+                    }
+                    50% {
+                        background: linear-gradient(to left, rgba(0,0,0,0) 20%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0) 100%);
+                    }
+                    100% {
+                        background: linear-gradient(to left, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0) 100%);
+                    }
+                }
+
+                .shadow-sweep-next {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 30;
+                    mix-blend-mode: multiply;
+                    animation: nextShadowSweep 600ms cubic-bezier(0.2, 0.6, 0.3, 1.0) forwards;
+                }
+
+                .shadow-sweep-prev {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 30;
+                    mix-blend-mode: multiply;
+                    animation: prevShadowSweep 600ms cubic-bezier(0.2, 0.6, 0.3, 1.0) forwards;
                 }
             `}</style>
         </div>
