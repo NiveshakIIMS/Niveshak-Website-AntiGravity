@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { Magazine } from "@/services/dataService";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MagazineReaderProps {
     magazine: Magazine;
@@ -34,11 +35,12 @@ function loadPdfjs(): Promise<any> {
 export default function MagazineReader({ magazine, onClose }: MagazineReaderProps) {
     const [pdf, setPdf] = useState<any>(null);
     const [numPages, setNumPages] = useState<number>(0);
-    const [currentPage, setCurrentPage] = useState<number>(1); // Represents left-page index on desktop (always even, except page 1)
+    const [currentPage, setCurrentPage] = useState<number>(1); 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [scale, setScale] = useState<number>(1.0);
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [direction, setDirection] = useState<"next" | "prev">("next");
 
     const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
     const canvasRightRef = useRef<HTMLCanvasElement | null>(null);
@@ -102,8 +104,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             if (!container) return;
 
             // Reserve height/width
-            const availableHeight = window.innerHeight - 160;
-            const availableWidth = container.clientWidth - 40;
+            const availableHeight = window.innerHeight - 180;
+            const availableWidth = container.clientWidth - 80;
 
             if (isMobile) {
                 // Mobile layout: Single page centered
@@ -157,7 +159,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             const scaleY = availableHeight / viewport.height;
                             const fitScale = Math.min(scaleX, scaleY) * scale;
 
-                            const finalViewport = page.getPageViewport ? page.getPageViewport({ scale: fitScale }) : page.getViewport({ scale: fitScale });
+                            const finalViewport = page.getViewport({ scale: fitScale });
                             rightCanvas.width = finalViewport.width;
                             rightCanvas.height = finalViewport.height;
 
@@ -254,6 +256,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     const nextPage = () => {
         if (!pdf) return;
+        setDirection("next");
         if (isMobile) {
             if (currentPage < numPages) setCurrentPage(currentPage + 1);
         } else {
@@ -262,8 +265,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             } else {
                 if (currentPage + 2 <= numPages) {
                     setCurrentPage(currentPage + 2);
-                } else if (currentPage + 1 === numPages) {
-                    // Already on the last page
                 }
             }
         }
@@ -271,6 +272,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     const prevPage = () => {
         if (!pdf) return;
+        setDirection("prev");
         if (isMobile) {
             if (currentPage > 1) setCurrentPage(currentPage - 1);
         } else {
@@ -298,10 +300,66 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
 
+    // 3D Hinge Turn Animation variants for Desktop Book Page Turn
+    const leftPageVariants = {
+        initial: (dir: "next" | "prev") => ({
+            rotateY: dir === "prev" ? -90 : 0,
+            z: dir === "prev" ? 10 : 0
+        }),
+        animate: {
+            rotateY: 0,
+            z: 0,
+            transition: { duration: 0.6, ease: "easeOut" as const }
+        },
+        exit: (dir: "next" | "prev") => ({
+            rotateY: dir === "next" ? -90 : 0,
+            z: dir === "next" ? 10 : 0,
+            transition: { duration: 0.6, ease: "easeIn" as const }
+        })
+    };
+
+    const rightPageVariants = {
+        initial: (dir: "next" | "prev") => ({
+            rotateY: dir === "next" ? 90 : 0,
+            z: dir === "next" ? 10 : 0
+        }),
+        animate: {
+            rotateY: 0,
+            z: 0,
+            transition: { duration: 0.6, ease: "easeOut" as const }
+        },
+        exit: (dir: "next" | "prev") => ({
+            rotateY: dir === "prev" ? 90 : 0,
+            z: dir === "prev" ? 10 : 0,
+            transition: { duration: 0.6, ease: "easeIn" as const }
+        })
+    };
+
+    // 3D Card Flip Animation variants for Mobile Single Page
+    const mobilePageVariants = {
+        initial: (dir: "next" | "prev") => ({
+            rotateY: dir === "next" ? 90 : -90,
+            opacity: 0.8,
+            scale: 0.95
+        }),
+        animate: {
+            rotateY: 0,
+            opacity: 1,
+            scale: 1,
+            transition: { duration: 0.55, ease: "easeOut" as const }
+        },
+        exit: (dir: "next" | "prev") => ({
+            rotateY: dir === "next" ? -90 : 90,
+            opacity: 0.8,
+            scale: 0.95,
+            transition: { duration: 0.55, ease: "easeIn" as const }
+        })
+    };
+
     return (
-        <div className="fixed inset-0 z-50 bg-[#121212]/95 backdrop-blur-md flex flex-col justify-between select-none">
+        <div className="fixed inset-0 z-50 bg-[#0f0f0f]/97 backdrop-blur-lg flex flex-col justify-between select-none">
             {/* Header Toolbar */}
-            <div className="flex items-center justify-between p-4 bg-[#1e1e1e] border-b border-[#2e2e2e] text-white">
+            <div className="flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-[#2b2b2b] text-white z-10 shadow-lg">
                 <div className="flex flex-col">
                     <span className="font-bold text-sm sm:text-base line-clamp-1">{magazine.title}</span>
                     <span className="text-xs text-muted-foreground">{magazine.issueMonth} {magazine.issueYear}</span>
@@ -309,26 +367,26 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                 <div className="flex items-center gap-1 sm:gap-3">
                     <button
-                        onClick={() => setScale((s) => Math.max(0.6, s - 0.2))}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors"
+                        onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
+                        className="p-2 hover:bg-[#333] rounded-lg transition-colors border border-transparent hover:border-[#444]"
                         title="Zoom Out"
                     >
                         <ZoomOut className="w-5 h-5 text-gray-300" />
                     </button>
-                    <span className="text-xs font-semibold px-2 text-gray-300">{Math.round(scale * 100)}%</span>
+                    <span className="text-xs font-bold px-2 text-gray-300 w-12 text-center">{Math.round(scale * 100)}%</span>
                     <button
-                        onClick={() => setScale((s) => Math.min(2.0, s + 0.2))}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors"
+                        onClick={() => setScale((s) => Math.min(2.0, s + 0.15))}
+                        className="p-2 hover:bg-[#333] rounded-lg transition-colors border border-transparent hover:border-[#444]"
                         title="Zoom In"
                     >
                         <ZoomIn className="w-5 h-5 text-gray-300" />
                     </button>
 
-                    <div className="h-5 w-[1px] bg-[#2e2e2e] mx-1 sm:mx-2" />
+                    <div className="h-5 w-[1px] bg-[#2b2b2b] mx-1 sm:mx-2" />
 
                     <button
                         onClick={toggleFullscreen}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors hidden sm:block"
+                        className="p-2 hover:bg-[#333] rounded-lg transition-colors hidden sm:block border border-transparent hover:border-[#444]"
                         title="Fullscreen Toggle"
                     >
                         {isFullscreen ? <Minimize2 className="w-5 h-5 text-gray-300" /> : <Maximize2 className="w-5 h-5 text-gray-300" />}
@@ -348,71 +406,120 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             <div
                 ref={containerRef}
                 className="flex-1 flex items-center justify-center overflow-auto px-4 py-8 relative"
+                style={{ perspective: "2000px" }}
             >
+                {/* Stage Left Arrow Overlay */}
+                <button
+                    onClick={prevPage}
+                    disabled={isLoading || currentPage === 1}
+                    className="absolute left-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
+                >
+                    <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+                </button>
+
+                {/* Stage Right Arrow Overlay */}
+                <button
+                    onClick={nextPage}
+                    disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-30 shadow-2xl hidden md:flex items-center justify-center group"
+                >
+                    <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
                 {isLoading ? (
                     <div className="flex flex-col items-center gap-4 text-white">
                         <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
                         <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                     </div>
                 ) : (
-                    <div className="relative flex items-center justify-center max-w-full">
-                        {/* Book Display */}
-                        {isMobile ? (
-                            // Mobile view: Single Canvas Card
-                            <div className="relative bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-800">
-                                <canvas ref={canvasLeftRef} className="max-w-full block shadow-inner" />
-                            </div>
-                        ) : (
-                            // Desktop view: Double Canvas Book
-                            <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#151515] p-1.5">
-                                {/* Left Page */}
-                                <div
-                                    className={`relative transition-all duration-300 bg-white ${
-                                        currentPage === 1 ? "w-0 h-0 overflow-hidden" : ""
-                                    }`}
+                    <div className="relative flex items-center justify-center max-w-full z-10" style={{ transformStyle: "preserve-3d" }}>
+                        <AnimatePresence initial={false} mode="wait" custom={direction}>
+                            {isMobile ? (
+                                // Mobile View: Single Page Card with 3D Flip Turn
+                                <motion.div
+                                    key={`page-${currentPage}`}
+                                    custom={direction}
+                                    variants={mobilePageVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                    className="relative bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-900"
+                                    style={{ transformStyle: "preserve-3d", transformOrigin: "left center" }}
                                 >
-                                    <canvas ref={canvasLeftRef} className="block shadow-inner" />
-                                    {currentPage > 1 && (
-                                        <>
-                                            {/* Page Shadow Right Edge (Inner Fold) */}
-                                            <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-black/15 pointer-events-none" />
-                                            {/* Page Corner Shadow */}
-                                            <div className="absolute bottom-0 left-0 w-8 h-8 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none" />
-                                        </>
-                                    )}
-                                </div>
+                                    <canvas ref={canvasLeftRef} className="max-w-full block shadow-inner" />
+                                    {/* Real Magazine Paper Semi-Gloss Overlay */}
+                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                </motion.div>
+                            ) : (
+                                // Desktop View: Double Page Book with 3D Center-Hinge Hinge Page Turn
+                                <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#121212] p-2" style={{ transformStyle: "preserve-3d" }}>
+                                    {/* Left Page (Hinged at Center Right Spine) */}
+                                    <motion.div
+                                        key={`left-page-${currentPage}`}
+                                        custom={direction}
+                                        variants={leftPageVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                        className={`relative bg-white ${currentPage === 1 ? "w-0 h-0 overflow-hidden" : ""}`}
+                                        style={{ transformStyle: "preserve-3d", transformOrigin: "right center" }}
+                                    >
+                                        <canvas ref={canvasLeftRef} className="block shadow-inner" />
+                                        {currentPage > 1 && (
+                                            <>
+                                                {/* Page Inner Fold Spine Shadow */}
+                                                <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-r from-transparent to-black/15 pointer-events-none z-10" />
+                                                {/* Left Page Corner fold shadow */}
+                                                <div className="absolute bottom-0 left-0 w-8 h-8 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none z-10" />
+                                                {/* Real Magazine Paper Semi-Gloss Overlay */}
+                                                <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                            </>
+                                        )}
+                                    </motion.div>
 
-                                {/* Spine divider & Shadow */}
-                                {currentPage > 1 && (
-                                    <div className="relative w-[3px] bg-gradient-to-r from-gray-300 via-gray-600 to-gray-300 z-20 flex items-center justify-center">
-                                        {/* Deep shadow fold on left and right */}
-                                        <div className="absolute top-0 bottom-0 -left-[16px] w-[16px] bg-gradient-to-r from-transparent to-black/35 pointer-events-none" />
-                                        <div className="absolute top-0 bottom-0 -right-[16px] w-[16px] bg-gradient-to-l from-transparent to-black/35 pointer-events-none" />
-                                    </div>
-                                )}
-
-                                {/* Right Page */}
-                                <div className="relative bg-white">
-                                    <canvas ref={canvasRightRef} className="block shadow-inner" />
-                                    {/* Page Shadow Left Edge (Inner Fold) */}
+                                    {/* Book Spine Divider & Center Shadow fold */}
                                     {currentPage > 1 && (
-                                        <div className="absolute top-0 left-0 bottom-0 w-8 bg-gradient-to-l from-transparent to-black/15 pointer-events-none" />
+                                        <div className="relative w-[4px] bg-gradient-to-r from-gray-300 via-gray-700 to-gray-300 z-20 flex items-center justify-center">
+                                            <div className="absolute top-0 bottom-0 -left-[20px] w-[20px] bg-gradient-to-r from-transparent to-black/40 pointer-events-none" />
+                                            <div className="absolute top-0 bottom-0 -right-[20px] w-[20px] bg-gradient-to-l from-transparent to-black/40 pointer-events-none" />
+                                        </div>
                                     )}
-                                    {/* Cover shadow curve to simulate physical book cover depth */}
-                                    {currentPage === 1 && (
-                                        <div className="absolute top-0 left-0 bottom-0 w-[4px] bg-black/25 pointer-events-none" />
-                                    )}
-                                    {/* Page Corner Shadow */}
-                                    <div className="absolute bottom-0 right-0 w-8 h-8 bg-gradient-to-tl from-black/5 to-transparent pointer-events-none" />
+
+                                    {/* Right Page (Hinged at Center Left Spine) */}
+                                    <motion.div
+                                        key={`right-page-${currentPage}`}
+                                        custom={direction}
+                                        variants={rightPageVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                        className="relative bg-white"
+                                        style={{ transformStyle: "preserve-3d", transformOrigin: "left center" }}
+                                    >
+                                        <canvas ref={canvasRightRef} className="block shadow-inner" />
+                                        {/* Crease fold Shadow */}
+                                        {currentPage > 1 && (
+                                            <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-l from-transparent to-black/15 pointer-events-none z-10" />
+                                        )}
+                                        {/* Cover spine crease shadow to simulate actual book fold */}
+                                        {currentPage === 1 && (
+                                            <div className="absolute top-0 left-0 bottom-0 w-[5px] bg-black/35 pointer-events-none z-10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.5)]" />
+                                        )}
+                                        {/* Right Page Corner shadow */}
+                                        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gradient-to-tl from-black/5 to-transparent pointer-events-none z-10" />
+                                        
+                                        {/* Real Magazine Paper Semi-Gloss Overlay */}
+                                        <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    </motion.div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
             </div>
 
             {/* Bottom Navigation Toolbar */}
-            <div className="p-4 bg-[#1e1e1e] border-t border-[#2e2e2e] flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+            <div className="p-4 bg-[#1a1a1a] border-t border-[#2b2b2b] flex flex-col sm:flex-row items-center justify-between gap-4 text-white z-10 shadow-inner">
                 <span className="text-sm font-semibold text-gray-300 order-2 sm:order-1">{getPageRangeString()}</span>
 
                 {/* Navigation Buttons */}
@@ -420,14 +527,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     <button
                         onClick={prevPage}
                         disabled={isLoading || currentPage === 1}
-                        className="px-4 py-2 bg-[#2d2d2d] hover:bg-[#3d3d3d] disabled:opacity-40 disabled:hover:bg-[#2d2d2d] rounded-xl flex items-center gap-1 font-bold text-sm border border-[#3e3e3e] active:scale-95 transition-all text-white"
+                        className="px-5 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] disabled:opacity-40 disabled:hover:bg-[#2a2a2a] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#3b3b3b] active:scale-95 transition-all text-white shadow-md"
                     >
                         <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
                     <button
                         onClick={nextPage}
                         disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages)}
-                        className="px-4 py-2 bg-[#2d2d2d] hover:bg-[#3d3d3d] disabled:opacity-40 disabled:hover:bg-[#2d2d2d] rounded-xl flex items-center gap-1 font-bold text-sm border border-[#3e3e3e] active:scale-95 transition-all text-white"
+                        className="px-5 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] disabled:opacity-40 disabled:hover:bg-[#2a2a2a] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#3b3b3b] active:scale-95 transition-all text-white shadow-md"
                     >
                         Next <ChevronRight className="w-4 h-4" />
                     </button>
@@ -437,6 +544,21 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     Tip: Use Left & Right Arrow keys to flip pages
                 </div>
             </div>
+
+            <style jsx global>{`
+                /* Real Semi-Gloss Paper glare overlay */
+                .magazine-gloss {
+                    background: linear-gradient(
+                        140deg, 
+                        rgba(255, 255, 255, 0) 35%, 
+                        rgba(255, 255, 255, 0.05) 45%, 
+                        rgba(255, 255, 255, 0.075) 50%,
+                        rgba(255, 255, 255, 0.05) 55%,
+                        rgba(255, 255, 255, 0) 65%
+                    );
+                    mix-blend-mode: overlay;
+                }
+            `}</style>
         </div>
     );
 }
