@@ -78,7 +78,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     // Calculated layout mode based on device, manual toggle, and horizontal rotation
     const isDouble = !isMobile || mobileDoublePage || (isMobile && isLandscape);
-    const isDoubleLayout = isDouble || isFlipping;
+    const isDoubleLayout = isDouble; // Strictly bound to double-page mode to prevent mid-flip shrinking
 
     // 1. Detect Screen Size & Orientation
     useEffect(() => {
@@ -280,12 +280,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const pageHeight = dims.height;
 
             if (!isDouble) {
-                // Single-page mode (mobile single or desktop cover)
                 if (canvasRightRef.current) {
                     await renderPageToCanvas(pdf, currentPage, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
                 }
             } else {
-                // Double-page mode
                 const renderPromises = [];
                 if (currentPage === 1) {
                     if (canvasRightRef.current) {
@@ -324,11 +322,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Front face
                 canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Back face
                 canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Underneath static
                 (canvasRightRef.current && targetRight <= numPages && isDouble) ? renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve(),
                 (canvasRightRef.current && !isDouble && targetLeft <= numPages) ? renderPageToCanvas(pdf, targetLeft, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
             ];
@@ -336,7 +331,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
             setIsFlipping(true);
 
-            // Mid-Flip pre-render background
             setTimeout(() => {
                 if (canvasLeftRef.current && targetLeft <= numPages && isDouble) {
                     renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
@@ -347,11 +341,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Back face
                 canvasFlipBackRef.current ? renderPageToCanvas(pdf, currentPage, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Front face
                 canvasFlipFrontRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Underneath static
                 (canvasLeftRef.current && targetLeft > 1 && isDouble) ? renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic") : Promise.resolve(),
                 (canvasRightRef.current && !isDouble) ? renderPageToCanvas(pdf, targetLeft, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
             ];
@@ -359,7 +350,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
             setIsFlipping(true);
 
-            // Mid-Flip pre-render background
             setTimeout(() => {
                 if (canvasRightRef.current && targetRight <= numPages && isDouble) {
                     renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
@@ -449,7 +439,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const dragDistance = Math.abs(deltaX);
 
         if (dragDistance < 15) {
-            // Click action
             const rect = bookWrapperRef.current?.getBoundingClientRect();
             if (rect) {
                 const clickX = e.clientX - rect.left;
@@ -472,7 +461,86 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // 7. Double-click to zoom
+    const handlePointerCancel = (e: React.PointerEvent) => {
+        setIsDragging(false);
+        if (e.target) {
+            try {
+                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+            } catch (err) {}
+        }
+    };
+
+    // 7. Stable Touch-Zoom Effect (empty deps, scaleRef reference)
+    const scaleRef = useRef(scale);
+    useEffect(() => {
+        scaleRef.current = scale;
+    }, [scale]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialTouchDistanceRef.current = dist;
+                initialScaleRef.current = scaleRef.current;
+                currentRatioRef.current = 1.0;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialTouchDistanceRef.current !== null) {
+                e.preventDefault();
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const ratio = dist / initialTouchDistanceRef.current;
+                currentRatioRef.current = ratio;
+
+                const wrapper = bookWrapperRef.current;
+                if (wrapper) {
+                    const needsCoverShift = isDouble && currentPage === 1 && !isFlipping;
+                    const dims = getBookDimensions();
+                    const pageWidth = isDouble ? (dims.width / 2) : dims.width;
+                    const shiftX = needsCoverShift ? -pageWidth / 2 : 0;
+                    
+                    wrapper.style.transform = `translateX(${shiftX}px) scale(${ratio})`;
+                    wrapper.style.transformOrigin = "center center";
+                }
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
+                const wrapper = bookWrapperRef.current;
+                if (wrapper) {
+                    wrapper.style.transform = "";
+                }
+
+                const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
+                setScale(finalScale);
+            }
+            initialTouchDistanceRef.current = null;
+            currentRatioRef.current = 1.0;
+        };
+
+        container.addEventListener("touchstart", handleTouchStart, { passive: true });
+        container.addEventListener("touchmove", handleTouchMove, { passive: false });
+        container.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+        return () => {
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchmove", handleTouchMove);
+            container.removeEventListener("touchend", handleTouchEnd);
+        };
+    }, [currentPage, isFlipping, isMobile, isDouble]);
+
+    // 8. Double-click to zoom
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setScale((s) => (s > 1.05 ? 1.0 : 1.8));
@@ -504,14 +572,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
 
-    const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
-
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
     
     // Fix: pageWidth is always halved on desktop double page layout
     const pageWidth = isDoubleLayout ? (bookWidth / 2) : bookWidth;
+
+    const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
 
     // Center Cover page layout using GPU translation shift on double page container
     const needsCoverShift = isDouble && currentPage === 1 && !isFlipping;
@@ -617,6 +685,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             onPointerDown={handlePointerDown}
                             onPointerMove={handlePointerMove}
                             onPointerUp={handlePointerUp}
+                            onPointerCancel={handlePointerCancel}
                             onDoubleClick={handleDoubleClick}
                         >
                             {/* LEFT STATIC PAGE */}
@@ -721,9 +790,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     showToolbar ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-95 pointer-events-none"
                 }`}
             >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-xs font-semibold text-gray-300 tracking-wide select-none">{getPageRangeString()}</span>
                     
+                    {/* Active Mode Indicator label */}
+                    <span className="text-[9px] sm:text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-md font-bold uppercase select-none">
+                        {isDouble ? "2-Page" : "1-Page"}
+                    </span>
+
                     {/* Toggle Layout Mode Button (Mobile Only) */}
                     {isMobile && (
                         <button
@@ -732,7 +806,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             title={mobileDoublePage ? "Switch to Single Page" : "Switch to Double Page"}
                         >
                             {mobileDoublePage ? <Layers className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-                            {mobileDoublePage ? "1-Page" : "2-Page"}
                         </button>
                     )}
                 </div>
