@@ -229,7 +229,7 @@ export const dataService = {
         });
 
         if (rows.length > 0) {
-            const { error } = await supabase.from('hero_slides').upsert(rows);
+            const { error } = await supabase.from('hero_slides').upsert(rows, { onConflict: 'id' });
             if (error) console.error("Save Hero Error", error);
         }
     },
@@ -275,7 +275,7 @@ export const dataService = {
             cards: data.cards,
             rich_content: data.richContent
         };
-        const { error: globalError } = await supabase.from('about_content').upsert(globalRow);
+        const { error: globalError } = await supabase.from('about_content').upsert(globalRow, { onConflict: 'id' });
         if (globalError) console.error("Save About Global Error", globalError);
 
         // 2. Save Sections (if provided)
@@ -299,22 +299,15 @@ export const dataService = {
                 if (error) console.error("Save Section Error", error);
             }
 
-            // Delete sections not in the list?
-            // Simple strategy: Delete all not in the current list IDs
-            const currentIds = data.sections.map(s => s.id);
-            if (currentIds.length > 0) {
-                await supabase.from('about_sections').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
-            } else {
-                // If list is empty, delete all? Be careful.
-                // For now, let's just upsert. Full sync is better but riskier if IDs are messed up.
-                // Verified strategy: Fetch existing IDs, compare.
-                // For MVP, just upsert is fine, and provide explicit "Delete Section" method if needed, 
-                // OR relies on "Delete" button in UI calling a delete/save sequence.
-                // The prompt says "editable/deletable".
-                // I will add a explicit delete logic if I can, or relies on the "save all" replacing the state.
-                // "Delete not in" is best for "Save All" behavior.
-                const { error: deleteError } = await supabase.from('about_sections').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
-                if (deleteError) console.error("Components Delete Error", deleteError);
+            // Fetch all sections in DB, delete those not in the list, then upsert
+            const { data: dbData } = await supabase.from('about_sections').select('id');
+            const dbIds = dbData ? dbData.map(d => d.id) : [];
+            const desiredIds = data.sections.map(s => s.id);
+            const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+            
+            if (idsToDelete.length > 0) {
+                const { error: deleteError } = await supabase.from('about_sections').delete().in('id', idsToDelete);
+                if (deleteError) console.error("Delete Sections Error", deleteError);
             }
         }
     },
@@ -363,7 +356,7 @@ export const dataService = {
         });
         
         if (rows.length > 0) {
-            const { error } = await supabase.from('team_members').upsert(rows);
+            const { error } = await supabase.from('team_members').upsert(rows, { onConflict: 'id' });
             if (error) console.error("Save Team Error", error);
         }
     },
@@ -417,7 +410,7 @@ export const dataService = {
         });
 
         if (rows.length > 0) {
-            const { error } = await supabase.from('magazines').upsert(rows);
+            const { error } = await supabase.from('magazines').upsert(rows, { onConflict: 'id' });
             if (error) console.error("Save Mags Error", error);
         }
     },
@@ -504,7 +497,7 @@ export const dataService = {
         });
 
         if (rows.length > 0) {
-            const { error } = await supabase.from('events').upsert(rows);
+            const { error } = await supabase.from('events').upsert(rows, { onConflict: 'id' });
             if (error) console.error("Save Events Error", error);
         }
     },
@@ -522,23 +515,15 @@ export const dataService = {
         }));
     },
     saveNAVData: async (data: NAVData[]) => {
-        const currentIds = data.map(d => d.id).filter(Boolean);
-        if (currentIds.length > 0) {
-            const { error: deleteError } = await supabase
-                .from('nav_data')
-                .delete()
-                .not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+        const { data: dbData } = await supabase.from('nav_data').select('id');
+        const dbIds = dbData ? dbData.map(d => d.id) : [];
+        const desiredIds = data.map(d => d.id).filter(Boolean);
+        const idsToDelete = dbIds.filter(id => !desiredIds.includes(id));
+
+        if (idsToDelete.length > 0) {
+            const { error: deleteError } = await supabase.from('nav_data').delete().in('id', idsToDelete);
             if (deleteError) {
                 console.error("Delete NAV Error", deleteError);
-                throw deleteError;
-            }
-        } else {
-            const { error: deleteError } = await supabase
-                .from('nav_data')
-                .delete()
-                .neq('id', '0');
-            if (deleteError) {
-                console.error("Delete All NAV Error", deleteError);
                 throw deleteError;
             }
         }
@@ -550,7 +535,7 @@ export const dataService = {
                 value: d.value,
                 nifty50: d.nifty50 !== undefined && d.nifty50 !== null ? d.nifty50 : null
             }));
-            const { error: insertError } = await supabase.from('nav_data').upsert(rows);
+            const { error: insertError } = await supabase.from('nav_data').upsert(rows, { onConflict: 'id' });
             if (insertError) {
                 console.error("Save NAV Insert/Upsert Error", insertError);
                 throw insertError;
@@ -580,7 +565,7 @@ export const dataService = {
             is_auto_return: data.isAutoReturn, // Save to DB
             asset_allocation: data.assetAllocation
         };
-        const { error } = await supabase.from('nif_metrics').upsert(row);
+        const { error } = await supabase.from('nif_metrics').upsert(row, { onConflict: 'id' });
         if (error) {
             console.error("Save NIF Metrics Error", error);
             throw error;
@@ -607,10 +592,11 @@ export const dataService = {
     saveSiteSettings: async (settings: SiteSettings) => {
         const row = {
             id: 'settings',
-            social_links: settings.socialLinks
+            social_links: settings.socialLinks,
+            updated_at: new Date().toISOString()
         };
 
-        const { error } = await supabase.from('site_settings').upsert(row);
+        const { error } = await supabase.from('site_settings').upsert(row, { onConflict: 'id' });
 
         if (error) {
             console.error("Save Settings Error:", error);
@@ -666,7 +652,7 @@ export const dataService = {
         });
 
         if (rows.length > 0) {
-            const { error } = await supabase.from('notices').upsert(rows);
+            const { error } = await supabase.from('notices').upsert(rows, { onConflict: 'id' });
             if (error) console.error("Save Notices Error", error);
         }
     },
