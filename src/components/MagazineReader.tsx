@@ -31,20 +31,44 @@ function loadPdfjs(): Promise<any> {
     return pdfjsPromise;
 }
 
+const scriptPromises: { [src: string]: Promise<void> | undefined } = {};
+
 function loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        if (typeof window === 'undefined') return resolve();
+    if (typeof window === 'undefined') return Promise.resolve();
+    
+    const existingPromise = scriptPromises[src];
+    if (existingPromise) {
+        return existingPromise;
+    }
+
+    const promise = new Promise<void>((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
-            resolve();
+            const existingScript = existing as HTMLScriptElement;
+            if (existingScript.dataset.loaded === "true") {
+                resolve();
+            } else {
+                existingScript.addEventListener("load", () => {
+                    existingScript.dataset.loaded = "true";
+                    resolve();
+                });
+                existingScript.addEventListener("error", (err) => reject(err));
+            }
             return;
         }
+
         const script = document.createElement("script");
         script.src = src;
-        script.onload = () => resolve();
+        script.onload = () => {
+            script.dataset.loaded = "true";
+            resolve();
+        };
         script.onerror = (err) => reject(err);
         document.head.appendChild(script);
     });
+
+    scriptPromises[src] = promise;
+    return promise;
 }
 
 export default function MagazineReader({ magazine, onClose }: MagazineReaderProps) {
@@ -59,6 +83,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const flipbookRef = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const renderTasksRef = useRef<{ [key: number]: any }>({});
+
+    const initialTouchDistanceRef = useRef<number | null>(null);
+    const initialScaleRef = useRef<number>(1.0);
+    const currentRatioRef = useRef<number>(1.0);
 
     // 1. Detect Screen Size
     useEffect(() => {
@@ -355,6 +383,68 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [pdf, isLoading]);
+
+    // 7. Mobile Touch Pinch-to-zoom Gesture Handler
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialTouchDistanceRef.current = dist;
+                initialScaleRef.current = scale;
+                currentRatioRef.current = 1.0;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialTouchDistanceRef.current !== null) {
+                e.preventDefault();
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const ratio = dist / initialTouchDistanceRef.current;
+                currentRatioRef.current = ratio;
+
+                // GPU-accelerated scaling of the flipbook element for smooth 60fps pinch movement
+                const fbEl = flipbookRef.current;
+                if (fbEl) {
+                    fbEl.style.transform = `scale(${ratio})`;
+                    fbEl.style.transformOrigin = "center center";
+                }
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
+                const fbEl = flipbookRef.current;
+                if (fbEl) {
+                    fbEl.style.transform = "";
+                }
+
+                // Compute and commit final zoom scale state (triggers high-DPI canvas re-draw)
+                const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
+                setScale(finalScale);
+            }
+            initialTouchDistanceRef.current = null;
+            currentRatioRef.current = 1.0;
+        };
+
+        container.addEventListener("touchstart", handleTouchStart, { passive: true });
+        container.addEventListener("touchmove", handleTouchMove, { passive: false });
+        container.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+        return () => {
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchmove", handleTouchMove);
+            container.removeEventListener("touchend", handleTouchEnd);
+        };
+    }, [scale, isLoading]);
 
     const nextPage = () => {
         const $ = (window as any).$;
