@@ -39,6 +39,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [scale, setScale] = useState<number>(1.0);
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    
+    // Dynamic PDF page aspect ratio (defaults to standard A4 1.414)
+    const [pageRatio, setPageRatio] = useState<number>(1.414);
 
     // 3D CSS Hinge Flip Anim States
     const [isFlipping, setIsFlipping] = useState<boolean>(false);
@@ -81,6 +84,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const proxyUrl = `/api/proxy-pdf?url=${encodeURIComponent(targetUrl)}`;
                 const loadedPdf = await pdfjs.getDocument(proxyUrl).promise;
                 if (!active) return;
+
+                // Load first page to calculate exact PDF aspect ratio dynamically
+                const firstPage = await loadedPdf.getPage(1);
+                const viewport = firstPage.getViewport({ scale: 1.0 });
+                const ratio = viewport.height / viewport.width;
+
+                setPageRatio(ratio);
                 setPdf(loadedPdf);
                 setNumPages(loadedPdf.numPages);
                 setCurrentPage(1);
@@ -123,12 +133,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, []);
 
-    // Helper: Calculate book dimensions fitting A4 ratio standard (1:1.414)
+    // Helper: Calculate book dimensions fitting page aspect ratio exactly (removing empty white blocks)
     const getBookDimensions = () => {
         const availableHeight = window.innerHeight - 180;
         const availableWidth = window.innerWidth - 80;
-
-        const pageRatio = 1.414;
 
         let height = availableHeight;
         let width = height / pageRatio;
@@ -255,7 +263,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
 
         renderStaticView();
-    }, [pdf, currentPage, scale, isMobile, isFlipping, isLoading]);
+    }, [pdf, currentPage, scale, isMobile, isFlipping, isLoading, pageRatio]);
 
     // 4. Trigger Flip Turn Animation (Render-First, Animate-Second)
     const startFlip = async (dir: "next" | "prev") => {
@@ -277,31 +285,46 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Render Front moving sheet (current right page)
+                // Render Front moving sheet (current right page - starts visible on right side)
                 canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Render Back moving sheet (target left page)
+                // Render Back moving sheet (target left page - lands visible on left side)
                 canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Render static right page under the flip
+                // Render static right page revealed underneath the flip
                 (canvasRightRef.current && targetRight <= numPages && !isMobile) ? renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
             ];
             await Promise.all(renderPromises);
+
+            // Mid-Flip Optimization: at 350ms (when moving sheet is vertical), trigger the static left canvas to pre-render page targetLeft
+            // Since it runs in the background, it completes BEFORE the 800ms flip ends, preventing landing stutter/flicker!
+            setTimeout(() => {
+                if (canvasLeftRef.current && targetLeft <= numPages) {
+                    renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
+                }
+            }, 350);
         } else {
             const currentLeft = currentPage;
             const targetLeft = isMobile ? currentLeft - 1 : (currentLeft === 2 ? 1 : currentLeft - 2);
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Render Front moving sheet (current left page)
-                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentLeft, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Render Back moving sheet (target right page)
-                canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Render static left page under the flip
+                // Render Back moving sheet (current left page - starts visible on left side)
+                canvasFlipBackRef.current ? renderPageToCanvas(pdf, currentLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
+                // Render Front moving sheet (target right page - lands visible on right side)
+                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
+                // Render static left page revealed underneath the flip
                 (canvasLeftRef.current && targetLeft > 1 && !isMobile) ? renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic") : Promise.resolve()
             ];
             await Promise.all(renderPromises);
+
+            // Mid-Flip Optimization: at 350ms, trigger static right canvas to pre-render page targetRight
+            setTimeout(() => {
+                if (canvasRightRef.current && targetRight <= numPages) {
+                    renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
+                }
+            }, 350);
         }
 
-        // Wait one frame to let the browser mount the sheet in its initial angle, then trigger GPU transition
+        // Trigger CSS 3D folding transition in the next paint cycle (duration extended to 800ms for extra rendering head-room)
         setTimeout(() => {
             setIsAnimating(true);
             setFlipAngle(dir === "next" ? -180 : 0);
@@ -428,6 +451,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     const isDoubleLayout = !isMobile && (currentPage > 1 || isFlipping);
     const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
+
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
@@ -521,7 +545,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     >
                         {/* LEFT STATIC PAGE */}
                         <div 
-                            className="relative bg-white overflow-hidden"
+                            className="relative overflow-hidden"
                             style={{
                                 width: `${pageWidth}px`,
                                 height: `${bookHeight}px`,
@@ -539,7 +563,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                         {/* RIGHT STATIC PAGE */}
                         <div 
-                            className="relative bg-white overflow-hidden"
+                            className="relative overflow-hidden"
                             style={{
                                 width: `${pageWidth}px`,
                                 height: `${bookHeight}px`,
@@ -570,7 +594,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     transformOrigin: direction === "next" ? "left center" : "right center",
                                     transformStyle: "preserve-3d",
                                     transform: `rotateY(${flipAngle}deg)`,
-                                    transition: isAnimating ? "transform 600ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
+                                    transition: isAnimating ? "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
                                     pointerEvents: "none"
                                 }}
                                 onTransitionEnd={handleAnimationComplete}
