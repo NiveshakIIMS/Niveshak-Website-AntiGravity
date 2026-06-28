@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Maximize2, Minimize2 } from "lucide-react";
-import { motion } from "framer-motion";
 import { Magazine } from "@/services/dataService";
 
 interface MagazineReaderProps {
@@ -41,9 +40,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-    // 3D Flip Anim States (Framer Motion Native)
+    // 3D CSS Hinge Flip Anim States
     const [isFlipping, setIsFlipping] = useState<boolean>(false);
-    const [animationTrigger, setAnimationTrigger] = useState<boolean>(false);
+    const [flipAngle, setFlipAngle] = useState<number>(0);
+    const [isAnimating, setIsAnimating] = useState<boolean>(false);
     const [direction, setDirection] = useState<"next" | "prev">("next");
 
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -133,18 +133,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         let height = availableHeight;
         let width = height / pageRatio;
 
-        if (isMobile) {
-            // Mobile: Single page layout
-            if (width > availableWidth) {
-                width = availableWidth;
-                height = width * pageRatio;
-            }
-        } else {
+        const isDoubleLayout = !isMobile && (currentPage > 1 || isFlipping);
+
+        if (isDoubleLayout) {
             // Desktop: Double page layout side-by-side
             width = width * 2;
             if (width > availableWidth) {
                 width = availableWidth;
                 height = (width / 2) * pageRatio;
+            }
+        } else {
+            // Mobile OR Static Cover page: Single page layout
+            if (width > availableWidth) {
+                width = availableWidth;
+                height = width * pageRatio;
             }
         }
 
@@ -154,7 +156,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     };
 
-    // Helper: Render individual PDF page onto its canvas with High-DPI scaling
+    // Helper: Render individual PDF page onto its canvas with High-DPI scaling and Offscreen Double-Buffering
     const renderPageToCanvas = async (
         pdfDoc: any, 
         pageNum: number, 
@@ -174,38 +176,44 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const scaleX = pageWidth / viewport.width;
             const scaleY = pageHeight / viewport.height;
             const fitScale = Math.min(scaleX, scaleY);
-
             const finalViewport = page.getViewport({ scale: fitScale });
             
             const dpr = window.devicePixelRatio || 1;
-            const newWidth = Math.round(finalViewport.width * dpr);
-            const newHeight = Math.round(finalViewport.height * dpr);
+            const targetWidth = Math.round(finalViewport.width * dpr);
+            const targetHeight = Math.round(finalViewport.height * dpr);
 
-            if (canvas.width !== newWidth || canvas.height !== newHeight) {
-                canvas.width = newWidth;
-                canvas.height = newHeight;
-                canvas.style.width = `${finalViewport.width}px`;
-                canvas.style.height = `${finalViewport.height}px`;
-                
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
-                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                }
-            }
+            // 1. Create offscreen canvas buffer to prevent clear-to-blank rendering flicker
+            const offscreen = document.createElement("canvas");
+            offscreen.width = targetWidth;
+            offscreen.height = targetHeight;
+            
+            const offscreenCtx = offscreen.getContext("2d");
+            if (offscreenCtx) {
+                offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
+                // 2. Render PDF page asynchronously onto offscreen canvas
                 const renderTask = page.render({
-                    canvasContext: ctx,
+                    canvasContext: offscreenCtx,
                     viewport: finalViewport
                 });
                 renderTasksRef.current[taskKey] = renderTask;
                 await renderTask.promise;
                 delete renderTasksRef.current[taskKey];
+
+                // 3. Copy pixels synchronously to visible canvas in <1ms (flicker-free replacement)
+                if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    canvas.style.width = `${finalViewport.width}px`;
+                    canvas.style.height = `${finalViewport.height}px`;
+                }
+
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(offscreen, 0, 0);
+                }
             }
         } catch (e: any) {
             if (e.name !== "RenderingCancelledException") {
@@ -230,7 +238,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             } else {
                 const renderPromises = [];
                 if (currentPage === 1) {
-                    // Cover page is centered on the right
+                    // Cover page centers itself on the right canvas
                     if (canvasRightRef.current) {
                         renderPromises.push(renderPageToCanvas(pdf, 1, canvasRightRef.current, pageWidth, pageHeight, "rightStatic"));
                     }
@@ -259,6 +267,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         setDirection(dir);
         setIsFlipping(true);
+        setIsAnimating(false);
+        setFlipAngle(dir === "next" ? 0 : -180);
 
         if (dir === "next") {
             const currentLeft = currentPage;
@@ -291,14 +301,17 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             await Promise.all(renderPromises);
         }
 
-        // Once pages are rendered, trigger rotation
-        setAnimationTrigger(true);
+        // Wait one frame to let the browser mount the sheet in its initial angle, then trigger GPU transition
+        setTimeout(() => {
+            setIsAnimating(true);
+            setFlipAngle(dir === "next" ? -180 : 0);
+        }, 50);
     };
 
     const handleAnimationComplete = () => {
         if (!isFlipping) return;
 
-        // Commit page index update
+        // Perform page index update
         if (direction === "next") {
             const targetPg = isMobile 
                 ? currentPage + 1 
@@ -311,8 +324,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             setCurrentPage(targetPg);
         }
 
-        setAnimationTrigger(false);
+        setIsAnimating(false);
         setIsFlipping(false);
+        setFlipAngle(0);
     };
 
     const nextPage = () => {
@@ -412,6 +426,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
 
+    const isDoubleLayout = !isMobile && (currentPage > 1 || isFlipping);
+    const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
@@ -505,63 +521,72 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     >
                         {/* LEFT STATIC PAGE */}
                         <div 
-                            className={`relative bg-white overflow-hidden ${(!isMobile && currentPage === 1) ? "w-0 opacity-0 pointer-events-none" : ""}`}
+                            className="relative bg-white overflow-hidden"
                             style={{
                                 width: `${pageWidth}px`,
-                                height: `${bookHeight}px`
+                                height: `${bookHeight}px`,
+                                display: showLeftPage ? "block" : "none"
                             }}
                         >
                             <canvas ref={canvasLeftRef} className="block mx-auto" />
                             <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
                             
                             {/* Inner Crease Shadow */}
-                            {!isMobile && currentPage > 1 && (
+                            {showLeftPage && (
                                 <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-10" />
                             )}
                         </div>
 
                         {/* RIGHT STATIC PAGE */}
                         <div 
-                            className={`relative bg-white overflow-hidden ${(!isMobile && currentPage === 1) ? "mx-auto" : ""}`}
+                            className="relative bg-white overflow-hidden"
                             style={{
                                 width: `${pageWidth}px`,
                                 height: `${bookHeight}px`,
-                                display: (isMobile || currentPage + 1 <= numPages) ? "block" : "none"
+                                display: (isMobile || currentPage + 1 <= numPages || isFlipping || currentPage === 1) ? "block" : "none"
                             }}
                         >
                             <canvas ref={canvasRightRef} className="block mx-auto" />
                             <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
                             
                             {/* Inner Crease Shadow */}
-                            {!isMobile && currentPage > 1 && (
+                            {isDoubleLayout && currentPage > 1 && (
                                 <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10" />
                             )}
                             {/* Cover Spine creases */}
-                            {!isMobile && currentPage === 1 && (
+                            {!isMobile && currentPage === 1 && !isFlipping && (
                                 <div className="absolute top-0 left-0 bottom-0 w-[5px] bg-black/25 pointer-events-none z-10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.4)]" />
                             )}
                         </div>
 
-                        {/* 3D FLIPPING SHEET OVERLAY (Framer Motion) */}
+                        {/* 3D FLIPPING SHEET OVERLAY (CSS 3D GPU transition) */}
                         {isFlipping && (
-                            <motion.div
-                                className="absolute top-2 bottom-2 z-30"
+                            <div
+                                className="absolute top-2 bottom-2 z-30 shadow-2xl"
                                 style={{
                                     width: `${pageWidth}px`,
                                     left: direction === "next" ? (isMobile ? "0px" : "50%") : "auto",
                                     right: direction === "prev" ? (isMobile ? "0px" : "50%") : "auto",
                                     transformOrigin: direction === "next" ? "left center" : "right center",
-                                    transformStyle: "preserve-3d"
+                                    transformStyle: "preserve-3d",
+                                    transform: `rotateY(${flipAngle}deg)`,
+                                    transition: isAnimating ? "transform 600ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
+                                    pointerEvents: "none"
                                 }}
-                                initial={{ rotateY: direction === "next" ? 0 : -180 }}
-                                animate={{ rotateY: animationTrigger ? (direction === "next" ? -180 : 0) : (direction === "next" ? 0 : -180) }}
-                                transition={{ duration: 0.6, ease: "easeInOut" }}
-                                onAnimationComplete={handleAnimationComplete}
+                                onTransitionEnd={handleAnimationComplete}
                             >
                                 {/* FRONT FACE (Visible initially) */}
                                 <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
                                     <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    {/* Crease shadow sweep */}
+                                    <div 
+                                        className="absolute inset-0 bg-black pointer-events-none z-30 transition-opacity duration-300"
+                                        style={{
+                                            opacity: isAnimating ? (direction === "next" ? 0.25 : 0) : 0,
+                                            mixBlendMode: "multiply"
+                                        }}
+                                    />
                                     {/* Fold shadow */}
                                     <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "right-0 bg-gradient-to-l from-black/5 to-transparent" : "left-0 bg-gradient-to-r from-black/5 to-transparent"}`} />
                                 </div>
@@ -573,10 +598,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 >
                                     <canvas ref={canvasFlipBackRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    {/* Crease shadow sweep */}
+                                    <div 
+                                        className="absolute inset-0 bg-black pointer-events-none z-30 transition-opacity duration-300"
+                                        style={{
+                                            opacity: isAnimating ? (direction === "next" ? 0 : 0.25) : 0,
+                                            mixBlendMode: "multiply"
+                                        }}
+                                    />
                                     {/* Fold shadow */}
                                     <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "left-0 bg-gradient-to-r from-black/5 to-transparent" : "right-0 bg-gradient-to-l from-black/5 to-transparent"}`} />
                                 </div>
-                            </motion.div>
+                            </div>
                         )}
                     </div>
                 )}
