@@ -33,26 +33,55 @@ function loadPdfjs(): Promise<any> {
 
 const scriptPromises: { [src: string]: Promise<void> | undefined } = {};
 
-function loadScript(src: string): Promise<void> {
+function isGlobalDefined(name: string): boolean {
+    if (typeof window === 'undefined') return false;
+    const parts = name.split(".");
+    let current: any = window;
+    for (const part of parts) {
+        if (current[part] === undefined) return false;
+        current = current[part];
+    }
+    return true;
+}
+
+function loadScript(src: string, globalCheck?: string): Promise<void> {
     if (typeof window === 'undefined') return Promise.resolve();
-    
-    const existingPromise = scriptPromises[src];
-    if (existingPromise) {
-        return existingPromise;
+
+    if (globalCheck && isGlobalDefined(globalCheck)) {
+        return Promise.resolve();
+    }
+
+    if (scriptPromises[src]) {
+        return scriptPromises[src];
     }
 
     const promise = new Promise<void>((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
+            if (globalCheck && isGlobalDefined(globalCheck)) {
+                resolve();
+                return;
+            }
             const existingScript = existing as HTMLScriptElement;
             if (existingScript.dataset.loaded === "true") {
                 resolve();
             } else {
+                const checkInterval = setInterval(() => {
+                    if (globalCheck && isGlobalDefined(globalCheck)) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+
                 existingScript.addEventListener("load", () => {
+                    clearInterval(checkInterval);
                     existingScript.dataset.loaded = "true";
                     resolve();
                 });
-                existingScript.addEventListener("error", (err) => reject(err));
+                existingScript.addEventListener("error", (err) => {
+                    clearInterval(checkInterval);
+                    reject(err);
+                });
             }
             return;
         }
@@ -80,10 +109,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-    const flipbookRef = useRef<HTMLDivElement | null>(null);
+    const mountRef = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const renderTasksRef = useRef<{ [key: number]: any }>({});
-
+    
     const initialTouchDistanceRef = useRef<number | null>(null);
     const initialScaleRef = useRef<number>(1.0);
     const currentRatioRef = useRef<number>(1.0);
@@ -161,13 +190,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         let width = height / pageRatio;
 
         if (isMobile) {
-            // Mobile: Single page display
+            // Mobile: Single page layout
             if (width > availableWidth) {
                 width = availableWidth;
                 height = width * pageRatio;
             }
         } else {
-            // Desktop: Double page display side-by-side
+            // Desktop: Double page layout side-by-side
             width = width * 2;
             if (width > availableWidth) {
                 width = availableWidth;
@@ -189,7 +218,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         pageWidth: number, 
         pageHeight: number
     ) => {
-        // Cancel active render tasks for this page
         if (renderTasksRef.current[pageNum]) {
             renderTasksRef.current[pageNum].cancel();
         }
@@ -208,7 +236,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const newWidth = Math.round(finalViewport.width * dpr);
             const newHeight = Math.round(finalViewport.height * dpr);
 
-            // ONLY resize canvas if dimensions actually changed (prevents blank screen flickers)
             if (canvas.width !== newWidth || canvas.height !== newHeight) {
                 canvas.width = newWidth;
                 canvas.height = newHeight;
@@ -242,7 +269,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // Helper: Pre-render visible pages and adjacent buffers to ensure 100% flicker-free turns
+    // Helper: Pre-render visible pages and adjacent buffers
     const renderViewPages = async (pdfDoc: any, view: number[]) => {
         if (!pdfDoc) return;
 
@@ -252,7 +279,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         const visiblePages = view.filter(p => p > 0 && p <= numPages);
         
-        // Load adjacent buffer pages (up to 2 pages ahead and behind)
         const adjacentPages: number[] = [];
         visiblePages.forEach(p => {
             if (p - 1 > 0 && !visiblePages.includes(p - 1)) adjacentPages.push(p - 1);
@@ -263,7 +289,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         const uniqueAdjacent = Array.from(new Set(adjacentPages));
 
-        // 1. Priority: Render currently visible pages first
+        // 1. Priority: Render currently visible pages
         await Promise.all(
             visiblePages.map(p => {
                 const canvas = document.getElementById(`canvas-page-${p}`) as HTMLCanvasElement;
@@ -274,7 +300,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             })
         );
 
-        // 2. Background: Pre-render surrounding pages to cache peels
+        // 2. Background: Pre-render adjacent pages
         uniqueAdjacent.forEach(p => {
             const canvas = document.getElementById(`canvas-page-${p}`) as HTMLCanvasElement;
             if (canvas) {
@@ -283,31 +309,70 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         });
     };
 
-    // 4. Initialize and control turn.js flipbook
+    // 4. Initialize and control turn.js flipbook (Isolated inside DOM parent to avoid React conflicts)
     useEffect(() => {
-        if (!pdf) return;
+        if (!pdf || !mountRef.current) return;
 
         let active = true;
         let $flipbook: any = null;
 
         const initBook = async () => {
-            // Ensure jQuery is loaded first
-            await loadScript("https://code.jquery.com/jquery-3.6.0.min.js");
+            setIsLoading(true);
+
+            // 1. Load jQuery
+            await loadScript("https://code.jquery.com/jquery-3.6.0.min.js", "jQuery");
             if (!active) return;
 
-            // Load turn.js script
-            await loadScript("/js/turn.js");
+            // 2. Load turn.js
+            await loadScript("/js/turn.js", "jQuery.fn.turn");
             if (!active) return;
 
             const $ = (window as any).$;
             if (!$) return;
 
-            $flipbook = $(flipbookRef.current);
-            if (!$flipbook || !$flipbook.length) return;
+            // 3. Clear any previous mount content to isolate turn.js DOM completely
+            mountRef.current!.innerHTML = "";
 
+            // 4. Construct flipbook container dynamically
+            const fb = document.createElement("div");
+            fb.id = "flipbook";
+            fb.className = "shadow-2xl";
+            mountRef.current!.appendChild(fb);
+
+            // 5. Append page elements dynamically
+            for (let i = 1; i <= numPages; i++) {
+                const pageDiv = document.createElement("div");
+                pageDiv.className = "page bg-white relative overflow-hidden";
+                pageDiv.style.width = "100%";
+                pageDiv.style.height = "100%";
+
+                const canvas = document.createElement("canvas");
+                canvas.id = `canvas-page-${i}`;
+                canvas.className = "block mx-auto";
+                pageDiv.appendChild(canvas);
+
+                const gloss = document.createElement("div");
+                gloss.className = "absolute inset-0 magazine-gloss pointer-events-none z-20";
+                pageDiv.appendChild(gloss);
+
+                // Spine Crease shadow for interior pages
+                if (i > 1 && i < numPages) {
+                    const crease = document.createElement("div");
+                    crease.className = `absolute top-0 bottom-0 w-8 pointer-events-none z-10 ${
+                        i % 2 === 0 
+                            ? 'right-0 bg-gradient-to-l from-black/8 to-transparent' 
+                            : 'left-0 bg-gradient-to-r from-black/8 to-transparent'
+                    }`;
+                    pageDiv.appendChild(crease);
+                }
+
+                fb.appendChild(pageDiv);
+            }
+
+            $flipbook = $(fb);
             const dims = getBookDimensions();
 
-            // Initialize turn.js engine
+            // 6. Initialize turnbook
             $flipbook.turn({
                 width: dims.width,
                 height: dims.height,
@@ -318,7 +383,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 gradients: true,
                 when: {
                     turning: (event: any, page: number, view: number[]) => {
-                        // Pre-render turning target pages to avoid white flashes
                         renderViewPages(pdf, view);
                     },
                     turned: (event: any, page: number, view: number[]) => {
@@ -328,7 +392,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 }
             });
 
-            // Initial render call
+            // 7. Initial render view
             const initialView = $flipbook.turn("view");
             await renderViewPages(pdf, initialView);
             setIsLoading(false);
@@ -338,9 +402,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         return () => {
             active = false;
-            // Clean up tasks
             Object.values(renderTasksRef.current).forEach(task => task.cancel());
-            // Destroy turn.js flipbook
             if ($flipbook && $flipbook.length && $flipbook.turn("is")) {
                 try {
                     $flipbook.turn("destroy");
@@ -355,36 +417,23 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     useEffect(() => {
         if (!pdf || isLoading) return;
         const $ = (window as any).$;
-        if (!$ || !flipbookRef.current) return;
+        if (!$ || !mountRef.current) return;
 
-        const $fb = $(flipbookRef.current);
-        if ($fb.length && $fb.turn("is")) {
+        const fbEl = document.getElementById("flipbook");
+        if (fbEl) {
             const dims = getBookDimensions();
-            
-            // Resize turn.js wrapper
-            $fb.turn("size", dims.width, dims.height);
-            
-            // Disable swiping/peeling when zoomed in to let users pan/scroll around easily
-            $fb.turn("disable", scale > 1.0);
+            const $fb = $(fbEl);
+            if ($fb.length && $fb.turn("is")) {
+                $fb.turn("size", dims.width, dims.height);
+                $fb.turn("disable", scale > 1.0);
 
-            // Re-render currently visible canvases at the new scale resolution
-            const currentView = $fb.turn("view");
-            renderViewPages(pdf, currentView);
+                const currentView = $fb.turn("view");
+                renderViewPages(pdf, currentView);
+            }
         }
     }, [scale]);
 
-    // 6. Keyboard navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "ArrowRight") nextPage();
-            if (e.key === "ArrowLeft") prevPage();
-            if (e.key === "Escape") onClose();
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [pdf, isLoading]);
-
-    // 7. Mobile Touch Pinch-to-zoom Gesture Handler
+    // 6. Mobile Touch Pinch-to-zoom Gesture Handler
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -411,8 +460,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const ratio = dist / initialTouchDistanceRef.current;
                 currentRatioRef.current = ratio;
 
-                // GPU-accelerated scaling of the flipbook element for smooth 60fps pinch movement
-                const fbEl = flipbookRef.current;
+                const fbEl = document.getElementById("flipbook");
                 if (fbEl) {
                     fbEl.style.transform = `scale(${ratio})`;
                     fbEl.style.transformOrigin = "center center";
@@ -422,12 +470,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         const handleTouchEnd = () => {
             if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
-                const fbEl = flipbookRef.current;
+                const fbEl = document.getElementById("flipbook");
                 if (fbEl) {
                     fbEl.style.transform = "";
                 }
 
-                // Compute and commit final zoom scale state (triggers high-DPI canvas re-draw)
                 const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
                 setScale(finalScale);
             }
@@ -446,10 +493,22 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [scale, isLoading]);
 
+    // 7. Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") nextPage();
+            if (e.key === "ArrowLeft") prevPage();
+            if (e.key === "Escape") onClose();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [pdf, isLoading]);
+
     const nextPage = () => {
         const $ = (window as any).$;
-        if ($ && flipbookRef.current) {
-            const $fb = $(flipbookRef.current);
+        const fbEl = document.getElementById("flipbook");
+        if ($ && fbEl) {
+            const $fb = $(fbEl);
             if ($fb.length && $fb.turn("is")) {
                 $fb.turn("next");
             }
@@ -458,8 +517,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     const prevPage = () => {
         const $ = (window as any).$;
-        if ($ && flipbookRef.current) {
-            const $fb = $(flipbookRef.current);
+        const fbEl = document.getElementById("flipbook");
+        if ($ && fbEl) {
+            const $fb = $(fbEl);
             if ($fb.length && $fb.turn("is")) {
                 $fb.turn("previous");
             }
@@ -550,45 +610,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
-                {isLoading ? (
-                    <div className="flex flex-col items-center gap-4 text-white">
+                {isLoading && (
+                    <div className="absolute flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
                         <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
                         <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                     </div>
-                ) : (
-                    <div className="relative flex items-center justify-center max-w-full z-10">
-                        {/* turn.js container */}
-                        <div 
-                            ref={flipbookRef}
-                            id="flipbook"
-                            className="shadow-2xl"
-                        >
-                            {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
-                                <div 
-                                    key={pageNum}
-                                    className="page bg-white relative overflow-hidden"
-                                    style={{ width: "100%", height: "100%" }}
-                                >
-                                    <canvas 
-                                        id={`canvas-page-${pageNum}`} 
-                                        className="block mx-auto" 
-                                    />
-                                    {/* Real Magazine Paper Semi-Gloss Overlay */}
-                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                    
-                                    {/* Spine crease shadow for double page layout */}
-                                    {pageNum > 1 && pageNum < numPages && (
-                                        <div className={`absolute top-0 bottom-0 w-8 pointer-events-none z-10 ${
-                                            pageNum % 2 === 0 
-                                                ? 'right-0 bg-gradient-to-l from-black/8 to-transparent' 
-                                                : 'left-0 bg-gradient-to-r from-black/8 to-transparent'
-                                        }`} />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 )}
+
+                {/* Isolated target mount where turn.js elements will build */}
+                <div 
+                    ref={mountRef}
+                    className="relative flex items-center justify-center max-w-full z-10"
+                />
             </div>
 
             {/* Bottom Navigation Toolbar */}
@@ -635,20 +668,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 /* turn.js specific styles */
                 #flipbook {
                     margin: 0 auto;
-                    transition: width 0.3s ease, height 0.3s ease;
+                    transition: transform 0.1s ease-out;
                 }
                 
                 .turn-page {
                     background-color: #fff;
                     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-                }
-                
-                /* Hide raw turn pages before initialization */
-                #flipbook:not(.animated) > .page {
-                    display: none;
-                }
-                #flipbook:not(.animated) > .page:first-child {
-                    display: block;
                 }
             `}</style>
         </div>
