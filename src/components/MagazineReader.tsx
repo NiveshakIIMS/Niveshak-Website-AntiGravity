@@ -145,6 +145,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
+    // Helper: Copy canvas pixels instantly to prevent the 1ms render transition flicker
+    const copyCanvas = (src: HTMLCanvasElement, dest: HTMLCanvasElement) => {
+        const destCtx = dest.getContext("2d");
+        if (destCtx) {
+            dest.width = src.width;
+            dest.height = src.height;
+            dest.style.width = src.style.width;
+            dest.style.height = src.style.height;
+            destCtx.clearRect(0, 0, dest.width, dest.height);
+            destCtx.drawImage(src, 0, 0);
+        }
+    };
+
     // 3. Render Pages when currentPage, scale, layout, or isFlipping state changes
     useEffect(() => {
         if (!pdf) return;
@@ -168,52 +181,45 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const canvasBack = canvasFlippingBackRef.current;
 
                 if (isMobile) {
+                    const canvasBg = canvasLeftRef.current;
                     const currentPg = currentPage;
                     const targetPg = direction === "next" ? currentPage + 1 : currentPage - 1;
 
-                    if (canvasFront && canvasBack) {
+                    if (canvasFront && canvasBack && canvasBg) {
+                        // Render all canvases BEFORE transition to guarantee 0% JS load during animation
                         await Promise.all([
                             renderPageToCanvas(pdf, direction === "next" ? currentPg : targetPg, canvasFront, availableWidth, availableHeight, scale, false, 'flipFront'),
-                            renderPageToCanvas(pdf, direction === "next" ? targetPg : currentPg, canvasBack, availableWidth, availableHeight, scale, false, 'flipBack')
+                            renderPageToCanvas(pdf, direction === "next" ? targetPg : currentPg, canvasBack, availableWidth, availableHeight, scale, false, 'flipBack'),
+                            renderPageToCanvas(pdf, targetPg, canvasBg, availableWidth, availableHeight, scale, false, 'left')
                         ]);
                     }
                 } else {
+                    const canvasLeftBg = canvasLeftRef.current;
+                    const canvasRightBg = canvasRightRef.current;
+
                     if (canvasFront && canvasBack) {
                         if (direction === "next") {
                             const targetPg = currentPage === 1 ? 2 : currentPage + 2;
-                            await Promise.all([
+                            const renderTasks = [
                                 renderPageToCanvas(pdf, currentPage === 1 ? 1 : currentPage + 1, canvasFront, availableWidth, availableHeight, scale, true, 'flipFront'),
                                 renderPageToCanvas(pdf, targetPg, canvasBack, availableWidth, availableHeight, scale, true, 'flipBack')
-                            ]);
+                            ];
+                            // Also pre-render static background right page underneath
+                            if (canvasRightBg && targetPg + 1 <= numPages) {
+                                renderTasks.push(renderPageToCanvas(pdf, targetPg + 1, canvasRightBg, availableWidth, availableHeight, scale, true, 'right'));
+                            }
+                            await Promise.all(renderTasks);
                         } else {
                             const targetPg = currentPage === 2 ? 1 : currentPage - 2;
-                            await Promise.all([
+                            const renderTasks = [
                                 renderPageToCanvas(pdf, currentPage, canvasFront, availableWidth, availableHeight, scale, true, 'flipFront'),
                                 renderPageToCanvas(pdf, targetPg === 1 ? 1 : targetPg + 1, canvasBack, availableWidth, availableHeight, scale, true, 'flipBack')
-                            ]);
-                        }
-                    }
-                }
-
-                // Render background pages underneath the flip (in parallel, hidden from view)
-                if (isMobile) {
-                    const canvasBg = canvasLeftRef.current;
-                    const targetPg = direction === "next" ? currentPage + 1 : currentPage - 1;
-                    if (canvasBg) {
-                        renderPageToCanvas(pdf, targetPg, canvasBg, availableWidth, availableHeight, scale, false, 'left');
-                    }
-                } else {
-                    if (direction === "next") {
-                        const targetPg = currentPage === 1 ? 2 : currentPage + 2;
-                        const canvasRightBg = canvasRightRef.current;
-                        if (canvasRightBg && targetPg + 1 <= numPages) {
-                            renderPageToCanvas(pdf, targetPg + 1, canvasRightBg, availableWidth, availableHeight, scale, true, 'right');
-                        }
-                    } else {
-                        const targetPg = currentPage === 2 ? 1 : currentPage - 2;
-                        const canvasLeftBg = canvasLeftRef.current;
-                        if (canvasLeftBg && targetPg > 1) {
-                            renderPageToCanvas(pdf, targetPg, canvasLeftBg, availableWidth, availableHeight, scale, true, 'left');
+                            ];
+                            // Also pre-render static background left page underneath
+                            if (canvasLeftBg && targetPg > 1) {
+                                renderTasks.push(renderPageToCanvas(pdf, targetPg, canvasLeftBg, availableWidth, availableHeight, scale, true, 'left'));
+                            }
+                            await Promise.all(renderTasks);
                         }
                     }
                 }
@@ -222,7 +228,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         setIsAnimationActive(true);
-                    }, 50);
+                    }, 30);
                 });
             } else {
                 // STATIC DISPLAY (NO FLIP TRANSITION IN PROGRESS)
@@ -307,6 +313,22 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const handleFlipEnd = () => {
         if (!isFlipping) return;
 
+        // Synchronously copy the rendered canvas to the static canvas to prevent 1ms flickering
+        if (canvasFlippingBackRef.current) {
+            if (isMobile) {
+                if (canvasLeftRef.current) {
+                    copyCanvas(canvasFlippingBackRef.current, canvasLeftRef.current);
+                }
+            } else {
+                if (direction === "next" && canvasLeftRef.current) {
+                    copyCanvas(canvasFlippingBackRef.current, canvasLeftRef.current);
+                } else if (direction === "prev" && canvasRightRef.current) {
+                    copyCanvas(canvasFlippingBackRef.current, canvasRightRef.current);
+                }
+            }
+        }
+
+        // Perform the state change
         if (direction === "next") {
             const targetPg = isMobile 
                 ? currentPage + 1 
