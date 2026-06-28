@@ -525,7 +525,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     showToolbar ? "translate-y-0 opacity-100 scale-100" : "-translate-y-24 opacity-0 scale-95 pointer-events-none"
                 }`}
             >
-                <div className="flex flex-col">
+                <div className="flex flex-col max-w-[120px] sm:max-w-xs">
                     <span className="font-bold text-xs sm:text-sm line-clamp-1 text-orange-500 tracking-wide uppercase">{magazine.title}</span>
                     <span className="text-[10px] text-gray-400 font-medium">{magazine.issueMonth} {magazine.issueYear}</span>
                 </div>
@@ -551,7 +551,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                     <button
                         onClick={toggleFullscreen}
-                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all hidden sm:block border border-transparent hover:border-white/5 active:scale-90"
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
                         title="Fullscreen Toggle"
                     >
                         {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
