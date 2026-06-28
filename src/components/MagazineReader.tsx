@@ -54,6 +54,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const dragStartXRef = useRef<number>(0);
     const dragCurrentXRef = useRef<number>(0);
 
+    // Modern Distraction-free floating controls timeout
+    const [showToolbar, setShowToolbar] = useState<boolean>(true);
+    const toolbarTimeoutRef = useRef<any>(null);
+
     const containerRef = useRef<HTMLDivElement | null>(null);
     const bookWrapperRef = useRef<HTMLDivElement | null>(null);
     const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
@@ -137,6 +141,31 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             container.removeEventListener("wheel", handleWheel);
         };
     }, []);
+
+    // 4. Distraction-Free Toolbar Hiding Timeout
+    const handleUserInteraction = () => {
+        setShowToolbar(true);
+        if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+        toolbarTimeoutRef.current = setTimeout(() => {
+            if (!isFlipping && !isDragging) {
+                setShowToolbar(false);
+            }
+        }, 3000);
+    };
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        container.addEventListener("mousemove", handleUserInteraction);
+        container.addEventListener("touchstart", handleUserInteraction);
+
+        return () => {
+            container.removeEventListener("mousemove", handleUserInteraction);
+            container.removeEventListener("touchstart", handleUserInteraction);
+            if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+        };
+    }, [isFlipping, isDragging]);
 
     // Helper: Calculate book dimensions fitting page aspect ratio exactly
     const getBookDimensions = () => {
@@ -271,7 +300,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         renderStaticView();
     }, [pdf, currentPage, scale, isMobile, isFlipping, isLoading, pageRatio]);
 
-    // 4. Trigger Flip Turn Animation (Render-First, Animate-Second)
+    // 5. Trigger Flip Turn Animation (Unified Right-Hinged 3D Hinge Model)
     const startFlip = async (dir: "next" | "prev") => {
         if (isFlipping || isLoading || !pdf) return;
 
@@ -281,6 +310,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         setDirection(dir);
         setIsAnimating(false);
+        
+        // Unified position: Page sheet is always on the right (left: 50%), hinging on left spine edge.
+        // next: starts flat on right (0deg), swings to left (-180deg).
+        // prev: starts folded on left (-180deg), swings to right (0deg).
         setFlipAngle(dir === "next" ? 0 : -180);
 
         if (dir === "next") {
@@ -290,19 +323,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Render Front moving sheet (current right page - starts visible on right side)
+                // Front face is visible initially on right (page currentRight)
                 canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Render Back moving sheet (target left page - lands visible on left side)
+                // Back face turns visible on left (page targetLeft)
                 canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Render static right page revealed underneath the flip
+                // Static right underneath reveals targetRight
                 (canvasRightRef.current && targetRight <= numPages && !isMobile) ? renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
             ];
             await Promise.all(renderPromises);
 
-            // Set isFlipping ONLY after moving sheet is fully drawn, avoiding blank white flash!
             setIsFlipping(true);
 
-            // Mid-Flip Optimization: pre-render static left page in the background
+            // Mid-Flip pre-render left page background
             setTimeout(() => {
                 if (canvasLeftRef.current && targetLeft <= numPages) {
                     renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
@@ -314,19 +346,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const targetRight = targetLeft + 1;
 
             const renderPromises = [
-                // Render Back moving sheet (current left page - starts visible on left side)
+                // Back face is visible initially on left (page currentLeft)
                 canvasFlipBackRef.current ? renderPageToCanvas(pdf, currentLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                // Render Front moving sheet (target right page - lands visible on right side)
+                // Front face turns visible on right (page targetRight)
                 canvasFlipFrontRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                // Render static left page revealed underneath the flip
+                // Static left underneath reveals targetLeft
                 (canvasLeftRef.current && targetLeft > 1 && !isMobile) ? renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic") : Promise.resolve()
             ];
             await Promise.all(renderPromises);
 
-            // Set isFlipping ONLY after moving sheet is fully drawn, avoiding blank white flash!
             setIsFlipping(true);
 
-            // Mid-Flip Optimization: pre-render static right page in the background
+            // Mid-Flip pre-render right page background
             setTimeout(() => {
                 if (canvasRightRef.current && targetRight <= numPages) {
                     renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
@@ -334,7 +365,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }, 350);
         }
 
-        // Trigger CSS 3D folding transition in the next paint cycle (duration 800ms for premium physical curl)
+        // Trigger CSS 3D folding transition in next paint frame (duration 800ms)
         setTimeout(() => {
             setIsAnimating(true);
             setFlipAngle(dir === "next" ? -180 : 0);
@@ -373,7 +404,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         startFlip("prev");
     };
 
-    // 5. Interactive Drag-to-Flip Physics Handlers
+    // 6. Interactive Drag-to-Flip Physics Handlers
     const handlePointerDown = (e: React.PointerEvent) => {
         if (isFlipping || isLoading || isDragging) return;
 
@@ -384,7 +415,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const clickX = e.clientX - rect.left;
         const width = rect.width;
 
-        // Drag starting zones (outer 30% pages)
+        // Swipe starting hot-spots (outer 30% bounds)
         let side: "next" | "prev" | null = null;
         if (clickX > width * 0.7) {
             side = "next";
@@ -403,7 +434,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         dragStartXRef.current = e.clientX;
         dragCurrentXRef.current = e.clientX;
 
-        // Hook up pointer capture to keep tracking drag outside wrapper
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     };
 
@@ -421,7 +451,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const dragDistance = Math.abs(deltaX);
 
         if (dragDistance < 15) {
-            // Click action: trigger full smooth turn
+            // Click action
             if (deltaX < 0) {
                 nextPage();
             } else {
@@ -430,7 +460,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             return;
         }
 
-        const threshold = window.innerWidth * 0.15; // 15% screen width swipe threshold
+        const threshold = window.innerWidth * 0.15;
         if (dragDistance > threshold) {
             if (deltaX < 0) {
                 nextPage();
@@ -439,66 +469,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         }
     };
-
-    // 6. Mobile Touch Pinch-to-zoom Gesture Handler
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length === 2) {
-                const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                initialTouchDistanceRef.current = dist;
-                initialScaleRef.current = scale;
-                currentRatioRef.current = 1.0;
-            }
-        };
-
-        const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length === 2 && initialTouchDistanceRef.current !== null) {
-                e.preventDefault();
-                const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                const ratio = dist / initialTouchDistanceRef.current;
-                currentRatioRef.current = ratio;
-
-                const wrapper = bookWrapperRef.current;
-                if (wrapper) {
-                    wrapper.style.transform = `scale(${ratio})`;
-                    wrapper.style.transformOrigin = "center center";
-                }
-            }
-        };
-
-        const handleTouchEnd = () => {
-            if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
-                const wrapper = bookWrapperRef.current;
-                if (wrapper) {
-                    wrapper.style.transform = "";
-                }
-
-                const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
-                setScale(finalScale);
-            }
-            initialTouchDistanceRef.current = null;
-            currentRatioRef.current = 1.0;
-        };
-
-        container.addEventListener("touchstart", handleTouchStart, { passive: true });
-        container.addEventListener("touchmove", handleTouchMove, { passive: false });
-        container.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-        return () => {
-            container.removeEventListener("touchstart", handleTouchStart);
-            container.removeEventListener("touchmove", handleTouchMove);
-            container.removeEventListener("touchend", handleTouchEnd);
-        };
-    }, [scale, isLoading]);
 
     // 7. Double-click to zoom
     const handleDoubleClick = (e: React.MouseEvent) => {
@@ -547,47 +517,52 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const skewY = Math.sin(progress * Math.PI) * 4.0; // 4.0 degree bend curl skew
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none">
-            {/* Header Toolbar */}
-            <div className="flex items-center justify-between p-4 bg-[#141414] border-b border-[#242424] text-white z-10 shadow-lg">
+        <div className="fixed inset-0 z-50 bg-[#060606]/98 backdrop-blur-2xl flex flex-col justify-between select-none transition-colors duration-500">
+            
+            {/* Header Floating Glass Toolbar */}
+            <div 
+                className={`fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-between text-white z-50 shadow-2xl transition-all duration-500 ease-in-out ${
+                    showToolbar ? "translate-y-0 opacity-100 scale-100" : "-translate-y-24 opacity-0 scale-95 pointer-events-none"
+                }`}
+            >
                 <div className="flex flex-col">
-                    <span className="font-bold text-sm sm:text-base line-clamp-1">{magazine.title}</span>
-                    <span className="text-xs text-muted-foreground">{magazine.issueMonth} {magazine.issueYear}</span>
+                    <span className="font-bold text-xs sm:text-sm line-clamp-1 text-orange-500 tracking-wide uppercase">{magazine.title}</span>
+                    <span className="text-[10px] text-gray-400 font-medium">{magazine.issueMonth} {magazine.issueYear}</span>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                     <button
                         onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
-                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors border border-transparent hover:border-[#3a3a3a]"
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
                         title="Zoom Out"
                     >
-                        <ZoomOut className="w-5 h-5 text-gray-300" />
+                        <ZoomOut className="w-4 h-4 text-gray-300" />
                     </button>
-                    <span className="text-xs font-bold px-2 text-gray-300 w-12 text-center">{Math.round(scale * 100)}%</span>
+                    <span className="text-[10px] sm:text-xs font-bold px-1 text-gray-300 w-12 text-center select-none bg-white/5 py-1 rounded-md">{Math.round(scale * 100)}%</span>
                     <button
                         onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
-                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors border border-transparent hover:border-[#3a3a3a]"
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
                         title="Zoom In"
                     >
-                        <ZoomIn className="w-5 h-5 text-gray-300" />
+                        <ZoomIn className="w-4 h-4 text-gray-300" />
                     </button>
 
-                    <div className="h-5 w-[1px] bg-[#242424] mx-1 mx-2" />
+                    <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
                     <button
                         onClick={toggleFullscreen}
-                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors hidden sm:block border border-transparent hover:border-[#3a3a3a]"
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all hidden sm:block border border-transparent hover:border-white/5 active:scale-90"
                         title="Fullscreen Toggle"
                     >
-                        {isFullscreen ? <Minimize2 className="w-5 h-5 text-gray-300" /> : <Maximize2 className="w-5 h-5 text-gray-300" />}
+                        {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
                     </button>
 
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-red-950/60 hover:text-red-400 rounded-lg transition-colors border border-transparent hover:border-red-900/50"
+                        className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all border border-transparent hover:border-red-500/30 active:scale-90"
                         title="Close Reader"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -627,7 +602,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         /* Book Container Wrapper */
                         <div 
                             ref={bookWrapperRef}
-                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.8)] bg-[#101010] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out cursor-grab active:cursor-grabbing"
+                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.85)] bg-[#121212] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out cursor-grab active:cursor-grabbing"
                             style={{
                                 width: `${bookWidth}px`,
                                 height: `${bookHeight}px`,
@@ -655,7 +630,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 
                                 {/* Inner Crease Shadow */}
                                 {showLeftPage && (
-                                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/15 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/20 to-transparent pointer-events-none z-10" />
                                 )}
                             </div>
 
@@ -675,7 +650,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 
                                 {/* Inner Crease Shadow */}
                                 {isDoubleLayout && currentPage > 1 && (
-                                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/15 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/20 to-transparent pointer-events-none z-10" />
                                 )}
                                 {/* Cover Spine creases */}
                                 {!isMobile && currentPage === 1 && !isFlipping && (
@@ -683,14 +658,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 )}
                             </div>
 
-                            {/* 3D FLIPPING SHEET OVERLAY (CSS 3D GPU transition - always in DOM, styled on-the-fly) */}
+                            {/* 3D FLIPPING SHEET OVERLAY (Unified Right-Hinged 3D Hinge Model) */}
                             <div
-                                className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                                className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)]"
                                 style={{
                                     width: `${pageWidth}px`,
-                                    left: direction === "next" ? (isMobile ? "0px" : "50%") : "auto",
-                                    right: direction === "prev" ? (isMobile ? "0px" : "50%") : "auto",
-                                    transformOrigin: direction === "next" ? "left center" : "right center",
+                                    // Unified: Always starts positionally on the right page, hinging on the left center spine
+                                    left: isMobile ? "0px" : "50%",
+                                    transformOrigin: "left center",
                                     transformStyle: "preserve-3d",
                                     transform: `rotateY(${flipAngle}deg) skewY(${direction === "next" ? -skewY : skewY}deg)`,
                                     transition: isAnimating ? "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
@@ -700,7 +675,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 }}
                                 onTransitionEnd={handleAnimationComplete}
                             >
-                                {/* FRONT FACE (Visible initially) */}
+                                {/* FRONT FACE (Visible when flat or tilted right: 0 to -90 degrees) */}
                                 <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
                                     <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
@@ -713,10 +688,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         }}
                                     />
                                     {/* Fold shadow */}
-                                    <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "right-0 bg-gradient-to-l from-black/5 to-transparent" : "left-0 bg-gradient-to-r from-black/5 to-transparent"}`} />
+                                    <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 right-0 bg-gradient-to-l from-black/5 to-transparent" />
                                 </div>
 
-                                {/* BACK FACE (Visible after 90 degree rotation) */}
+                                {/* BACK FACE (Visible when tilted left: -90 to -180 degrees) */}
                                 <div 
                                     className="absolute inset-0 bg-white backface-hidden z-10 shadow-2xl"
                                     style={{ transform: "rotateY(180deg)" }}
@@ -732,7 +707,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         }}
                                     />
                                     {/* Fold shadow */}
-                                    <div className={`absolute top-0 bottom-0 w-4 pointer-events-none z-10 ${direction === "next" ? "left-0 bg-gradient-to-r from-black/5 to-transparent" : "right-0 bg-gradient-to-l from-black/5 to-transparent"}`} />
+                                    <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 left-0 bg-gradient-to-r from-black/5 to-transparent" />
                                 </div>
                             </div>
                         </div>
@@ -740,30 +715,34 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </div>
             </div>
 
-            {/* Bottom Navigation Toolbar */}
-            <div className="p-4 bg-[#141414] border-t border-[#242424] flex flex-col sm:flex-row items-center justify-between gap-4 text-white z-10 shadow-inner">
-                <span className="text-sm font-semibold text-gray-300 order-2 sm:order-1">{getPageRangeString()}</span>
+            {/* Bottom Floating Glass Toolbar */}
+            <div 
+                className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-between text-white z-50 shadow-2xl transition-all duration-500 ease-in-out ${
+                    showToolbar ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-95 pointer-events-none"
+                }`}
+            >
+                <span className="text-xs font-semibold text-gray-300 tracking-wide select-none">{getPageRangeString()}</span>
 
                 {/* Navigation Buttons */}
-                <div className="flex items-center gap-4 order-1 sm:order-2">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <button
                         onClick={prevPage}
                         disabled={isLoading || currentPage === 1 || isFlipping}
-                        className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
+                        className="px-4 py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-xl flex items-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
                     >
-                        <ChevronLeft className="w-4 h-4" /> Previous
+                        <ChevronLeft className="w-3.5 h-3.5" /> Prev
                     </button>
                     <button
                         onClick={nextPage}
                         disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages) || isFlipping}
-                        className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
+                        className="px-4 py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-xl flex items-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
                     >
-                        Next <ChevronRight className="w-4 h-4" />
+                        Next <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                 </div>
 
-                <div className="text-xs text-muted-foreground hidden sm:block order-3">
-                    Tip: Drag pages or click page edges to flip, pinch or double-click to zoom
+                <div className="text-[10px] text-gray-400 font-medium hidden md:block select-none">
+                    Tip: Drag pages or click arrows. Pinch / double-click to zoom
                 </div>
             </div>
 
