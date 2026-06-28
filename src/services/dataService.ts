@@ -276,7 +276,10 @@ export const dataService = {
             rich_content: data.richContent
         };
         const { error: globalError } = await supabase.from('about_content').upsert(globalRow, { onConflict: 'id' });
-        if (globalError) console.error("Save About Global Error", globalError);
+        if (globalError) {
+            console.error("Save About Global Error", globalError);
+            throw globalError;
+        }
 
         // 2. Save Sections (if provided)
         if (data.sections) {
@@ -290,13 +293,12 @@ export const dataService = {
                     display_order: section.displayOrder,
                     updated_at: new Date().toISOString()
                 };
-                // If ID is new (e.g. temp ID), we might need to handle it. 
-                // But for now assume frontend generates valid UUIDs or we let DB handle generic ones safely if we omit ID? 
-                // Actually, upsert needs ID to match. Frontend should generate IDs or we handle "new" ones.
-                // Let's assume frontend passes persistent IDs.
 
                 const { error } = await supabase.from('about_sections').upsert(sectionRow, { onConflict: 'id' });
-                if (error) console.error("Save Section Error", error);
+                if (error) {
+                    console.error("Save Section Error", error);
+                    throw error;
+                }
             }
 
             // Fetch all sections in DB, delete those not in the list, then upsert
@@ -307,7 +309,10 @@ export const dataService = {
             
             if (idsToDelete.length > 0) {
                 const { error: deleteError } = await supabase.from('about_sections').delete().in('id', idsToDelete);
-                if (deleteError) console.error("Delete Sections Error", deleteError);
+                if (deleteError) {
+                    console.error("Delete Sections Error", deleteError);
+                    throw deleteError;
+                }
             }
         }
     },

@@ -14,6 +14,7 @@ import 'react-quill-new/dist/quill.snow.css';
 export default function AboutManager() {
     const [data, setData] = useState<AboutContent | null>(null);
     const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     // Quill Modules
     const modules = {
@@ -44,7 +45,7 @@ export default function AboutManager() {
             // Initialize sections from legacy data if sections are missing (Migration support)
             if (!loadedData.sections || loadedData.sections.length === 0) {
                 loadedData.sections = [{
-                    id: 'default', // Will be replaced by UUID on save if we implement that, or kept as placeholder
+                    id: crypto.randomUUID(), // Use a valid random UUID instead of 'default'
                     title: loadedData.title || "About Niveshak",
                     description: loadedData.description || "",
                     cards: loadedData.cards || [],
@@ -55,12 +56,20 @@ export default function AboutManager() {
         });
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (data) {
-            // Ensure display orders are correct before saving
-            const sectionsWithOrder = data.sections?.map((s, i) => ({ ...s, displayOrder: i })) || [];
-            dataService.saveAbout({ ...data, sections: sectionsWithOrder });
-            alert("About Us content updated!");
+            setSaving(true);
+            try {
+                // Ensure display orders are correct before saving
+                const sectionsWithOrder = data.sections?.map((s, i) => ({ ...s, displayOrder: i })) || [];
+                await dataService.saveAbout({ ...data, sections: sectionsWithOrder });
+                alert("About Us content updated!");
+            } catch (err: any) {
+                console.error("Save About Error:", err);
+                alert("Failed to save About Us content. Please try again.");
+            } finally {
+                setSaving(false);
+            }
         }
     };
 
@@ -178,7 +187,7 @@ export default function AboutManager() {
                     </h2>
                     <p className="text-muted-foreground mt-1">Update company mission, vision, and history.</p>
                 </div>
-                <AdminButton onClick={handleSave} variant="success" icon={<Save className="w-5 h-5" />}>
+                <AdminButton onClick={handleSave} isLoading={saving} variant="success" icon={<Save className="w-5 h-5" />}>
                     Save Changes
                 </AdminButton>
             </div>
