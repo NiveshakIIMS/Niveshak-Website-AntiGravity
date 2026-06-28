@@ -449,11 +449,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const dragDistance = Math.abs(deltaX);
 
         if (dragDistance < 15) {
-            // Click action
-            if (deltaX < 0) {
-                nextPage();
-            } else {
-                prevPage();
+            // Click action: turn pages based on which half of the book was clicked
+            const rect = bookWrapperRef.current?.getBoundingClientRect();
+            if (rect) {
+                const clickX = e.clientX - rect.left;
+                if (clickX < rect.width / 2) {
+                    prevPage();
+                } else {
+                    nextPage();
+                }
             }
             return;
         }
@@ -521,7 +525,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const skewY = Math.sin(progress * Math.PI) * 4.0; // 4.0 degree bend curl skew
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#060606]/98 backdrop-blur-2xl flex flex-col justify-between select-none transition-colors duration-500">
+        <div 
+            className="fixed inset-0 z-50 flex flex-col justify-between select-none transition-colors duration-500"
+            style={{
+                background: "radial-gradient(circle, rgba(13, 27, 42, 0.94) 0%, rgba(6, 12, 20, 0.98) 100%)",
+                backdropFilter: "blur(35px)",
+                WebkitBackdropFilter: "blur(35px)"
+            }}
+        >
             
             {/* Header Floating Glass Toolbar */}
             <div 
@@ -575,7 +586,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             {/* Reader Stage (Scroll stage container) */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-auto relative bg-[#090909]"
+                className="flex-1 overflow-auto relative bg-transparent"
             >
                 {/* Fixed Navigation Overlays */}
                 {/* Stage Left Arrow Overlay */}
