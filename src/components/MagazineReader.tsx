@@ -40,10 +40,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     
-    // Physical 3D Book Flip Animation States
+    // Interactive 3D Hinge Page Turn States (FlipHTML5 Style)
     const [isFlipping, setIsFlipping] = useState<boolean>(false);
     const [isAnimationActive, setIsAnimationActive] = useState<boolean>(false);
     const [direction, setDirection] = useState<"next" | "prev">("next");
+    const [dragAngle, setDragAngle] = useState<number>(0);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [dragStartX, setDragStartX] = useState<number>(0);
+    const [dragCurrentX, setDragCurrentX] = useState<number>(0);
+    const [snapback, setSnapback] = useState<boolean>(false);
 
     // Hover Corner Lift States (Affordance just like FlipHTML5)
     const [isHoveringNext, setIsHoveringNext] = useState<boolean>(false);
@@ -55,6 +60,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const canvasFlippingBackRef = useRef<HTMLCanvasElement | null>(null);
     
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const bookContainerRef = useRef<HTMLDivElement | null>(null);
     const renderTasksRef = useRef<{ left?: any; right?: any; flipFront?: any; flipBack?: any }>({});
 
     // 1. Detect Screen Size
@@ -97,6 +103,30 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [magazine, onClose]);
 
+    // 3. Laptop Trackpad Pinch-to-zoom integration
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            if (e.ctrlKey) {
+                // Intercept trackpad pinch zoom
+                e.preventDefault();
+                const zoomFactor = 0.04;
+                if (e.deltaY < 0) {
+                    setScale((s) => Math.min(2.5, s + zoomFactor));
+                } else {
+                    setScale((s) => Math.max(0.6, s - zoomFactor));
+                }
+            }
+        };
+
+        container.addEventListener("wheel", handleWheel, { passive: false });
+        return () => {
+            container.removeEventListener("wheel", handleWheel);
+        };
+    }, []);
+
     // Helper: High-DPI legibility rendering of a page on a canvas
     const renderPageToCanvas = async (
         pdfDoc: any, 
@@ -121,16 +151,30 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             
             // High-DPI Legibility: backing store scaled by devicePixelRatio
             const dpr = window.devicePixelRatio || 1;
-            canvas.width = finalViewport.width * dpr;
-            canvas.height = finalViewport.height * dpr;
-            canvas.style.width = `${finalViewport.width}px`;
-            canvas.style.height = `${finalViewport.height}px`;
+            const newWidth = finalViewport.width * dpr;
+            const newHeight = finalViewport.height * dpr;
+
+            // ONLY resize backing store if dimensions changed, preventing blank-screen flicker
+            if (canvas.width !== newWidth || canvas.height !== newHeight) {
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                canvas.style.width = `${finalViewport.width}px`;
+                canvas.style.height = `${finalViewport.height}px`;
+                
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                }
+            }
 
             const ctx = canvas.getContext("2d");
             if (ctx) {
+                // Clear the backing store at native resolution
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Re-apply dpr scaling
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                
+
                 const renderTask = page.render({
                     canvasContext: ctx,
                     viewport: finalViewport
@@ -153,6 +197,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             dest.height = src.height;
             dest.style.width = src.style.width;
             dest.style.height = src.style.height;
+            destCtx.setTransform(1, 0, 0, 1, 0, 0);
             destCtx.clearRect(0, 0, dest.width, dest.height);
             destCtx.drawImage(src, 0, 0);
         }
@@ -186,7 +231,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     const targetPg = direction === "next" ? currentPage + 1 : currentPage - 1;
 
                     if (canvasFront && canvasBack && canvasBg) {
-                        // Render all canvases BEFORE transition to guarantee 0% JS load during animation
                         await Promise.all([
                             renderPageToCanvas(pdf, direction === "next" ? currentPg : targetPg, canvasFront, availableWidth, availableHeight, scale, false, 'flipFront'),
                             renderPageToCanvas(pdf, direction === "next" ? targetPg : currentPg, canvasBack, availableWidth, availableHeight, scale, false, 'flipBack'),
@@ -204,7 +248,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 renderPageToCanvas(pdf, currentPage === 1 ? 1 : currentPage + 1, canvasFront, availableWidth, availableHeight, scale, true, 'flipFront'),
                                 renderPageToCanvas(pdf, targetPg, canvasBack, availableWidth, availableHeight, scale, true, 'flipBack')
                             ];
-                            // Also pre-render static background right page underneath
                             if (canvasRightBg && targetPg + 1 <= numPages) {
                                 renderTasks.push(renderPageToCanvas(pdf, targetPg + 1, canvasRightBg, availableWidth, availableHeight, scale, true, 'right'));
                             }
@@ -215,7 +258,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 renderPageToCanvas(pdf, currentPage, canvasFront, availableWidth, availableHeight, scale, true, 'flipFront'),
                                 renderPageToCanvas(pdf, targetPg === 1 ? 1 : targetPg + 1, canvasBack, availableWidth, availableHeight, scale, true, 'flipBack')
                             ];
-                            // Also pre-render static background left page underneath
                             if (canvasLeftBg && targetPg > 1) {
                                 renderTasks.push(renderPageToCanvas(pdf, targetPg, canvasLeftBg, availableWidth, availableHeight, scale, true, 'left'));
                             }
@@ -223,13 +265,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         }
                     }
                 }
-
-                // Canvases are now fully rendered. Safely trigger rotation transition.
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        setIsAnimationActive(true);
-                    }, 30);
-                });
             } else {
                 // STATIC DISPLAY (NO FLIP TRANSITION IN PROGRESS)
                 if (isMobile) {
@@ -276,42 +311,105 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         renderPages();
     }, [pdf, currentPage, scale, isMobile, numPages, isFlipping]);
 
-    // 4. Keyboard Navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "ArrowRight") nextPage();
-            if (e.key === "ArrowLeft") prevPage();
-            if (e.key === "Escape") onClose();
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [pdf, currentPage, isMobile, numPages, isFlipping]);
+    // 4. Interactive Click & Drag Handlers
+    const handleDragStart = (clientX: number) => {
+        if (!pdf || isFlipping || isDragging) return;
 
-    const nextPage = () => {
-        if (!pdf || isFlipping) return;
-        
-        const isLastPage = isMobile 
-            ? currentPage === numPages 
-            : currentPage + 1 >= numPages;
-        if (isLastPage) return;
+        const book = bookContainerRef.current;
+        if (!book) return;
 
-        setDirection("next");
+        const rect = book.getBoundingClientRect();
+        const clickX = clientX - rect.left;
+        const bookWidth = rect.width;
+
+        let side: "next" | "prev" | null = null;
+        // Check outer 35% click zones for page dragging
+        if (clickX > bookWidth * 0.65) {
+            side = "next";
+        } else if (clickX < bookWidth * 0.35) {
+            side = "prev";
+        }
+
+        if (!side) return;
+
+        const isLastPage = isMobile ? currentPage === numPages : currentPage + 1 >= numPages;
+        if (side === "next" && isLastPage) return;
+        if (side === "prev" && currentPage === 1) return;
+
+        setDirection(side);
         setIsFlipping(true);
-        setIsHoveringNext(false);
+        setIsDragging(true);
+        setDragStartX(clientX);
+        setDragCurrentX(clientX);
+        setDragAngle(side === "next" ? 0 : -180);
+        setSnapback(false);
     };
 
-    const prevPage = () => {
-        if (!pdf || isFlipping) return;
-        
-        if (currentPage === 1) return;
+    const handleDragMove = (clientX: number) => {
+        if (!isDragging || !isFlipping) return;
+        setDragCurrentX(clientX);
 
-        setDirection("prev");
-        setIsFlipping(true);
-        setIsHoveringPrev(false);
+        const book = bookContainerRef.current;
+        if (!book) return;
+        const rect = book.getBoundingClientRect();
+        const bookWidth = rect.width;
+
+        const dx = clientX - dragStartX;
+        const maxDist = bookWidth / 2;
+        let pct = Math.abs(dx) / maxDist;
+        pct = Math.min(1, Math.max(0, pct));
+
+        if (direction === "next") {
+            const angle = -180 * (dx < 0 ? pct : 0);
+            setDragAngle(angle);
+        } else {
+            const angle = -180 + (180 * (dx > 0 ? pct : 0));
+            setDragAngle(angle);
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+
+        const book = bookContainerRef.current;
+        if (!book) return;
+        const rect = book.getBoundingClientRect();
+        const bookWidth = rect.width;
+
+        const dx = dragCurrentX - dragStartX;
+        const dragDistance = Math.abs(dx);
+        const pct = dragDistance / (bookWidth / 2);
+
+        // Click Trigger (if drag distance is minimal, trigger full flip animation)
+        if (dragDistance < 12) {
+            setIsAnimationActive(true);
+            setDragAngle(direction === "next" ? -180 : 0);
+            return;
+        }
+
+        // Drag Release Resolution
+        if (pct > 0.35) {
+            // Succeeded: complete the turn
+            setIsAnimationActive(true);
+            setDragAngle(direction === "next" ? -180 : 0);
+        } else {
+            // Snapped back: revert to initial position
+            setIsAnimationActive(true);
+            setDragAngle(direction === "next" ? 0 : -180);
+            setSnapback(true);
+        }
     };
 
     const handleFlipEnd = () => {
         if (!isFlipping) return;
+
+        if (snapback) {
+            setIsFlipping(false);
+            setIsAnimationActive(false);
+            setSnapback(false);
+            return;
+        }
 
         // Synchronously copy the rendered canvas to the static canvas to prevent 1ms flickering
         if (canvasFlippingBackRef.current) {
@@ -328,7 +426,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         }
 
-        // Perform the state change
+        // Perform page index update
         if (direction === "next") {
             const targetPg = isMobile 
                 ? currentPage + 1 
@@ -343,6 +441,24 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         setIsFlipping(false);
         setIsAnimationActive(false);
+    };
+
+    const nextPage = () => {
+        if (isFlipping || isDragging) return;
+        handleDragStart(window.innerWidth);
+        setTimeout(() => {
+            setIsAnimationActive(true);
+            setDragAngle(-180);
+        }, 50);
+    };
+
+    const prevPage = () => {
+        if (isFlipping || isDragging) return;
+        handleDragStart(0);
+        setTimeout(() => {
+            setIsAnimationActive(true);
+            setDragAngle(0);
+        }, 50);
     };
 
     const toggleFullscreen = () => {
@@ -362,7 +478,17 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none">
+        <div 
+            ref={containerRef}
+            className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none touch-none"
+            onMouseMove={(e) => handleDragMove(e.clientX)}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            onTouchMove={(e) => {
+                if (e.touches.length === 1) handleDragMove(e.touches[0].clientX);
+            }}
+            onTouchEnd={handleDragEnd}
+        >
             {/* Header Toolbar */}
             <div className="flex items-center justify-between p-4 bg-[#141414] border-b border-[#242424] text-white z-10 shadow-lg">
                 <div className="flex flex-col">
@@ -409,7 +535,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
             {/* Reader Stage */}
             <div
-                ref={containerRef}
                 className="flex-1 flex items-center justify-center overflow-auto px-4 py-8 relative"
                 style={{ perspective: "2200px" }}
             >
@@ -444,8 +569,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                     </div>
                 ) : (
-                    <div className="relative flex items-center justify-center max-w-full z-10" style={{ transformStyle: "preserve-3d" }}>
-                        
+                    <div 
+                        ref={bookContainerRef}
+                        className="relative flex items-center justify-center max-w-full z-10 cursor-grab active:cursor-grabbing" 
+                        style={{ transformStyle: "preserve-3d" }}
+                        onMouseDown={(e) => handleDragStart(e.clientX)}
+                        onTouchStart={(e) => {
+                            if (e.touches.length === 1) handleDragStart(e.touches[0].clientX);
+                        }}
+                    >
                         {/* Static / Background Book Pages Container */}
                         <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#141414] p-2" style={{ transformStyle: "preserve-3d" }}>
                             {isMobile ? (
@@ -530,30 +662,29 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             {/* Dynamic 3D Flipping Page Sheet (FlipHTML5 Professional Page Curl Style) */}
                             {isFlipping && (
                                 <div 
-                                    className="absolute top-2 bottom-2 z-30 transition-all duration-[600ms]"
+                                    className="absolute top-2 bottom-2 z-30"
                                     style={{
                                         width: isMobile ? "calc(100% - 16px)" : "calc(50% - 6px)",
                                         left: direction === "next" ? (isMobile ? "8px" : "50%") : "auto",
                                         right: direction === "prev" ? (isMobile ? "8px" : "50%") : "auto",
                                         transformOrigin: direction === "next" ? "left center" : "right center",
                                         transform: direction === "next" 
-                                            ? (isAnimationActive ? "rotateY(-180deg) skewY(-1.5deg)" : "rotateY(0deg) skewY(0deg)")
-                                            : (isAnimationActive ? "rotateY(0deg) skewY(0deg)" : "rotateY(-180deg) skewY(1.5deg)"),
+                                            ? `rotateY(${dragAngle}deg) skewY(${dragAngle * 0.01}deg)`
+                                            : `rotateY(${dragAngle}deg) skewY(${(dragAngle + 180) * 0.01}deg)`,
                                         transformStyle: "preserve-3d",
-                                        opacity: isAnimationActive ? 1 : 0,
-                                        visibility: isAnimationActive ? "visible" : "hidden",
-                                        transitionTimingFunction: "cubic-bezier(0.2, 0.6, 0.3, 1.0)",
+                                        opacity: (isAnimationActive || isDragging) ? 1 : 0,
+                                        visibility: (isAnimationActive || isDragging) ? "visible" : "hidden",
+                                        transition: isAnimationActive ? "transform 600ms cubic-bezier(0.2, 0.6, 0.3, 1.0), opacity 600ms" : "none",
                                     }}
                                     onTransitionEnd={handleFlipEnd}
                                 >
                                     {/* Front Page Face (Visible from 0 to 90 degrees) */}
                                     <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl border-r border-gray-200">
                                         <canvas ref={canvasFlippingFrontRef} className="block w-full h-full" />
-                                        {/* Specular Glare paper gloss */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
                                         
                                         {/* Moving Crease Shadow Overlay (FlipHTML5 Crease Effect) */}
-                                        <div className={`absolute inset-0 pointer-events-none z-30 shadow-sweep-next`} />
+                                        <div className={`absolute inset-0 pointer-events-none z-30 ${isAnimationActive ? 'shadow-sweep-next' : ''}`} />
 
                                         {/* Page edge fold shadow */}
                                         <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l from-black/5 to-transparent pointer-events-none z-10" />
@@ -565,11 +696,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         style={{ transform: "rotateY(180deg)" }}
                                     >
                                         <canvas ref={canvasFlippingBackRef} className="block w-full h-full" />
-                                        {/* Specular Glare paper gloss */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
 
                                         {/* Moving Crease Shadow Overlay (FlipHTML5 Crease Effect) */}
-                                        <div className={`absolute inset-0 pointer-events-none z-30 shadow-sweep-prev`} />
+                                        <div className={`absolute inset-0 pointer-events-none z-30 ${isAnimationActive ? 'shadow-sweep-prev' : ''}`} />
 
                                         {/* Page edge fold shadow */}
                                         <div className="absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r from-black/5 to-transparent pointer-events-none z-10" />
@@ -604,7 +734,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </div>
 
                 <div className="text-xs text-muted-foreground hidden sm:block order-3">
-                    Tip: Use Left & Right Arrow keys to flip pages
+                    Tip: Click and drag pages or use Arrow keys to flip pages
                 </div>
             </div>
 
