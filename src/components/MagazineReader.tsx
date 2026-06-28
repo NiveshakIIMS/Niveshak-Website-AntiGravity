@@ -175,17 +175,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         let height = availableHeight;
         let width = height / pageRatio;
 
-        const isDoubleLayout = !isMobile && (currentPage > 1 || isFlipping);
-
-        if (isDoubleLayout) {
-            // Desktop: Double page layout side-by-side
+        if (!isMobile) {
+            // Desktop: Book layout is always double-page width for 3D coordinate stability
             width = width * 2;
             if (width > availableWidth) {
                 width = availableWidth;
                 height = (width / 2) * pageRatio;
             }
         } else {
-            // Mobile OR Static Cover page: Single page layout
+            // Mobile: Single page layout
             if (width > availableWidth) {
                 width = availableWidth;
                 height = width * pageRatio;
@@ -270,7 +268,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
         const renderStaticView = async () => {
             const dims = getBookDimensions();
-            const isDoubleLayout = !isMobile && currentPage > 1;
+            const isDoubleLayout = !isMobile;
             const pageWidth = isDoubleLayout ? (dims.width / 2) : dims.width;
             const pageHeight = dims.height;
 
@@ -502,15 +500,21 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
 
-    const isDoubleLayout = !isMobile && (currentPage > 1 || isFlipping);
+    const isDoubleLayout = !isMobile;
     const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
 
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
     
-    // Fix: pageWidth matches bookWidth on single layout (cover / mobile), and is halved ONLY on double layout
+    // Fix: pageWidth is always halved on desktop double page layout
     const pageWidth = isDoubleLayout ? (bookWidth / 2) : bookWidth;
+
+    // Center Cover page layout using GPU translation shift on double page container
+    // When currentPage === 1 (and not flipping), we shift the book container left by pageWidth/2 so the cover aligns exactly to center.
+    // When flipping or currentPage > 1, the container slides back to 0px, mimicking opening a physical book cover!
+    const needsCoverShift = !isMobile && currentPage === 1 && !isFlipping;
+    const shiftX = needsCoverShift ? -pageWidth / 2 : 0;
 
     // Peak page curl skew value in mid-flight (skew peaks at 90deg, 0 at flat points)
     const progress = Math.abs(flipAngle) / 180;
@@ -525,12 +529,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     showToolbar ? "translate-y-0 opacity-100 scale-100" : "-translate-y-24 opacity-0 scale-95 pointer-events-none"
                 }`}
             >
-                <div className="flex flex-col max-w-[120px] sm:max-w-xs">
-                    <span className="font-bold text-xs sm:text-sm line-clamp-1 text-orange-500 tracking-wide uppercase">{magazine.title}</span>
+                <div className="flex flex-col min-w-0 pr-4">
+                    {/* Fixed: Full title is visible and never truncated or clipped */}
+                    <span className="font-bold text-xs sm:text-sm text-orange-500 tracking-wide uppercase whitespace-normal">{magazine.title}</span>
                     <span className="text-[10px] text-gray-400 font-medium">{magazine.issueMonth} {magazine.issueYear}</span>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     <button
                         onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
                         className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
@@ -602,12 +607,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         /* Book Container Wrapper */
                         <div 
                             ref={bookWrapperRef}
-                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.85)] bg-[#121212] p-2 rounded-lg border border-white/5 transition-transform duration-100 ease-out cursor-grab active:cursor-grabbing"
+                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.85)] bg-[#121212] p-2 rounded-lg border border-white/5 cursor-grab active:cursor-grabbing"
                             style={{
                                 width: `${bookWidth}px`,
                                 height: `${bookHeight}px`,
                                 perspective: "2500px",
-                                transformStyle: "preserve-3d"
+                                transformStyle: "preserve-3d",
+                                // Symmetrical GPU Slide Centering Transition mimicking opening a real cover page
+                                transform: `translateX(${shiftX}px)`,
+                                transition: "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)"
                             }}
                             onPointerDown={handlePointerDown}
                             onPointerMove={handlePointerMove}
