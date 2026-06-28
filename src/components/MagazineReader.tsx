@@ -177,8 +177,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     // Helper: Calculate book dimensions fitting page aspect ratio exactly
     const getBookDimensions = () => {
-        const padY = isMobile ? 40 : 180;
-        const padX = isMobile ? 24 : 80; // Small padding on mobile to maximize portrait height/width
+        const padY = isMobile ? 8 : 180;
+        const padX = isMobile ? 8 : 80; // Minimal padding on mobile to maximize portrait height/width
 
         const availableHeight = window.innerHeight - padY;
         const availableWidth = window.innerWidth - padX;
@@ -595,7 +595,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </button>
 
                 {/* Centering Wrapper with Generous Scroll Padding, letting zoomed-in readers scroll past margins */}
-                <div className="flex items-center justify-center min-h-full min-w-full p-4 sm:p-20 md:p-36">
+                <div className="flex items-center justify-center min-h-full min-w-full p-1 sm:p-20 md:p-36">
                     {isLoading ? (
                         <div className="flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
                             <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
@@ -742,16 +742,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     <button
                         onClick={prevPage}
                         disabled={isLoading || currentPage === 1 || isFlipping}
-                        className="px-4 py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-xl flex items-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        title="Previous Page"
                     >
-                        <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                        <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Prev</span>
                     </button>
                     <button
                         onClick={nextPage}
                         disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages) || isFlipping}
-                        className="px-4 py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-xl flex items-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        title="Next Page"
                     >
-                        Next <ChevronRight className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
 
