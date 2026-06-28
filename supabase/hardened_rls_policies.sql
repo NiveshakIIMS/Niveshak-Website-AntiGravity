@@ -84,21 +84,21 @@ CREATE POLICY "Allow public read access" ON trading_days FOR SELECT USING (true)
 -- Note: In a production environment, you can further lock this down to specific admin emails
 -- by checking: (auth.jwt() ->> 'email') IN ('admin1@iimshillong.ac.in', 'admin2@iimshillong.ac.in')
 
-CREATE POLICY "Allow admin write access" ON hero_slides FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON about_content FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON about_sections FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON team_members FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON magazines FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON events FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON nav_data FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON nif_metrics FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON site_settings FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON notices FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON resources FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON hall_of_fame FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON redemption_cards FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON nif_investments FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow admin write access" ON trading_days FOR ALL TO authenticated USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow admin write access" ON hero_slides FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON about_content FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON about_sections FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON team_members FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON magazines FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON nav_data FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON nif_metrics FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON site_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON notices FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON resources FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON hall_of_fame FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON redemption_cards FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON nif_investments FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow admin write access" ON trading_days FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 
 -- =====================================================================

@@ -106,10 +106,9 @@ drop policy if exists "Allow public read access" on public.about_sections;
 drop policy if exists "Allow authenticated insert" on public.about_sections;
 drop policy if exists "Allow authenticated update" on public.about_sections;
 drop policy if exists "Allow authenticated delete" on public.about_sections;
+drop policy if exists "Allow admin write access" on public.about_sections;
 create policy "Allow public read access" on public.about_sections for select using (true);
-create policy "Allow authenticated insert" on public.about_sections for insert with check (auth.role() = 'authenticated');
-create policy "Allow authenticated update" on public.about_sections for update using (auth.role() = 'authenticated');
-create policy "Allow authenticated delete" on public.about_sections for delete using (auth.role() = 'authenticated');
+create policy "Allow admin write access" on public.about_sections for all to authenticated using (true) with check (true);
 
 
 -- 3.3 TEAM MEMBERS
@@ -320,68 +319,49 @@ alter table public.hall_of_fame enable row level security;
 alter table public.redemption_cards enable row level security;
 
 -- HERO
+-- HERO
 create policy "Public Read Hero" on public.hero_slides for select using (true);
-create policy "Admin Write Hero" on public.hero_slides for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update Hero" on public.hero_slides for update using (auth.role() = 'authenticated');
-create policy "Admin Delete Hero" on public.hero_slides for delete using (auth.role() = 'authenticated');
+create policy "Admin Write Hero" on public.hero_slides for all to authenticated using (true) with check (true);
 
 -- ABOUT
 create policy "Public Read About" on public.about_content for select using (true);
-create policy "Admin Write About" on public.about_content for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update About" on public.about_content for update using (auth.role() = 'authenticated');
+create policy "Admin Write About" on public.about_content for all to authenticated using (true) with check (true);
 
 -- TEAM
 create policy "Public Read Team" on public.team_members for select using (true);
-create policy "Admin Write Team" on public.team_members for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update Team" on public.team_members for update using (auth.role() = 'authenticated');
-create policy "Admin Delete Team" on public.team_members for delete using (auth.role() = 'authenticated');
+create policy "Admin Write Team" on public.team_members for all to authenticated using (true) with check (true);
 
 -- MAGAZINES
 create policy "Public Read Magazines" on public.magazines for select using (true);
-create policy "Admin Write Magazines" on public.magazines for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update Magazines" on public.magazines for update using (auth.role() = 'authenticated');
-create policy "Admin Delete Magazines" on public.magazines for delete using (auth.role() = 'authenticated');
+create policy "Admin Write Magazines" on public.magazines for all to authenticated using (true) with check (true);
 
 -- EVENTS
 create policy "Public Read Events" on public.events for select using (true);
-create policy "Admin Write Events" on public.events for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update Events" on public.events for update using (auth.role() = 'authenticated');
-create policy "Admin Delete Events" on public.events for delete using (auth.role() = 'authenticated');
+create policy "Admin Write Events" on public.events for all to authenticated using (true) with check (true);
 
 -- NAV
 create policy "Public Read NAV" on public.nav_data for select using (true);
-create policy "Admin Write NAV" on public.nav_data for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update NAV" on public.nav_data for update using (auth.role() = 'authenticated');
-create policy "Admin Delete NAV" on public.nav_data for delete using (auth.role() = 'authenticated');
+create policy "Admin Write NAV" on public.nav_data for all to authenticated using (true) with check (true);
 
 -- NIF
 create policy "Public Read NIF" on public.nif_metrics for select using (true);
-create policy "Admin Write NIF" on public.nif_metrics for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update NIF" on public.nif_metrics for update using (auth.role() = 'authenticated');
+create policy "Admin Write NIF" on public.nif_metrics for all to authenticated using (true) with check (true);
 
 -- NOTICES
 create policy "Public Read Notices" on public.notices for select using (true);
-create policy "Admin Write Notices" on public.notices for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update Notices" on public.notices for update using (auth.role() = 'authenticated');
-create policy "Admin Delete Notices" on public.notices for delete using (auth.role() = 'authenticated');
+create policy "Admin Write Notices" on public.notices for all to authenticated using (true) with check (true);
 
 -- RESOURCES
 create policy "Allow public read access" on public.resources for select using (true);
-create policy "Allow authenticated insert" on public.resources for insert with check (auth.role() = 'authenticated');
-create policy "Allow authenticated update" on public.resources for update using (auth.role() = 'authenticated');
-create policy "Allow authenticated delete" on public.resources for delete using (auth.role() = 'authenticated');
+create policy "Allow admin write access" on public.resources for all to authenticated using (true) with check (true);
 
 -- HALL OF FAME
 create policy "Public Read HallOfFame" on public.hall_of_fame for select using (true);
-create policy "Admin Write HallOfFame" on public.hall_of_fame for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update HallOfFame" on public.hall_of_fame for update using (auth.role() = 'authenticated');
-create policy "Admin Delete HallOfFame" on public.hall_of_fame for delete using (auth.role() = 'authenticated');
+create policy "Admin Write HallOfFame" on public.hall_of_fame for all to authenticated using (true) with check (true);
 
 -- REDEMPTION CARDS
 create policy "Public Read RedemptionCards" on public.redemption_cards for select using (true);
-create policy "Admin Write RedemptionCards" on public.redemption_cards for insert with check (auth.role() = 'authenticated');
-create policy "Admin Update RedemptionCards" on public.redemption_cards for update using (auth.role() = 'authenticated');
-create policy "Admin Delete RedemptionCards" on public.redemption_cards for delete using (auth.role() = 'authenticated');
+create policy "Admin Write RedemptionCards" on public.redemption_cards for all to authenticated using (true) with check (true);
 
 -- ============================================
 -- 5. INDEXES
