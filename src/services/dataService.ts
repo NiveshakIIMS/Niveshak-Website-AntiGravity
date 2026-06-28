@@ -64,6 +64,7 @@ export interface Magazine {
     issueYear: string;
     coverUrl: string;
     pdfUrl: string;
+    uploadedPdfUrl?: string;
     flipUrl?: string;
 }
 
@@ -379,6 +380,7 @@ export const dataService = {
             issueYear: d.issue_year,
             coverUrl: resolveUrl(d.cover_url, d.media_key, d.storage_provider),
             pdfUrl: resolveUrl(d.pdf_url, d.pdf_media_key, d.storage_provider),
+            uploadedPdfUrl: resolveUrl(d.uploaded_pdf_url, d.uploaded_pdf_media_key, d.storage_provider),
             flipUrl: d.flip_url
         }));
     },
@@ -399,6 +401,9 @@ export const dataService = {
             const isR2Pdf = m.pdfUrl.startsWith(R2_DOMAIN);
             const pdfKey = isR2Pdf ? m.pdfUrl.replace(`${R2_DOMAIN}/`, '') : null;
 
+            const isR2UploadedPdf = m.uploadedPdfUrl ? m.uploadedPdfUrl.startsWith(R2_DOMAIN) : false;
+            const uploadedPdfKey = isR2UploadedPdf ? m.uploadedPdfUrl!.replace(`${R2_DOMAIN}/`, '') : null;
+
             return {
                 id: m.id,
                 title: m.title,
@@ -407,10 +412,12 @@ export const dataService = {
                 issue_year: m.issueYear,
                 cover_url: m.coverUrl,
                 pdf_url: m.pdfUrl,
+                uploaded_pdf_url: m.uploadedPdfUrl || null,
                 flip_url: m.flipUrl,
-                storage_provider: (isR2Cover || isR2Pdf) ? 'r2' : 'legacy',
+                storage_provider: (isR2Cover || isR2Pdf || isR2UploadedPdf) ? 'r2' : 'legacy',
                 media_key: coverKey,
-                pdf_media_key: pdfKey
+                pdf_media_key: pdfKey,
+                uploaded_pdf_media_key: uploadedPdfKey
             };
         });
 

@@ -201,6 +201,9 @@ function MagazineCard({ mag, index = 0, onOpenReader }: { mag: Magazine; index?:
     // Priority load first 4 images, lazy load rest
     const isPriority = index < 4;
 
+    const pdfLink = mag.pdfUrl || mag.uploadedPdfUrl;
+    const hasReaderSupport = !!mag.uploadedPdfUrl || (!!mag.pdfUrl && (mag.pdfUrl.toLowerCase().endsWith(".pdf") || mag.pdfUrl.includes(".pdf?")));
+
     return (
         <div
             className="group relative flex flex-col h-full bg-card rounded-xl border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
@@ -227,25 +230,29 @@ function MagazineCard({ mag, index = 0, onOpenReader }: { mag: Magazine; index?:
                 </div>
 
                 <div className="mt-auto flex gap-2 w-full pt-2">
-                    {mag.pdfUrl && (
-                        <>
-                            <button
-                                onClick={() => onOpenReader(mag)}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 dark:bg-accent text-white font-bold text-sm shadow-md hover:bg-orange-700 dark:hover:bg-blue-600 active:scale-95 transition-all"
-                            >
-                                <BookOpen className="w-4 h-4" />
-                                Read
-                            </button>
-                            <a
-                                href={mag.pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-muted text-muted-foreground border border-border font-bold text-sm hover:bg-muted/80 hover:text-foreground active:scale-95 transition-all"
-                            >
-                                <FileText className="w-4 h-4" />
-                                PDF
-                            </a>
-                        </>
+                    {hasReaderSupport && (
+                        <button
+                            onClick={() => onOpenReader(mag)}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 dark:bg-accent text-white font-bold text-sm shadow-md hover:bg-orange-700 dark:hover:bg-blue-600 active:scale-95 transition-all ${
+                                pdfLink ? "flex-1" : "w-full"
+                            }`}
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            Read
+                        </button>
+                    )}
+                    {pdfLink && (
+                        <a
+                            href={pdfLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-muted text-muted-foreground border border-border font-bold text-sm hover:bg-muted/80 hover:text-foreground active:scale-95 transition-all ${
+                                hasReaderSupport ? "flex-1" : "w-full"
+                            }`}
+                        >
+                            <FileText className="w-4 h-4" />
+                            PDF
+                        </a>
                     )}
                 </div>
             </div>

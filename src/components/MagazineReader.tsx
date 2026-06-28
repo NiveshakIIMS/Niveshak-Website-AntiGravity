@@ -58,11 +58,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // 2. Load PDF document
     useEffect(() => {
         let active = true;
+        const targetUrl = magazine.uploadedPdfUrl || magazine.pdfUrl;
         setIsLoading(true);
         loadPdfjs()
             .then(async (pdfjs) => {
                 if (!pdfjs || !active) return;
-                const proxyUrl = `/api/proxy-pdf?url=${encodeURIComponent(magazine.pdfUrl)}`;
+                const proxyUrl = `/api/proxy-pdf?url=${encodeURIComponent(targetUrl)}`;
                 const loadedPdf = await pdfjs.getDocument(proxyUrl).promise;
                 if (!active) return;
                 setPdf(loadedPdf);
@@ -74,7 +75,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 console.error("PDF load error:", err);
                 if (active) {
                     alert("Failed to load PDF reader. Opening direct link instead.");
-                    window.open(magazine.pdfUrl, "_blank");
+                    window.open(targetUrl, "_blank");
                     onClose();
                 }
             });

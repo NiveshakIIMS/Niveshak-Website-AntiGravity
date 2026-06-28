@@ -32,6 +32,7 @@ export default function MagazinesManager() {
             issueYear: sanitizeString(magForm.issueYear),
             coverUrl: magForm.coverUrl ? validateUrl(magForm.coverUrl) : "",
             pdfUrl: magForm.pdfUrl ? validateUrl(magForm.pdfUrl) : "",
+            uploadedPdfUrl: magForm.uploadedPdfUrl ? validateUrl(magForm.uploadedPdfUrl) : "",
             flipUrl: magForm.flipUrl ? validateUrl(magForm.flipUrl) : undefined,
         };
 
@@ -61,7 +62,8 @@ export default function MagazinesManager() {
             issueMonth: "",
             issueYear: "",
             coverUrl: "",
-            pdfUrl: ""
+            pdfUrl: "",
+            uploadedPdfUrl: ""
         });
         setIsEditing("new");
     };
@@ -117,15 +119,27 @@ export default function MagazinesManager() {
                                         onChange={(val) => setMagForm({ ...magForm, coverUrl: val })}
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <MediaInput
-                                        label="Magazine PDF Document"
-                                        value={magForm.pdfUrl}
-                                        onChange={(val) => setMagForm({ ...magForm, pdfUrl: val })}
-                                        placeholder="OneDrive Link or Upload PDF File"
-                                        accept="application/pdf"
-                                        folder="magazines"
-                                    />
+                                <div className="space-y-4 border-t border-border pt-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Option A: OneDrive / Google Drive Link (External Viewer Link)</label>
+                                        <input
+                                            placeholder="OneDrive or Google Drive link (e.g. https://1drv.ms/...)"
+                                            value={magForm.pdfUrl}
+                                            onChange={e => setMagForm({ ...magForm, pdfUrl: e.target.value })}
+                                            className="w-full p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Option B: Upload PDF Document directly (stored in Cloudflare R2)</label>
+                                        <MediaInput
+                                            label=""
+                                            value={magForm.uploadedPdfUrl || ""}
+                                            onChange={(val) => setMagForm({ ...magForm, uploadedPdfUrl: val })}
+                                            placeholder="Upload PDF File or enter direct file URL"
+                                            accept="application/pdf"
+                                            folder="magazines"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex gap-3 pt-2">
                                     <AdminButton onClick={saveMag} variant="success">Save Details</AdminButton>
