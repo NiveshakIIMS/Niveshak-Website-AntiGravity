@@ -66,7 +66,8 @@ export default function AboutManager() {
                 alert("About Us content updated!");
             } catch (err: any) {
                 console.error("Save About Error:", err);
-                alert("Failed to save About Us content. Please try again.");
+                const errMsg = err.message || err.details || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+                alert("Failed to save About Us content. Error details: " + errMsg);
             } finally {
                 setSaving(false);
             }
