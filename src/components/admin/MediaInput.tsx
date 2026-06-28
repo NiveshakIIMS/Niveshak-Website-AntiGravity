@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Link as LinkIcon, Upload, Check, X, ZoomIn, Loader2 } from "lucide-react";
+import { Link as LinkIcon, Upload, Check, X, ZoomIn, Loader2, Download } from "lucide-react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 import { uploadService } from "@/services/uploadService";
@@ -35,18 +35,19 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
         if (!file) return;
 
         const isVideo = file.type.startsWith("video/");
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
-        if (isVideo) {
+        if (isVideo || isPdf) {
             try {
                 setIsProcessing(true);
-                const extension = file.name.split('.').pop() || 'mp4';
+                const extension = file.name.split('.').pop() || (isPdf ? 'pdf' : 'mp4');
                 const filename = `${folder}/${Date.now()}.${extension}`;
                 const publicUrl = await uploadService.uploadFile(file, filename);
                 onChange(publicUrl);
                 setMode("link"); // Switch back to view mode
             } catch (error) {
                 console.error(error);
-                alert("Failed to upload video. Please check your connection and secrets.");
+                alert(`Failed to upload ${isPdf ? 'PDF' : 'video'}. Please check your connection and secrets.`);
             } finally {
                 setIsProcessing(false);
             }
@@ -216,12 +217,20 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                             )}
                         </div>
                         <span className="text-sm font-medium text-foreground">
-                            {isProcessing ? "Uploading..." : accept.includes("video") ? "Click to Upload Image / Video" : "Click to Upload Image"}
+                            {isProcessing 
+                                ? "Uploading..." 
+                                : accept.includes("pdf") 
+                                    ? "Click to Upload PDF" 
+                                    : accept.includes("video") 
+                                        ? "Click to Upload Image / Video" 
+                                        : "Click to Upload Image"}
                         </span>
                         <span className="text-xs text-muted-foreground mt-1">
-                            {accept.includes("video") 
-                                ? "Videos will be uploaded directly; images can be cropped"
-                                : "Images can be cropped or uploaded in original size"}
+                            {accept.includes("pdf")
+                                ? "PDFs will be uploaded directly to Cloudflare R2"
+                                : accept.includes("video") 
+                                    ? "Videos will be uploaded directly; images can be cropped"
+                                    : "Images can be cropped or uploaded in original size"}
                         </span>
                     </label>
                 </>
@@ -232,6 +241,11 @@ export default function MediaInput({ label, value, onChange, placeholder = "Imag
                 <div className="mt-2 h-20 w-20 rounded-lg border border-border overflow-hidden bg-muted relative group">
                     {isVideoUrl(value) ? (
                         <video src={value} className="w-full h-full object-cover" muted playsInline />
+                    ) : value.toLowerCase().endsWith(".pdf") || value.includes(".pdf") ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-600">
+                            <span className="text-[10px] font-bold uppercase">PDF</span>
+                            <Download className="w-4 h-4 mt-1" />
+                        </div>
                     ) : (
                         <img src={value} alt="Preview" className="w-full h-full object-cover" />
                     )}

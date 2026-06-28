@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { dataService, Magazine } from "@/services/dataService";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
+import MagazineReader from "../MagazineReader";
 
 interface MagazinesSectionProps {
     limit?: number;
@@ -27,6 +28,7 @@ export default function MagazinesSection({
     initialMagazines = []
 }: MagazinesSectionProps) {
     const [magazines, setMagazines] = useState<Magazine[]>(initialMagazines);
+    const [selectedReaderMag, setSelectedReaderMag] = useState<Magazine | null>(null);
 
     // Initialize years from initial data
     const [years, setYears] = useState<string[]>(() => {
@@ -167,7 +169,7 @@ export default function MagazinesSection({
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {filteredMagazines.map((mag, index) => (
-                                <MagazineCard key={mag.id} mag={mag} index={index} />
+                                <MagazineCard key={mag.id} mag={mag} index={index} onOpenReader={setSelectedReaderMag} />
                             ))}
                         </div>
 
@@ -187,12 +189,15 @@ export default function MagazinesSection({
                         </a>
                     </div>
                 )}
+                {selectedReaderMag && (
+                    <MagazineReader magazine={selectedReaderMag} onClose={() => setSelectedReaderMag(null)} />
+                )}
             </div>
         </section>
     );
 }
 
-function MagazineCard({ mag, index = 0 }: { mag: Magazine; index?: number }) {
+function MagazineCard({ mag, index = 0, onOpenReader }: { mag: Magazine; index?: number; onOpenReader: (mag: Magazine) => void }) {
     // Priority load first 4 images, lazy load rest
     const isPriority = index < 4;
 
@@ -221,22 +226,26 @@ function MagazineCard({ mag, index = 0 }: { mag: Magazine; index?: number }) {
                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{mag.issueMonth} {mag.issueYear}</p>
                 </div>
 
-                <div className="mt-auto relative w-full pt-2">
+                <div className="mt-auto flex gap-2 w-full pt-2">
                     {mag.pdfUrl && (
-                        <motion.a
-                            href={mag.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-orange-600 dark:bg-accent text-white font-bold text-sm shadow-md hover:bg-orange-700 dark:hover:bg-blue-600 transition-colors relative overflow-hidden group/btn"
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                        >
-                            <span className="relative z-10 flex items-center gap-2">
-                                <FileText className="w-4 h-4 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" /> 
-                                Read PDF
-                            </span>
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                        </motion.a>
+                        <>
+                            <button
+                                onClick={() => onOpenReader(mag)}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 dark:bg-accent text-white font-bold text-sm shadow-md hover:bg-orange-700 dark:hover:bg-blue-600 active:scale-95 transition-all"
+                            >
+                                <BookOpen className="w-4 h-4" />
+                                Read
+                            </button>
+                            <a
+                                href={mag.pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-muted text-muted-foreground border border-border font-bold text-sm hover:bg-muted/80 hover:text-foreground active:scale-95 transition-all"
+                            >
+                                <FileText className="w-4 h-4" />
+                                PDF
+                            </a>
+                        </>
                     )}
                 </div>
             </div>

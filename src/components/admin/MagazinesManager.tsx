@@ -117,7 +117,16 @@ export default function MagazinesManager() {
                                         onChange={(val) => setMagForm({ ...magForm, coverUrl: val })}
                                     />
                                 </div>
-                                <input placeholder="PDF Link (Drive/OneDrive - View Only)" value={magForm.pdfUrl} onChange={e => setMagForm({ ...magForm, pdfUrl: e.target.value })} className="p-3 border rounded-lg bg-background border-input text-foreground focus:ring-2 focus:ring-orange-500 outline-none" />
+                                <div className="space-y-1">
+                                    <MediaInput
+                                        label="Magazine PDF Document"
+                                        value={magForm.pdfUrl}
+                                        onChange={(val) => setMagForm({ ...magForm, pdfUrl: val })}
+                                        placeholder="OneDrive Link or Upload PDF File"
+                                        accept="application/pdf"
+                                        folder="magazines"
+                                    />
+                                </div>
                                 <div className="flex gap-3 pt-2">
                                     <AdminButton onClick={saveMag} variant="success">Save Details</AdminButton>
                                     <AdminButton onClick={() => setIsEditing(null)} variant="secondary">Cancel</AdminButton>
