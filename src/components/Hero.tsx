@@ -21,11 +21,7 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
     const [currentSlide, setCurrentSlide] = useState(0);
     const { isLogoInNav, setLogoInNav } = useLogo();
     const [isMounted, setIsMounted] = useState(false);
-    const [mediaLoaded, setMediaLoaded] = useState<{ [key: string]: boolean }>({});
 
-    const handleMediaLoad = (id: string) => {
-        setMediaLoaded(prev => ({ ...prev, [id]: true }));
-    };
 
     useEffect(() => {
         setIsMounted(true);
@@ -125,24 +121,22 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
                     {isVideoUrl(slide.imageUrl) ? (
                         <video
                             src={slide.imageUrl}
-                            className={`w-full h-full object-center transition-opacity duration-700 ${mediaLoaded[slide.id] ? 'opacity-100 md:opacity-50' : 'opacity-0'} ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
+                            className={`w-full h-full object-center transition-opacity duration-700 opacity-100 md:opacity-50 ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
                             autoPlay
                             muted
                             loop
                             playsInline
                             preload="auto"
-                            onLoadedData={() => handleMediaLoad(slide.id)}
                         />
                     ) : (
                         <Image
                             src={slide.imageUrl}
                             alt="Background"
                             fill
-                            className={`object-center transition-opacity duration-700 ${mediaLoaded[slide.id] ? 'opacity-100 md:opacity-50' : 'opacity-0'} ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
+                            className={`object-center transition-opacity duration-700 opacity-100 md:opacity-50 ${slide.objectFit === "contain" ? "object-contain" : "object-cover"}`}
                             priority
                             unoptimized={true}
                             sizes="100vw"
-                            onLoad={() => handleMediaLoad(slide.id)}
                         />
                     )}
                     {/* Gradient overlay */}

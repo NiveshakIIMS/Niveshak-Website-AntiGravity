@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Maximize2, Minimize2, Download } from "lucide-react";
 import { Magazine } from "@/services/dataService";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface MagazineReaderProps {
     magazine: Magazine;
@@ -40,6 +39,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const [scale, setScale] = useState<number>(1.0);
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
     const [direction, setDirection] = useState<"next" | "prev">("next");
 
     const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
@@ -87,6 +87,55 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [magazine, onClose]);
 
+    // Helper: High-DPI legibility rendering of a page on a canvas
+    const renderPageToCanvas = async (
+        pdfDoc: any, 
+        pageNum: number, 
+        canvas: HTMLCanvasElement, 
+        availableWidth: number, 
+        availableHeight: number, 
+        scaleMultiplier: number, 
+        isHalfWidth: boolean,
+        taskKey: 'left' | 'right'
+    ) => {
+        try {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+
+            const maxPageWidth = isHalfWidth ? (availableWidth / 2) : availableWidth;
+            const scaleX = maxPageWidth / viewport.width;
+            const scaleY = availableHeight / viewport.height;
+            const fitScale = Math.min(scaleX, scaleY) * scaleMultiplier;
+
+            const finalViewport = page.getViewport({ scale: fitScale });
+            
+            // High-DPI Legibility Fix: Multiply canvas backing store by devicePixelRatio
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = finalViewport.width * dpr;
+            canvas.height = finalViewport.height * dpr;
+            canvas.style.width = `${finalViewport.width}px`;
+            canvas.style.height = `${finalViewport.height}px`;
+
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Scale rendering context by dpr to draw sharp text
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                
+                const renderTask = page.render({
+                    canvasContext: ctx,
+                    viewport: finalViewport
+                });
+                renderTasksRef.current[taskKey] = renderTask;
+                await renderTask.promise;
+            }
+        } catch (e: any) {
+            if (e.name !== "RenderingCancelledException") {
+                console.error(`Error rendering page ${pageNum}:`, e);
+            }
+        }
+    };
+
     // 3. Render Pages when currentPage, scale, or layout changes
     useEffect(() => {
         if (!pdf) return;
@@ -110,32 +159,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             if (isMobile) {
                 // Mobile layout: Single page centered
                 const canvas = canvasLeftRef.current;
-                if (!canvas) return;
-
-                try {
-                    const page = await pdf.getPage(currentPage);
-                    const viewport = page.getViewport({ scale: 1.0 });
-
-                    // Calculate fit scale
-                    const scaleX = availableWidth / viewport.width;
-                    const scaleY = availableHeight / viewport.height;
-                    const fitScale = Math.min(scaleX, scaleY) * scale;
-
-                    const finalViewport = page.getViewport({ scale: fitScale });
-                    canvas.width = finalViewport.width;
-                    canvas.height = finalViewport.height;
-
-                    const ctx = canvas.getContext("2d");
-                    if (ctx) {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        const renderTask = page.render({ canvasContext: ctx, viewport: finalViewport });
-                        renderTasksRef.current.left = renderTask;
-                        await renderTask.promise;
-                    }
-                } catch (e: any) {
-                    if (e.name !== "RenderingCancelledException") {
-                        console.error(e);
-                    }
+                if (canvas) {
+                    await renderPageToCanvas(pdf, currentPage, canvas, availableWidth, availableHeight, scale, false, 'left');
                 }
             } else {
                 // Desktop Book layout
@@ -147,97 +172,32 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     if (leftCanvas) {
                         leftCanvas.width = 0;
                         leftCanvas.height = 0;
+                        leftCanvas.style.width = "0px";
+                        leftCanvas.style.height = "0px";
                     }
-
                     if (rightCanvas) {
-                        try {
-                            const page = await pdf.getPage(1);
-                            const viewport = page.getViewport({ scale: 1.0 });
-
-                            // Centered page takes max half available width
-                            const scaleX = (availableWidth / 2) / viewport.width;
-                            const scaleY = availableHeight / viewport.height;
-                            const fitScale = Math.min(scaleX, scaleY) * scale;
-
-                            const finalViewport = page.getViewport({ scale: fitScale });
-                            rightCanvas.width = finalViewport.width;
-                            rightCanvas.height = finalViewport.height;
-
-                            const ctx = rightCanvas.getContext("2d");
-                            if (ctx) {
-                                ctx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-                                const renderTask = page.render({ canvasContext: ctx, viewport: finalViewport });
-                                renderTasksRef.current.right = renderTask;
-                                await renderTask.promise;
-                            }
-                        } catch (e: any) {
-                            if (e.name !== "RenderingCancelledException") console.error(e);
-                        }
+                        await renderPageToCanvas(pdf, 1, rightCanvas, availableWidth, availableHeight, scale, true, 'right');
                     }
                 } else {
                     // Side-by-side pages: currentPage (Left) and currentPage + 1 (Right)
-                    const leftPageNum = currentPage;
-                    const rightPageNum = currentPage + 1;
-
-                    // Render Left Page
-                    if (leftCanvas && leftPageNum <= numPages) {
-                        try {
-                            const page = await pdf.getPage(leftPageNum);
-                            const viewport = page.getViewport({ scale: 1.0 });
-
-                            const scaleX = (availableWidth / 2) / viewport.width;
-                            const scaleY = availableHeight / viewport.height;
-                            const fitScale = Math.min(scaleX, scaleY) * scale;
-
-                            const finalViewport = page.getViewport({ scale: fitScale });
-                            leftCanvas.width = finalViewport.width;
-                            leftCanvas.height = finalViewport.height;
-
-                            const ctx = leftCanvas.getContext("2d");
-                            if (ctx) {
-                                ctx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-                                const renderTask = page.render({ canvasContext: ctx, viewport: finalViewport });
-                                renderTasksRef.current.left = renderTask;
-                                await renderTask.promise;
-                            }
-                        } catch (e: any) {
-                            if (e.name !== "RenderingCancelledException") console.error(e);
-                        }
+                    if (leftCanvas && currentPage <= numPages) {
+                        await renderPageToCanvas(pdf, currentPage, leftCanvas, availableWidth, availableHeight, scale, true, 'left');
                     }
-
-                    // Render Right Page
                     if (rightCanvas) {
-                        if (rightPageNum <= numPages) {
-                            try {
-                                const page = await pdf.getPage(rightPageNum);
-                                const viewport = page.getViewport({ scale: 1.0 });
-
-                                const scaleX = (availableWidth / 2) / viewport.width;
-                                const scaleY = availableHeight / viewport.height;
-                                const fitScale = Math.min(scaleX, scaleY) * scale;
-
-                                const finalViewport = page.getViewport({ scale: fitScale });
-                                rightCanvas.width = finalViewport.width;
-                                rightCanvas.height = finalViewport.height;
-
-                                const ctx = rightCanvas.getContext("2d");
-                                if (ctx) {
-                                    ctx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-                                    const renderTask = page.render({ canvasContext: ctx, viewport: finalViewport });
-                                    renderTasksRef.current.right = renderTask;
-                                    await renderTask.promise;
-                                }
-                            } catch (e: any) {
-                                if (e.name !== "RenderingCancelledException") console.error(e);
-                            }
+                        if (currentPage + 1 <= numPages) {
+                            await renderPageToCanvas(pdf, currentPage + 1, rightCanvas, availableWidth, availableHeight, scale, true, 'right');
                         } else {
-                            // Clear right canvas if no page exists
+                            // Clear right canvas
                             rightCanvas.width = 0;
                             rightCanvas.height = 0;
+                            rightCanvas.style.width = "0px";
+                            rightCanvas.style.height = "0px";
                         }
                     }
                 }
             }
+            // Rendering completes: end transition fadeout
+            setIsTransitioning(false);
         };
 
         renderPages();
@@ -252,36 +212,42 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [pdf, currentPage, isMobile, numPages]);
+    }, [pdf, currentPage, isMobile, numPages, isTransitioning]);
 
     const nextPage = () => {
-        if (!pdf) return;
+        if (!pdf || isTransitioning) return;
         setDirection("next");
-        if (isMobile) {
-            if (currentPage < numPages) setCurrentPage(currentPage + 1);
-        } else {
-            if (currentPage === 1) {
-                if (numPages > 1) setCurrentPage(2);
+        setIsTransitioning(true);
+        setTimeout(() => {
+            if (isMobile) {
+                if (currentPage < numPages) setCurrentPage(currentPage + 1);
             } else {
-                if (currentPage + 2 <= numPages) {
-                    setCurrentPage(currentPage + 2);
+                if (currentPage === 1) {
+                    if (numPages > 1) setCurrentPage(2);
+                } else {
+                    if (currentPage + 2 <= numPages) {
+                        setCurrentPage(currentPage + 2);
+                    }
                 }
             }
-        }
+        }, 120); // transition slide duration delay
     };
 
     const prevPage = () => {
-        if (!pdf) return;
+        if (!pdf || isTransitioning) return;
         setDirection("prev");
-        if (isMobile) {
-            if (currentPage > 1) setCurrentPage(currentPage - 1);
-        } else {
-            if (currentPage === 2) {
-                setCurrentPage(1);
-            } else if (currentPage > 2) {
-                setCurrentPage(currentPage - 2);
+        setIsTransitioning(true);
+        setTimeout(() => {
+            if (isMobile) {
+                if (currentPage > 1) setCurrentPage(currentPage - 1);
+            } else {
+                if (currentPage === 2) {
+                    setCurrentPage(1);
+                } else if (currentPage > 2) {
+                    setCurrentPage(currentPage - 2);
+                }
             }
-        }
+        }, 120);
     };
 
     const toggleFullscreen = () => {
@@ -300,66 +266,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         return next <= numPages ? `Pages ${currentPage}-${next} of ${numPages}` : `Page ${currentPage} of ${numPages}`;
     };
 
-    // 3D Hinge Turn Animation variants for Desktop Book Page Turn
-    const leftPageVariants = {
-        initial: (dir: "next" | "prev") => ({
-            rotateY: dir === "prev" ? -90 : 0,
-            z: dir === "prev" ? 10 : 0
-        }),
-        animate: {
-            rotateY: 0,
-            z: 0,
-            transition: { duration: 0.6, ease: "easeOut" as const }
-        },
-        exit: (dir: "next" | "prev") => ({
-            rotateY: dir === "next" ? -90 : 0,
-            z: dir === "next" ? 10 : 0,
-            transition: { duration: 0.6, ease: "easeIn" as const }
-        })
-    };
-
-    const rightPageVariants = {
-        initial: (dir: "next" | "prev") => ({
-            rotateY: dir === "next" ? 90 : 0,
-            z: dir === "next" ? 10 : 0
-        }),
-        animate: {
-            rotateY: 0,
-            z: 0,
-            transition: { duration: 0.6, ease: "easeOut" as const }
-        },
-        exit: (dir: "next" | "prev") => ({
-            rotateY: dir === "prev" ? 90 : 0,
-            z: dir === "prev" ? 10 : 0,
-            transition: { duration: 0.6, ease: "easeIn" as const }
-        })
-    };
-
-    // 3D Card Flip Animation variants for Mobile Single Page
-    const mobilePageVariants = {
-        initial: (dir: "next" | "prev") => ({
-            rotateY: dir === "next" ? 90 : -90,
-            opacity: 0.8,
-            scale: 0.95
-        }),
-        animate: {
-            rotateY: 0,
-            opacity: 1,
-            scale: 1,
-            transition: { duration: 0.55, ease: "easeOut" as const }
-        },
-        exit: (dir: "next" | "prev") => ({
-            rotateY: dir === "next" ? -90 : 90,
-            opacity: 0.8,
-            scale: 0.95,
-            transition: { duration: 0.55, ease: "easeIn" as const }
-        })
-    };
-
     return (
-        <div className="fixed inset-0 z-50 bg-[#0f0f0f]/97 backdrop-blur-lg flex flex-col justify-between select-none">
+        <div className="fixed inset-0 z-50 bg-[#0c0c0c]/98 backdrop-blur-xl flex flex-col justify-between select-none">
             {/* Header Toolbar */}
-            <div className="flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-[#2b2b2b] text-white z-10 shadow-lg">
+            <div className="flex items-center justify-between p-4 bg-[#141414] border-b border-[#242424] text-white z-10 shadow-lg">
                 <div className="flex flex-col">
                     <span className="font-bold text-sm sm:text-base line-clamp-1">{magazine.title}</span>
                     <span className="text-xs text-muted-foreground">{magazine.issueMonth} {magazine.issueYear}</span>
@@ -368,25 +278,25 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 <div className="flex items-center gap-1 sm:gap-3">
                     <button
                         onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors border border-transparent hover:border-[#444]"
+                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors border border-transparent hover:border-[#3a3a3a]"
                         title="Zoom Out"
                     >
                         <ZoomOut className="w-5 h-5 text-gray-300" />
                     </button>
                     <span className="text-xs font-bold px-2 text-gray-300 w-12 text-center">{Math.round(scale * 100)}%</span>
                     <button
-                        onClick={() => setScale((s) => Math.min(2.0, s + 0.15))}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors border border-transparent hover:border-[#444]"
+                        onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
+                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors border border-transparent hover:border-[#3a3a3a]"
                         title="Zoom In"
                     >
                         <ZoomIn className="w-5 h-5 text-gray-300" />
                     </button>
 
-                    <div className="h-5 w-[1px] bg-[#2b2b2b] mx-1 sm:mx-2" />
+                    <div className="h-5 w-[1px] bg-[#242424] mx-1 sm:mx-2" />
 
                     <button
                         onClick={toggleFullscreen}
-                        className="p-2 hover:bg-[#333] rounded-lg transition-colors hidden sm:block border border-transparent hover:border-[#444]"
+                        className="p-2 hover:bg-[#2c2c2c] rounded-lg transition-colors hidden sm:block border border-transparent hover:border-[#3a3a3a]"
                         title="Fullscreen Toggle"
                     >
                         {isFullscreen ? <Minimize2 className="w-5 h-5 text-gray-300" /> : <Maximize2 className="w-5 h-5 text-gray-300" />}
@@ -406,7 +316,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             <div
                 ref={containerRef}
                 className="flex-1 flex items-center justify-center overflow-auto px-4 py-8 relative"
-                style={{ perspective: "2000px" }}
             >
                 {/* Stage Left Arrow Overlay */}
                 <button
@@ -432,38 +341,27 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                     </div>
                 ) : (
-                    <div className="relative flex items-center justify-center max-w-full z-10" style={{ transformStyle: "preserve-3d" }}>
-                        <AnimatePresence initial={false} mode="wait" custom={direction}>
+                    <div className="relative flex items-center justify-center max-w-full z-10">
+                        {/* Book Display with hardware-accelerated slide-and-fade turn transition */}
+                        <div 
+                            className={`transition-all duration-300 ease-out transform ${
+                                isTransitioning 
+                                    ? (direction === "next" ? "opacity-0 -translate-x-8 scale-98 blur-[2px]" : "opacity-0 translate-x-8 scale-98 blur-[2px]") 
+                                    : "opacity-100 translate-x-0 scale-100 blur-0"
+                            }`}
+                        >
                             {isMobile ? (
-                                // Mobile View: Single Page Card with 3D Flip Turn
-                                <motion.div
-                                    key={`page-${currentPage}`}
-                                    custom={direction}
-                                    variants={mobilePageVariants}
-                                    initial="initial"
-                                    animate="animate"
-                                    exit="exit"
-                                    className="relative bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-900"
-                                    style={{ transformStyle: "preserve-3d", transformOrigin: "left center" }}
-                                >
+                                // Mobile View: Single Page Card
+                                <div className="relative bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-900">
                                     <canvas ref={canvasLeftRef} className="max-w-full block shadow-inner" />
                                     {/* Real Magazine Paper Semi-Gloss Overlay */}
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                </motion.div>
+                                </div>
                             ) : (
-                                // Desktop View: Double Page Book with 3D Center-Hinge Hinge Page Turn
-                                <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#121212] p-2" style={{ transformStyle: "preserve-3d" }}>
+                                // Desktop View: Double Page Book
+                                <div className="flex relative shadow-2xl rounded-lg overflow-hidden border border-[#222]/80 bg-[#141414] p-2">
                                     {/* Left Page (Hinged at Center Right Spine) */}
-                                    <motion.div
-                                        key={`left-page-${currentPage}`}
-                                        custom={direction}
-                                        variants={leftPageVariants}
-                                        initial="initial"
-                                        animate="animate"
-                                        exit="exit"
-                                        className={`relative bg-white ${currentPage === 1 ? "w-0 h-0 overflow-hidden" : ""}`}
-                                        style={{ transformStyle: "preserve-3d", transformOrigin: "right center" }}
-                                    >
+                                    <div className={`relative bg-white ${currentPage === 1 ? "w-0 h-0 overflow-hidden p-0 m-0 border-0" : ""}`}>
                                         <canvas ref={canvasLeftRef} className="block shadow-inner" />
                                         {currentPage > 1 && (
                                             <>
@@ -475,7 +373,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                                 <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
                                             </>
                                         )}
-                                    </motion.div>
+                                    </div>
 
                                     {/* Book Spine Divider & Center Shadow fold */}
                                     {currentPage > 1 && (
@@ -486,16 +384,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     )}
 
                                     {/* Right Page (Hinged at Center Left Spine) */}
-                                    <motion.div
-                                        key={`right-page-${currentPage}`}
-                                        custom={direction}
-                                        variants={rightPageVariants}
-                                        initial="initial"
-                                        animate="animate"
-                                        exit="exit"
-                                        className="relative bg-white"
-                                        style={{ transformStyle: "preserve-3d", transformOrigin: "left center" }}
-                                    >
+                                    <div className="relative bg-white">
                                         <canvas ref={canvasRightRef} className="block shadow-inner" />
                                         {/* Crease fold Shadow */}
                                         {currentPage > 1 && (
@@ -510,31 +399,31 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         
                                         {/* Real Magazine Paper Semi-Gloss Overlay */}
                                         <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                    </motion.div>
+                                    </div>
                                 </div>
                             )}
-                        </AnimatePresence>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Bottom Navigation Toolbar */}
-            <div className="p-4 bg-[#1a1a1a] border-t border-[#2b2b2b] flex flex-col sm:flex-row items-center justify-between gap-4 text-white z-10 shadow-inner">
+            <div className="p-4 bg-[#141414] border-t border-[#242424] flex flex-col sm:flex-row items-center justify-between gap-4 text-white z-10 shadow-inner">
                 <span className="text-sm font-semibold text-gray-300 order-2 sm:order-1">{getPageRangeString()}</span>
 
                 {/* Navigation Buttons */}
                 <div className="flex items-center gap-4 order-1 sm:order-2">
                     <button
                         onClick={prevPage}
-                        disabled={isLoading || currentPage === 1}
-                        className="px-5 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] disabled:opacity-40 disabled:hover:bg-[#2a2a2a] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#3b3b3b] active:scale-95 transition-all text-white shadow-md"
+                        disabled={isLoading || currentPage === 1 || isTransitioning}
+                        className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
                     >
                         <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
                     <button
                         onClick={nextPage}
-                        disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages)}
-                        className="px-5 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] disabled:opacity-40 disabled:hover:bg-[#2a2a2a] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#3b3b3b] active:scale-95 transition-all text-white shadow-md"
+                        disabled={isLoading || (isMobile ? currentPage === numPages : currentPage + 1 >= numPages) || isTransitioning}
+                        className="px-5 py-2.5 bg-[#252525] hover:bg-[#353535] disabled:opacity-40 disabled:hover:bg-[#252525] rounded-xl flex items-center gap-1.5 font-bold text-sm border border-[#343434] active:scale-95 transition-all text-white shadow-md"
                     >
                         Next <ChevronRight className="w-4 h-4" />
                     </button>
@@ -549,11 +438,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 /* Real Semi-Gloss Paper glare overlay */
                 .magazine-gloss {
                     background: linear-gradient(
-                        140deg, 
+                        135deg, 
                         rgba(255, 255, 255, 0) 35%, 
-                        rgba(255, 255, 255, 0.05) 45%, 
-                        rgba(255, 255, 255, 0.075) 50%,
-                        rgba(255, 255, 255, 0.05) 55%,
+                        rgba(255, 255, 255, 0.03) 45%, 
+                        rgba(255, 255, 255, 0.05) 50%,
+                        rgba(255, 255, 255, 0.03) 55%,
                         rgba(255, 255, 255, 0) 65%
                     );
                     mix-blend-mode: overlay;
