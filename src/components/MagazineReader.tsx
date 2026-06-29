@@ -50,6 +50,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     // Editable Zoom State
     const [zoomInput, setZoomInput] = useState<string>("100");
+    const [debouncedScale, setDebouncedScale] = useState<number>(1.0);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedScale(scale);
+        }, 250);
+        return () => clearTimeout(handler);
+    }, [scale]);
 
     // page-flip integration states and refs
     const [isPageFlipInit, setIsPageFlipInit] = useState<boolean>(false);
@@ -441,7 +449,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     maxHeight: 1500,
                     drawShadow: true,
                     maxShadowOpacity: 0.3,
-                    showCover: true,
+                    showCover: isDouble,
                     usePortrait: !isDouble,
                     flippingTime: 850,
                     mobileScrollSupport: false,
@@ -495,8 +503,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
         const pHeight = dims.height;
 
-        const renderWidth = Math.round(pWidth * scale);
-        const renderHeight = Math.round(pHeight * scale);
+        const renderWidth = Math.round(pWidth * debouncedScale);
+        const renderHeight = Math.round(pHeight * debouncedScale);
 
         for (let pageNum = startActive; pageNum <= endActive; pageNum++) {
             const canvas = pageCanvasesRef.current[pageNum];
@@ -507,11 +515,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     canvas,
                     renderWidth,
                     renderHeight,
-                    `page-${pageNum}-${scale}`
+                    `page-${pageNum}-${debouncedScale}`
                 );
             }
         }
-    }, [pdf, currentPage, isPageFlipInit, scale, isDouble, isMobile, forceLandscape, numPages]);
+    }, [pdf, currentPage, isPageFlipInit, debouncedScale, isDouble, isMobile, forceLandscape, numPages]);
 
     // Helper functions for page turning
     const nextPage = () => {
@@ -706,7 +714,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 width: `${bookWidth * scale}px`,
                                 height: `${bookHeight * scale}px`,
                                 position: "relative",
-                                transition: "width 200ms ease, height 200ms ease",
+                                transition: "width 350ms cubic-bezier(0.25, 1, 0.5, 1), height 350ms cubic-bezier(0.25, 1, 0.5, 1)",
                                 visibility: isPageFlipInit ? "visible" : "hidden"
                             }}
                         >
@@ -715,15 +723,17 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 style={{
                                     width: `${bookWidth}px`,
                                     height: `${bookHeight}px`,
-                                    transform: `scale(${scale})`,
+                                    transform: `scale(${scale}) translateX(${currentPage === 1 && isDouble ? -pageWidth / 2 : 0}px)`,
                                     transformOrigin: "top left",
                                     position: "absolute",
                                     left: 0,
-                                top: 0
+                                    top: 0,
+                                    transition: "width 350ms cubic-bezier(0.25, 1, 0.5, 1), height 350ms cubic-bezier(0.25, 1, 0.5, 1), transform 350ms cubic-bezier(0.25, 1, 0.5, 1)"
                                 }}
                             >
                                 {/* The container for PageFlip */}
                                 <div 
+                                    key={isDouble ? "double" : "single"}
                                     ref={bookContainerRef}
                                     className="st-pageflip-book"
                                     style={{
@@ -741,7 +751,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                             <div 
                                                 key={pageNum}
                                                 className="st-page-wrapper bg-[#151515] overflow-hidden select-none"
-                                                data-density={pageNum === 1 || pageNum === numPages ? "hard" : "soft"}
+                                                data-density={isDouble && (pageNum === 1 || pageNum === numPages) ? "hard" : "soft"}
                                                 style={{
                                                     width: `${pageWidth}px`,
                                                     height: `${bookHeight}px`
