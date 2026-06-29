@@ -689,20 +689,25 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </button>
 
                 {/* Centering Wrapper with Generous Scroll Padding, letting zoomed-in readers scroll past margins */}
-                <div className="flex items-center justify-center min-h-full min-w-full p-1 sm:p-2 md:p-4">
-                    {isLoading || !isPageFlipInit ? (
-                        <div className="flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
+                <div className="flex items-center justify-center min-h-full min-w-full p-1 sm:p-2 md:p-4 relative">
+                    {/* Spinner Overlay - displayed if loading or if St.PageFlip is still initializing */}
+                    {(isLoading || !isPageFlipInit) && (
+                        <div className="flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                             <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
                             <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                         </div>
-                    ) : (
+                    )}
+
+                    {/* Book container - mounted when PDF is loaded so PageFlip can access DOM elements */}
+                    {!isLoading && (
                         /* Zoom Scroll Container Wrapper (GPU scale sizing container) */
                         <div
                             style={{
                                 width: `${bookWidth * scale}px`,
                                 height: `${bookHeight * scale}px`,
                                 position: "relative",
-                                transition: "width 200ms ease, height 200ms ease"
+                                transition: "width 200ms ease, height 200ms ease",
+                                visibility: isPageFlipInit ? "visible" : "hidden"
                             }}
                         >
                             {/* Scaled Book Element */}
@@ -714,7 +719,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     transformOrigin: "top left",
                                     position: "absolute",
                                     left: 0,
-                                    top: 0
+                                top: 0
                                 }}
                             >
                                 {/* The container for PageFlip */}
