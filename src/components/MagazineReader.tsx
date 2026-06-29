@@ -51,16 +51,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Editable Zoom State
     const [zoomInput, setZoomInput] = useState<string>("100");
 
-    // 3D Hinge Page Flip States (Custom GPU Compositor Engine)
-    const [isFlipping, setIsFlipping] = useState<boolean>(false);
-    const [flipAngle, setFlipAngle] = useState<number>(0);
-    const [isAnimating, setIsAnimating] = useState<boolean>(false);
-    const [direction, setDirection] = useState<"next" | "prev">("next");
-
-    // Interactive Drag-to-Flip Physics States
-    const [isDragging, setIsDragging] = useState<boolean>(false);
-    const dragStartXRef = useRef<number>(0);
-    const dragCurrentXRef = useRef<number>(0);
+    // page-flip integration states and refs
+    const [isPageFlipInit, setIsPageFlipInit] = useState<boolean>(false);
+    const pageFlipRef = useRef<any>(null);
+    const bookContainerRef = useRef<HTMLDivElement | null>(null);
+    const pageCanvasesRef = useRef<{ [key: number]: HTMLCanvasElement | null }>({});
 
     // Modern Distraction-free floating controls timeout
     const [showToolbar, setShowToolbar] = useState<boolean>(true);
@@ -71,12 +66,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const scrollCountRef = useRef<number>(0);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const bookWrapperRef = useRef<HTMLDivElement | null>(null);
-    const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
-    const canvasRightRef = useRef<HTMLCanvasElement | null>(null);
-    const canvasFlipFrontRef = useRef<HTMLCanvasElement | null>(null);
-    const canvasFlipBackRef = useRef<HTMLCanvasElement | null>(null);
-
     const renderTasksRef = useRef<{ [key: string]: any }>({});
     
     // Mobile Pinch Gesture tracking refs
@@ -93,12 +82,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const interactionStartTimeRef = useRef<number>(0);
 
     // Sync state values to references to prevent event listener re-bindings and clearTimeout cancellations
-    const isFlippingRef = useRef(isFlipping);
-    const isDraggingRef = useRef(isDragging);
     const showToolbarRef = useRef(showToolbar);
     
-    useEffect(() => { isFlippingRef.current = isFlipping; }, [isFlipping]);
-    useEffect(() => { isDraggingRef.current = isDragging; }, [isDragging]);
     useEffect(() => { showToolbarRef.current = showToolbar; }, [showToolbar]);
 
     // Calculated layout mode based on device, manual toggle, orientation, and forced landscape rotation
@@ -185,9 +170,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         setShowToolbar(true);
         if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         toolbarTimeoutRef.current = setTimeout(() => {
-            if (!isFlippingRef.current && !isDraggingRef.current) {
-                setShowToolbar(false);
-            }
+            setShowToolbar(false);
         }, 3000);
     };
 
@@ -357,327 +340,132 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // Render Static Pages when not flipping
+    // Virtualization Helper: Keeps page canvas rendered if within view window
+    const isPageActive = (pageNum: number) => {
+        return pageNum >= currentPage - 3 && pageNum <= currentPage + 3;
+    };
+
+    // St.PageFlip initialization and management effect
     useEffect(() => {
-        if (!pdf || isFlipping || isLoading) return;
+        if (!pdf || isLoading) return;
 
-        const renderStaticView = async () => {
-            const dims = getBookDimensions();
-            const pageWidth = isDouble ? (dims.width / 2) : dims.width;
-            const pageHeight = dims.height;
+        let active = true;
+        let pageFlipInstance: any = null;
 
-            if (!isDouble) {
-                if (canvasRightRef.current) {
-                    await renderPageToCanvas(pdf, currentPage, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
+        const initPageFlip = async () => {
+            // Wait a frame for React to mount page wrapper containers
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            if (!active || !bookContainerRef.current) return;
+
+            try {
+                const { PageFlip } = await import("page-flip");
+                
+                const dims = getBookDimensions();
+                const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
+                const pHeight = dims.height;
+
+                pageFlipInstance = new PageFlip(bookContainerRef.current, {
+                    width: pWidth,
+                    height: pHeight,
+                    size: "stretch",
+                    minWidth: 200,
+                    maxWidth: 1500,
+                    minHeight: 300,
+                    maxHeight: 1500,
+                    drawShadow: true,
+                    maxShadowOpacity: 0.3,
+                    showCover: true,
+                    usePortrait: !isDouble,
+                    flippingTime: 850,
+                    mobileScrollSupport: false,
+                    clickEventForward: false
+                });
+
+                const pages = bookContainerRef.current.querySelectorAll(".st-page-wrapper");
+                if (pages.length > 0) {
+                    pageFlipInstance.loadFromHTML(pages);
+                    
+                    // Turn to current page (0-indexed)
+                    pageFlipInstance.turnToPage(Math.min(currentPage - 1, numPages - 1));
+                    
+                    // Bind events
+                    pageFlipInstance.on("flip", (e: any) => {
+                        if (active) {
+                            setCurrentPage(e.data + 1);
+                        }
+                    });
+
+                    pageFlipRef.current = pageFlipInstance;
+                    setIsPageFlipInit(true);
                 }
-            } else {
-                const renderPromises = [];
-                if (currentPage === 1) {
-                    if (canvasRightRef.current) {
-                        renderPromises.push(renderPageToCanvas(pdf, 1, canvasRightRef.current, pageWidth, pageHeight, "rightStatic"));
-                    }
-                } else {
-                    if (canvasLeftRef.current && currentPage <= numPages) {
-                        renderPromises.push(renderPageToCanvas(pdf, currentPage, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic"));
-                    }
-                    if (canvasRightRef.current && currentPage + 1 <= numPages) {
-                        renderPromises.push(renderPageToCanvas(pdf, currentPage + 1, canvasRightRef.current, pageWidth, pageHeight, "rightStatic"));
-                    }
-                }
-                await Promise.all(renderPromises);
+            } catch (err) {
+                console.error("Failed to initialize PageFlip:", err);
             }
         };
 
-        renderStaticView();
-    }, [pdf, currentPage, scale, isMobile, isFlipping, isLoading, pageRatio, mobileDoublePage, isLandscape, forceLandscape]);
+        setIsPageFlipInit(false);
+        initPageFlip();
 
-    // 5. Trigger Flip Turn Animation
-    const startFlip = async (dir: "next" | "prev") => {
-        if (isFlipping || isLoading || !pdf) return;
+        return () => {
+            active = false;
+            if (pageFlipInstance) {
+                try {
+                    pageFlipInstance.destroy();
+                } catch (e) {}
+            }
+            pageFlipRef.current = null;
+        };
+    }, [pdf, isLoading, isDouble, scale, isMobile, isLandscape, forceLandscape, numPages]);
+
+    // Active pages renderer effect
+    useEffect(() => {
+        if (!pdf || isLoading || !isPageFlipInit) return;
+
+        const startActive = Math.max(1, currentPage - 3);
+        const endActive = Math.min(numPages, currentPage + 3);
 
         const dims = getBookDimensions();
-        const pageWidth = isDoubleLayout ? (dims.width / 2) : dims.width;
-        const pageHeight = dims.height;
+        const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
+        const pHeight = dims.height;
 
-        setDirection(dir);
-        setIsAnimating(false);
-        setFlipAngle(dir === "next" ? 0 : -180);
-
-        if (dir === "next") {
-            const currentRight = isDouble ? (currentPage === 1 ? 1 : currentPage + 1) : currentPage;
-            const targetLeft = isDouble ? (currentPage === 1 ? 2 : currentPage + 2) : currentPage + 1;
-            const targetRight = targetLeft + 1;
-
-            const renderPromises = [
-                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, currentRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                canvasFlipBackRef.current ? renderPageToCanvas(pdf, targetLeft, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                (canvasRightRef.current && targetRight <= numPages && isDouble) ? renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve(),
-                (canvasRightRef.current && !isDouble && targetLeft <= numPages) ? renderPageToCanvas(pdf, targetLeft, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
-            ];
-            await Promise.all(renderPromises);
-
-            setIsFlipping(true);
-
-            setTimeout(() => {
-                if (canvasLeftRef.current && targetLeft <= numPages && isDouble) {
-                    renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic");
-                }
-            }, 350);
-        } else {
-            const targetLeft = isDouble ? (currentPage === 2 ? 1 : currentPage - 2) : currentPage - 1;
-            const targetRight = targetLeft + 1;
-
-            const renderPromises = [
-                canvasFlipBackRef.current ? renderPageToCanvas(pdf, currentPage, canvasFlipBackRef.current, pageWidth, pageHeight, "flipBack") : Promise.resolve(),
-                canvasFlipFrontRef.current ? renderPageToCanvas(pdf, targetRight, canvasFlipFrontRef.current, pageWidth, pageHeight, "flipFront") : Promise.resolve(),
-                (canvasLeftRef.current && targetLeft > 1 && isDouble) ? renderPageToCanvas(pdf, targetLeft, canvasLeftRef.current, pageWidth, pageHeight, "leftStatic") : Promise.resolve(),
-                (canvasRightRef.current && !isDouble) ? renderPageToCanvas(pdf, targetLeft, canvasRightRef.current, pageWidth, pageHeight, "rightStatic") : Promise.resolve()
-            ];
-            await Promise.all(renderPromises);
-
-            setIsFlipping(true);
-
-            setTimeout(() => {
-                if (canvasRightRef.current && targetRight <= numPages && isDouble) {
-                    renderPageToCanvas(pdf, targetRight, canvasRightRef.current, pageWidth, pageHeight, "rightStatic");
-                }
-            }, 350);
+        for (let pageNum = startActive; pageNum <= endActive; pageNum++) {
+            const canvas = pageCanvasesRef.current[pageNum];
+            if (canvas) {
+                renderPageToCanvas(
+                    pdf,
+                    pageNum,
+                    canvas,
+                    pWidth,
+                    pHeight,
+                    `page-${pageNum}-${scale}`
+                );
+            }
         }
+    }, [pdf, currentPage, isPageFlipInit, scale, isDouble, isMobile, forceLandscape, numPages]);
 
-        setTimeout(() => {
-            setIsAnimating(true);
-            setFlipAngle(dir === "next" ? -180 : 0);
-        }, 50);
-    };
-
-    const handleAnimationComplete = () => {
-        if (!isFlipping) return;
-
-        if (direction === "next") {
-            const targetPg = isDouble 
-                ? (currentPage === 1 ? 2 : currentPage + 2)
-                : currentPage + 1;
-            setCurrentPage(targetPg);
-        } else {
-            const targetPg = isDouble 
-                ? (currentPage === 2 ? 1 : currentPage - 2)
-                : currentPage - 1;
-            setCurrentPage(targetPg);
-        }
-
-        setIsAnimating(false);
-        setIsFlipping(false);
-        setFlipAngle(0);
-    };
-
+    // Helper functions for page turning
     const nextPage = () => {
-        const isLastPage = isDouble ? currentPage + 1 >= numPages : currentPage === numPages;
-        if (isLastPage) return;
-        startFlip("next");
+        if (pageFlipRef.current) {
+            pageFlipRef.current.flipNext();
+        }
     };
 
     const prevPage = () => {
-        if (currentPage === 1) return;
-        startFlip("prev");
-    };
-
-    // 6. Interactive Drag-to-Flip Physics Handlers
-    const handlePointerDown = (e: React.PointerEvent) => {
-        if (isFlipping || isLoading || isDragging || isPinchActiveRef.current) return;
-
-        const wrapper = bookWrapperRef.current;
-        if (!wrapper) return;
-
-        const rect = wrapper.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const width = rect.width;
-
-        let side: "next" | "prev" | null = null;
-        if (clickX > width * 0.7) {
-            side = "next";
-        } else if (clickX < width * 0.3) {
-            side = "prev";
-        }
-
-        if (!side) return;
-
-        const isLastPage = isDouble ? currentPage + 1 >= numPages : currentPage === numPages;
-        if (side === "next" && isLastPage) return;
-        if (side === "prev" && currentPage === 1) return;
-
-        setIsDragging(true);
-        dragStartXRef.current = e.clientX;
-        dragCurrentXRef.current = e.clientX;
-
-        // Only capture pointer focus on standard flat zoom modes to prevent panning scroll lockups
-        if (scale <= 1.0) {
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        if (pageFlipRef.current) {
+            pageFlipRef.current.flipPrev();
         }
     };
 
-    const handlePointerMove = (e: React.PointerEvent) => {
-        if (!isDragging || isPinchActiveRef.current) return;
-        dragCurrentXRef.current = e.clientX;
-    };
-
-    const handlePointerUp = (e: React.PointerEvent) => {
-        if (!isDragging || isPinchActiveRef.current) return;
-        setIsDragging(false);
-        
-        if (scale <= 1.0) {
-            try {
-                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-            } catch (err) {}
-        }
-
-        const deltaX = dragCurrentXRef.current - dragStartXRef.current;
-        const dragDistance = Math.abs(deltaX);
-
-        // Zoomed swipe navigation overlay: if zoomed in, let swiping at the edges turn the pages!
-        if (scale > 1.0 && dragDistance > 60) {
-            const container = containerRef.current;
-            if (container) {
-                const scrollLeft = container.scrollLeft;
-                const maxScroll = container.scrollWidth - container.clientWidth;
-                
-                // Swipe right at left edge -> Page Prev
-                if (deltaX > 60 && scrollLeft <= 15) {
-                    prevPage();
-                    return;
-                }
-                // Swipe left at right edge -> Page Next
-                if (deltaX < -60 && scrollLeft >= maxScroll - 15) {
-                    nextPage();
-                    return;
-                }
-            }
-            return;
-        }
-
-        // Tap Click turn navigation
-        if (dragDistance < 15) {
-            const rect = bookWrapperRef.current?.getBoundingClientRect();
-            if (rect) {
-                // If forced mobile landscape mode, evaluate coordinates vertically along Y axis (rotated 90deg)
-                if (forceLandscape && isMobile) {
-                    const clickY = e.clientY - rect.top;
-                    if (clickY < rect.height / 2) {
-                        prevPage();
-                    } else {
-                        nextPage();
-                    }
-                } else {
-                    const clickX = e.clientX - rect.left;
-                    if (clickX < rect.width / 2) {
-                        prevPage();
-                    } else {
-                        nextPage();
-                    }
-                }
-            }
-            return;
-        }
-
-        // Flat view drag swipes
-        if (scale <= 1.0) {
-            const threshold = window.innerWidth * 0.15;
-            if (dragDistance > threshold) {
-                if (deltaX < 0) {
-                    nextPage();
-                } else {
-                    prevPage();
-                }
-            }
-        }
-    };
-
-    const handlePointerCancel = (e: React.PointerEvent) => {
-        setIsDragging(false);
-        if (e.target) {
-            try {
-                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-            } catch (err) {}
-        }
-    };
-
-    // 7. Stable Touch-Zoom Effect (with pinch-zoom collision isolation)
-    const scaleRef = useRef(scale);
+    // Keyboard navigation
     useEffect(() => {
-        scaleRef.current = scale;
-    }, [scale]);
-
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length === 2) {
-                isPinchActiveRef.current = true;
-                setIsDragging(false);
-                
-                const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                initialTouchDistanceRef.current = dist;
-                initialScaleRef.current = scaleRef.current;
-                currentRatioRef.current = 1.0;
-            }
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") nextPage();
+            if (e.key === "ArrowLeft") prevPage();
+            if (e.key === "Escape") onClose();
         };
-
-        const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length === 2 && initialTouchDistanceRef.current !== null) {
-                e.preventDefault();
-                const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                const ratio = dist / initialTouchDistanceRef.current;
-                currentRatioRef.current = ratio;
-
-                const wrapper = bookWrapperRef.current;
-                if (wrapper) {
-                    const needsCoverShift = isDouble && currentPage === 1 && !isFlipping;
-                    const dims = getBookDimensions();
-                    const pageWidth = isDouble ? (dims.width / 2) : dims.width;
-                    const shiftX = needsCoverShift ? -pageWidth / 2 : 0;
-                    
-                    wrapper.style.transform = `translateX(${shiftX}px) scale(${ratio})`;
-                    wrapper.style.transformOrigin = "center center";
-                }
-            }
-        };
-
-        const handleTouchEnd = (e: TouchEvent) => {
-            if (initialTouchDistanceRef.current !== null && currentRatioRef.current !== 1.0) {
-                const wrapper = bookWrapperRef.current;
-                if (wrapper) {
-                    wrapper.style.transform = "";
-                }
-
-                const finalScale = Math.min(2.5, Math.max(0.6, initialScaleRef.current * currentRatioRef.current));
-                setScale(finalScale);
-            }
-            initialTouchDistanceRef.current = null;
-            currentRatioRef.current = 1.0;
-
-            if (e.touches.length === 0) {
-                setTimeout(() => {
-                    isPinchActiveRef.current = false;
-                }, 200);
-            }
-        };
-
-        container.addEventListener("touchstart", handleTouchStart, { passive: true });
-        container.addEventListener("touchmove", handleTouchMove, { passive: false });
-        container.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-        return () => {
-            container.removeEventListener("touchstart", handleTouchStart);
-            container.removeEventListener("touchmove", handleTouchMove);
-            container.removeEventListener("touchend", handleTouchEnd);
-        };
-    }, [currentPage, isFlipping, isMobile, isDouble, forceLandscape]);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
 
     // Custom text input zoom handlers
     const handleZoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -700,22 +488,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // 8. Double-click to zoom
+    // Double-click to zoom
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setScale((s) => (s > 1.05 ? 1.0 : 1.8));
     };
-
-    // Keyboard navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "ArrowRight") nextPage();
-            if (e.key === "ArrowLeft") prevPage();
-            if (e.key === "Escape") onClose();
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [pdf, currentPage, isLoading, isFlipping, mobileDoublePage, isLandscape, forceLandscape]);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -735,18 +512,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
-    
-    // Fix: pageWidth is always halved on desktop double page layout
-    const pageWidth = isDouble ? (bookWidth / 2) : bookWidth;
-
-    const showLeftPage = isDouble && (currentPage > 1 || isFlipping);
-
-    // Keep the cover page only in center (without any black bars beside it, hide them)
-    const currentBookWidth = (isDouble && currentPage === 1 && !isFlipping) ? pageWidth : bookWidth;
-
-    // Peak page curl skew value in mid-flight (skew peaks at 90deg, 0 at flat points)
-    const progress = Math.abs(flipAngle) / 180;
-    const skewY = Math.sin(progress * Math.PI) * 4.0; // 4.0 degree bend curl skew
+    const pageWidth = isDouble ? Math.round(bookWidth / 2) : bookWidth;
 
     return (
         <div 
@@ -838,7 +604,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 {/* Fixed Navigation Overlays */}
                 <button
                     onClick={prevPage}
-                    disabled={isLoading || currentPage === 1 || isFlipping}
+                    disabled={isLoading || currentPage === 1}
                     className="fixed left-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-40 shadow-2xl hidden md:flex items-center justify-center group"
                 >
                     <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
@@ -846,7 +612,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                 <button
                     onClick={nextPage}
-                    disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages) || isFlipping}
+                    disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages)}
                     className="fixed right-6 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 disabled:opacity-0 disabled:pointer-events-none text-white rounded-full transition-all duration-300 border border-white/10 hover:border-orange-500 hover:scale-110 z-40 shadow-2xl hidden md:flex items-center justify-center group"
                 >
                     <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
@@ -860,180 +626,62 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                         </div>
                     ) : (
-                        /* Book Container Wrapper */
+                        /* The container for PageFlip */
                         <div 
-                            ref={bookWrapperRef}
-                            className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.85)] bg-[#121212] p-2 rounded-lg border border-white/5 cursor-grab active:cursor-grabbing"
+                            ref={bookContainerRef}
+                            className="st-pageflip-book"
                             style={{
-                                width: `${currentBookWidth}px`,
-                                height: `${bookHeight}px`,
-                                perspective: "2500px",
-                                transformStyle: "preserve-3d",
-                                transition: "width 800ms cubic-bezier(0.25, 1, 0.5, 1), transform 800ms cubic-bezier(0.25, 1, 0.5, 1)"
+                                visibility: isPageFlipInit ? "visible" : "hidden",
+                                margin: "auto",
+                                boxShadow: "0 30px 70px rgba(0,0,0,0.85)",
+                                backgroundColor: "#121212",
+                                pointerEvents: scale > 1.05 ? "none" : "auto"
                             }}
-                            onPointerDown={handlePointerDown}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={handlePointerUp}
-                            onPointerCancel={handlePointerCancel}
                             onDoubleClick={handleDoubleClick}
                         >
-                            {/* LEFT STATIC PAGE */}
-                            <div 
-                                className="relative overflow-hidden transition-all duration-300"
-                                style={{
-                                    width: `${pageWidth}px`,
-                                    height: `${bookHeight}px`,
-                                    display: showLeftPage ? "block" : "none",
-                                    boxShadow: showLeftPage ? "-1px 0px 0px #e5e5e5, -2px 0px 0px #dbdbdb, -3px 0px 0px #d1d1d1, -4px 0px 0px #c7c7c7, -10px 0px 20px rgba(0,0,0,0.3)" : "none"
-                                }}
-                            >
-                                <canvas ref={canvasLeftRef} className="block mx-auto" />
-                                <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                
-                                {/* Inner Crease Shadow */}
-                                {showLeftPage && (
-                                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/20 to-transparent pointer-events-none z-10" />
-                                )}
-
-                                {/* Static Page Flip Shadow Overlay */}
-                                {isFlipping && isAnimating && (
+                            {/* Render all pages */}
+                            {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
+                                const active = isPageActive(pageNum);
+                                return (
                                     <div 
-                                        className={`absolute inset-0 pointer-events-none z-30 ${
-                                            direction === "next" ? "animate-shadow-left-reveal" : "animate-shadow-left-hide"
-                                        }`}
-                                    />
-                                )}
-                            </div>
-
-                            {/* RIGHT STATIC PAGE */}
-                            <div 
-                                className="relative overflow-hidden transition-all duration-300"
-                                style={{
-                                    width: `${pageWidth}px`,
-                                    height: `${bookHeight}px`,
-                                    display: (isMobile || currentPage + 1 <= numPages || isFlipping || currentPage === 1 || !isDouble) ? "block" : "none",
-                                    boxShadow: (!isDouble || currentPage === 1) ? "0 0 15px rgba(0,0,0,0.3)" : "1px 0px 0px #e5e5e5, 2px 0px 0px #dbdbdb, 3px 0px 0px #d1d1d1, 4px 0px 0px #c7c7c7, 10px 0px 20px rgba(0,0,0,0.3)"
-                                }}
-                            >
-                                <canvas ref={canvasRightRef} className="block mx-auto" />
-                                <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                
-                                {/* Inner Crease Shadow */}
-                                {isDoubleLayout && currentPage > 1 && (
-                                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/20 to-transparent pointer-events-none z-10" />
-                                )}
-                                
-                                {/* Realistic Hardcover Book Shading Overlay for Page 1 (Cover Page) */}
-                                {currentPage === 1 && !isFlipping && (
-                                    <>
-                                        {/* Realistic Spine highlight and hinge crease shadow without blocking page text */}
-                                        <div 
-                                            className="absolute inset-y-0 left-0 w-[45px] pointer-events-none z-20"
-                                            style={{
-                                                background: "linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.02) 2%, rgba(255,255,255,0.08) 5%, rgba(0,0,0,0.38) 8%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.05) 18%, rgba(0,0,0,0) 35%)"
-                                            }}
-                                        />
-                                        {/* Deep spine crease accent line */}
-                                        <div className="absolute inset-y-0 left-[8%] w-[1px] bg-black/15 pointer-events-none z-20" />
-                                        {/* Soft glare gloss sweep across cover */}
-                                        <div 
-                                            className="absolute inset-y-0 left-0 right-0 pointer-events-none z-25"
-                                            style={{
-                                                background: "linear-gradient(115deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0) 45%)"
-                                            }}
-                                        />
-                                        {/* Soft right page boundary edge shadow */}
-                                        <div className="absolute inset-y-0 right-0 w-[1px] bg-black/20 z-20 pointer-events-none" />
-                                    </>
-                                )}
-
-                                {/* Static Page Flip Shadow Overlay */}
-                                {isFlipping && isAnimating && (
-                                    <div 
-                                        className={`absolute inset-0 pointer-events-none z-30 ${
-                                            direction === "next" ? "animate-shadow-right-hide" : "animate-shadow-right-reveal"
-                                        }`}
-                                    />
-                                )}
-                            </div>
-
-                            {/* 3D FLIPPING SHEET OVERLAY (Unified Right-Hinged 3D Hinge Model) */}
-                            <div
-                                className={`absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)] ${
-                                    isAnimating 
-                                        ? (direction === "next" ? "animate-flip-next" : "animate-flip-prev") 
-                                        : ""
-                                }`}
-                                style={{
-                                    width: `${pageWidth}px`,
-                                    left: isDouble ? "50%" : "0px",
-                                    transformOrigin: "left center",
-                                    transformStyle: "preserve-3d",
-                                    pointerEvents: "none",
-                                    visibility: isFlipping ? "visible" : "hidden",
-                                    opacity: isFlipping ? 1 : 0,
-                                    transform: !isAnimating ? `rotateY(${direction === "next" ? 0 : -180}deg) rotateZ(0deg) skewY(0deg)` : undefined
-                                }}
-                                onAnimationEnd={handleAnimationComplete}
-                            >
-                                {/* FRONT FACE */}
-                                <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
-                                    <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
-                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                    
-                                    {/* Cover Crease Shadow on Flipping Front (Cover) */}
-                                    {currentPage === 1 && (
-                                        <>
-                                            <div 
-                                                className="absolute inset-y-0 left-0 w-[45px] pointer-events-none z-20"
-                                                style={{
-                                                    background: "linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.02) 2%, rgba(255,255,255,0.08) 5%, rgba(0,0,0,0.38) 8%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.05) 18%, rgba(0,0,0,0) 35%)"
-                                                }}
-                                            />
-                                            <div className="absolute inset-y-0 left-[8%] w-[1px] bg-black/15 pointer-events-none z-20" />
-                                        </>
-                                    )}
-
-                                    {/* Crease shadow sweep */}
-                                    {isAnimating && (
-                                        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden" style={{ mixBlendMode: "multiply" }}>
-                                            <div 
-                                                className={`absolute inset-y-0 w-[200%] ${
-                                                    direction === "next" ? "animate-sweep-next" : "animate-sweep-prev"
-                                                }`}
-                                                style={{
-                                                    background: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.35) 48%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0) 100%)"
-                                                }}
-                                            />
+                                        key={pageNum}
+                                        className="st-page-wrapper bg-[#151515] overflow-hidden select-none"
+                                        data-density={pageNum === 1 || pageNum === numPages ? "hard" : "soft"}
+                                        style={{
+                                            width: `${pageWidth}px`,
+                                            height: `${bookHeight}px`
+                                        }}
+                                    >
+                                        <div className="relative w-full h-full bg-[#151515] overflow-hidden flex items-center justify-center">
+                                            {active ? (
+                                                <canvas
+                                                    ref={(el) => {
+                                                        pageCanvasesRef.current[pageNum] = el;
+                                                    }}
+                                                    className="block max-w-full max-h-full m-auto"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                                                    <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                                                </div>
+                                            )}
+                                            {/* Paper sheen overlay */}
+                                            <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                            
+                                            {/* Inner Crease Shadow when two pages are open */}
+                                            {isDoubleLayout && pageNum > 1 && pageNum < numPages && (
+                                                <div 
+                                                    className={`absolute top-0 bottom-0 w-16 pointer-events-none z-10 ${
+                                                        pageNum % 2 === 0
+                                                            ? "right-0 bg-gradient-to-l from-black/25 to-transparent" // Left side page: shadow on right
+                                                            : "left-0 bg-gradient-to-r from-black/25 to-transparent"  // Right side page: shadow on left
+                                                    }`} 
+                                                />
+                                            )}
                                         </div>
-                                    )}
-                                    <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 right-0 bg-gradient-to-l from-black/5 to-transparent" />
-                                </div>
-
-                                {/* BACK FACE */}
-                                <div 
-                                    className="absolute inset-0 bg-white backface-hidden z-10 shadow-2xl"
-                                    style={{ transform: "rotateY(180deg)" }}
-                                >
-                                    <canvas ref={canvasFlipBackRef} className="block w-full h-full" />
-                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-
-                                    {/* Crease shadow sweep */}
-                                    {isAnimating && (
-                                        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden" style={{ mixBlendMode: "multiply" }}>
-                                            <div 
-                                                className={`absolute inset-y-0 w-[200%] ${
-                                                    direction === "next" ? "animate-sweep-next" : "animate-sweep-prev"
-                                                }`}
-                                                style={{
-                                                    background: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.35) 48%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0) 100%)"
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 left-0 bg-gradient-to-r from-black/5 to-transparent" />
-                                </div>
-                            </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -1092,7 +740,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 <div className="flex items-center gap-2 sm:gap-4">
                     <button
                         onClick={prevPage}
-                        disabled={isLoading || currentPage === 1 || isFlipping}
+                        disabled={isLoading || currentPage === 1}
                         className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
                         title="Previous Page"
                     >
@@ -1100,19 +748,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     </button>
                     <button
                         onClick={nextPage}
-                        disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages) || isFlipping}
+                        disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages)}
                         className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
                         title="Next Page"
                     >
                         <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
-
+ 
                 <div className="text-[10px] text-gray-400 font-medium hidden md:block select-none">
                     Tip: Drag pages or click arrows. Pinch / double-click to zoom
                 </div>
             </div>
-
+ 
             <style jsx global>{`
                 /* Real Semi-Gloss Paper glare overlay */
                 .magazine-gloss {
@@ -1126,179 +774,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     );
                     mix-blend-mode: overlay;
                 }
-                
-                .backface-hidden {
-                    backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
+
+                .st-pageflip-book {
+                    display: block;
+                    box-sizing: border-box;
                 }
 
-                /* Realistic 3D Page Turn Keyframes */
-                @keyframes flip-next-anim {
-                    0% {
-                        transform: rotateY(0deg) rotateZ(0deg) skewY(0deg) scale(1);
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    }
-                    30% {
-                        transform: rotateY(-54deg) rotateZ(-2.5deg) skewY(-5deg) scale(0.98) translateX(-2px);
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-                    }
-                    50% {
-                        transform: rotateY(-90deg) rotateZ(0deg) skewY(-7deg) scale(0.96) translateX(-4px);
-                        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-                    }
-                    70% {
-                        transform: rotateY(-126deg) rotateZ(2.5deg) skewY(-5deg) scale(0.98) translateX(-2px);
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-                    }
-                    100% {
-                        transform: rotateY(-180deg) rotateZ(0deg) skewY(0deg) scale(1);
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    }
-                }
-
-                @keyframes flip-prev-anim {
-                    0% {
-                        transform: rotateY(-180deg) rotateZ(0deg) skewY(0deg) scale(1);
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    }
-                    30% {
-                        transform: rotateY(-126deg) rotateZ(2.5deg) skewY(5deg) scale(0.98) translateX(2px);
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-                    }
-                    50% {
-                        transform: rotateY(-90deg) rotateZ(0deg) skewY(7deg) scale(0.96) translateX(4px);
-                        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-                    }
-                    70% {
-                        transform: rotateY(-54deg) rotateZ(-2.5deg) skewY(5deg) scale(0.98) translateX(2px);
-                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-                    }
-                    100% {
-                        transform: rotateY(0deg) rotateZ(0deg) skewY(0deg) scale(1);
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    }
-                }
-
-                .animate-flip-next {
-                    animation: flip-next-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                .animate-flip-prev {
-                    animation: flip-prev-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                /* Crease shadow sweep animations */
-                @keyframes sweep-next-anim {
-                    0% {
-                        transform: translateX(50%);
-                        opacity: 0;
-                    }
-                    15% {
-                        opacity: 1;
-                    }
-                    85% {
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translateX(-50%);
-                        opacity: 0;
-                    }
-                }
-
-                @keyframes sweep-prev-anim {
-                    0% {
-                        transform: translateX(-50%);
-                        opacity: 0;
-                    }
-                    15% {
-                        opacity: 1;
-                    }
-                    85% {
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translateX(50%);
-                        opacity: 0;
-                    }
-                }
-
-                .animate-sweep-next {
-                    animation: sweep-next-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                .animate-sweep-prev {
-                    animation: sweep-prev-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                /* Static page reveal/hide shadows */
-                @keyframes shadow-left-reveal-anim {
-                    0% {
-                        opacity: 0;
-                    }
-                    50% {
-                        opacity: 0.45;
-                        background: linear-gradient(to left, rgba(0,0,0,0.55), rgba(0,0,0,0));
-                    }
-                    100% {
-                        opacity: 0;
-                    }
-                }
-
-                @keyframes shadow-left-hide-anim {
-                    0% {
-                        opacity: 0.55;
-                        background: linear-gradient(to left, rgba(0,0,0,0.65), rgba(0,0,0,0));
-                    }
-                    50% {
-                        opacity: 0.25;
-                        background: linear-gradient(to left, rgba(0,0,0,0.35), rgba(0,0,0,0));
-                    }
-                    100% {
-                        opacity: 0;
-                    }
-                }
-
-                @keyframes shadow-right-reveal-anim {
-                    0% {
-                        opacity: 0;
-                    }
-                    50% {
-                        opacity: 0.45;
-                        background: linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0));
-                    }
-                    100% {
-                        opacity: 0;
-                    }
-                }
-
-                @keyframes shadow-right-hide-anim {
-                    0% {
-                        opacity: 0.55;
-                        background: linear-gradient(to right, rgba(0,0,0,0.65), rgba(0,0,0,0));
-                    }
-                    50% {
-                        opacity: 0.25;
-                        background: linear-gradient(to right, rgba(0,0,0,0.35), rgba(0,0,0,0));
-                    }
-                    100% {
-                        opacity: 0;
-                    }
-                }
-
-                .animate-shadow-left-reveal {
-                    animation: shadow-left-reveal-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                .animate-shadow-left-hide {
-                    animation: shadow-left-hide-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                .animate-shadow-right-reveal {
-                    animation: shadow-right-reveal-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
-                }
-
-                .animate-shadow-right-hide {
-                    animation: shadow-right-hide-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                .st-page-wrapper {
+                    display: none;
                 }
             `}</style>
         </div>
