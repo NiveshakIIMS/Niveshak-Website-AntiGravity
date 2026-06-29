@@ -191,11 +191,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [isLoading]);
 
-    // Scroll coordinates tracking refs to lock and restore scroll positions during page flips
-    const lastScrollTopRef = useRef<number>(0);
-    const lastScrollLeftRef = useRef<number>(0);
-    const isFlippingRef = useRef<boolean>(false);
-
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -220,26 +215,28 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const isToolbarAction = target.closest("button") || target.closest("input");
                 if (isToolbarAction) return;
 
+                // Zoomed-in interaction: Tap screen edges to turn pages
+                if (scaleRef.current > 1.05) {
+                    const width = window.innerWidth;
+                    const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
+                    const canFlipPrev = !isLoading && currentPage > 1;
+
+                    if (e.clientX < width * 0.2 && canFlipPrev) {
+                        prevPage();
+                        return;
+                    }
+                    if (e.clientX > width * 0.8 && canFlipNext) {
+                        nextPage();
+                        return;
+                    }
+                }
+
                 // Default: Toggle toolbar
                 if (showToolbarRef.current) {
                     setShowToolbar(false);
                     if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
                 } else {
                     handleUserInteraction();
-                }
-            }
-        };
-
-        const handleContainerDblClick = (e: MouseEvent) => {
-            if (scaleRef.current > 1.05) {
-                const width = window.innerWidth;
-                const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
-                const canFlipPrev = !isLoading && currentPage > 1;
-
-                if (e.clientX < width * 0.3 && canFlipPrev) {
-                    prevPage();
-                } else if (e.clientX > width * 0.7 && canFlipNext) {
-                    nextPage();
                 }
             }
         };
@@ -260,25 +257,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         };
 
-        const handleScroll = () => {
-            if (!isFlippingRef.current && container) {
-                lastScrollTopRef.current = container.scrollTop;
-                lastScrollLeftRef.current = container.scrollLeft;
-            }
-        };
-
         container.addEventListener("pointerdown", handleContainerPointerDown);
         container.addEventListener("pointerup", handleContainerPointerUp);
-        container.addEventListener("dblclick", handleContainerDblClick);
         container.addEventListener("wheel", handleWheelScroll);
-        container.addEventListener("scroll", handleScroll, { passive: true });
 
         return () => {
             container.removeEventListener("pointerdown", handleContainerPointerDown);
             container.removeEventListener("pointerup", handleContainerPointerUp);
-            container.removeEventListener("dblclick", handleContainerDblClick);
             container.removeEventListener("wheel", handleWheelScroll);
-            container.removeEventListener("scroll", handleScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
     }, [isLoading, isDouble, currentPage, numPages]);
@@ -498,24 +484,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         }
                     });
 
-                    pageFlipInstance.on("changeState", (e: any) => {
-                        if (active) {
-                            if (e.data !== "read") {
-                                isFlippingRef.current = true;
-                            } else {
-                                if (containerRef.current) {
-                                    containerRef.current.scrollTop = lastScrollTopRef.current;
-                                    containerRef.current.scrollLeft = lastScrollLeftRef.current;
-                                }
-                                setTimeout(() => {
-                                    if (active) {
-                                        isFlippingRef.current = false;
-                                    }
-                                }, 50);
-                            }
-                        }
-                    });
-
                     pageFlipRef.current = pageFlipInstance;
                     setIsPageFlipInit(true);
                 }
@@ -664,62 +632,23 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     <span className="text-[10px] text-gray-400 font-medium">{magazine.issueMonth} {magazine.issueYear}</span>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                    <button
-                        onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
-                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
-                        title="Zoom Out"
-                    >
-                        <ZoomOut className="w-4 h-4 text-gray-300" />
-                    </button>
-                    
-                    {/* Custom Text input to type custom zoom size percentage */}
-                    <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-md border border-white/10 w-[60px] justify-center">
-                        <input
-                            type="text"
-                            value={zoomInput}
-                            onChange={handleZoomInputChange}
-                            onKeyDown={handleZoomInputKeyDown}
-                            onBlur={applyCustomZoom}
-                            className="text-[10px] sm:text-xs font-bold text-gray-300 w-8 text-center bg-transparent border-none outline-none focus:ring-0 focus:text-white p-0"
-                            title="Set custom zoom % (Enter to apply)"
-                        />
-                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 select-none">%</span>
-                    </div>
-
-                    <button
-                        onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
-                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
-                        title="Zoom In"
-                    >
-                        <ZoomIn className="w-4 h-4 text-gray-300" />
-                    </button>
-
-                    <div className="h-4 w-[1px] bg-white/10 mx-1" />
-
-                    <button
-                        onClick={toggleFullscreen}
-                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
-                        title="Fullscreen Toggle"
-                    >
-                        {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
-                    </button>
-
-                    <button
-                        onClick={onClose}
-                        className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all border border-transparent hover:border-red-500/30 active:scale-90"
-                        title="Close Reader"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
+                <button
+                    onClick={onClose}
+                    className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all border border-transparent hover:border-red-500/30 active:scale-90 flex-shrink-0"
+                    title="Close Reader"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
 
             {/* Reader Stage (Scroll stage container) with 0.1% background opacity to guarantee 100% WebKit mobile touch hit-testing */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-auto relative"
-                style={{ backgroundColor: "rgba(0,0,0,0.001)", overflowAnchor: "none" }}
+                className={`flex-1 relative ${scale > 1.05 ? "overflow-auto" : "overflow-hidden"}`}
+                style={{ 
+                    backgroundColor: "rgba(0,0,0,0.001)",
+                    overflowAnchor: "none"
+                }}
             >
                 {/* Fixed Navigation Overlays */}
                 <button
@@ -765,7 +694,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 style={{
                                     width: `${isDouble ? bookWidth : bookWidth - 1}px`,
                                     height: `${bookHeight}px`,
-                                    transform: `scale(${scale}) translateX(${currentPage === 1 && isDouble ? -pageWidth / 2 : 0}px)`,
+                                    transform: `scale(${scale}) translateX(${currentPage === 1 && isDouble ? -pageWidth / 2 : (currentPage === numPages && isDouble ? (numPages % 2 === 0 ? pageWidth / 2 : -pageWidth / 2) : 0)}px)`,
                                     transformOrigin: "top left",
                                     position: "absolute",
                                     left: 0,
@@ -839,76 +768,79 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
             {/* Bottom Floating Glass Toolbar */}
             <div 
-                className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-between text-white z-50 shadow-2xl transition-all duration-500 ease-in-out ${
+                className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4 text-white z-50 shadow-2xl transition-all duration-500 ease-in-out ${
                     showToolbar ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-95 pointer-events-none"
                 }`}
             >
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xs font-semibold text-gray-300 tracking-wide select-none">{getPageRangeString()}</span>
-                    
-                    {/* Segmented Mode Selector Controls (both desktop & mobile layout controls) */}
-                    <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5">
-                        <button
-                            onClick={() => {
-                                setDoublePageMode(false);
-                            }}
-                            className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
-                                !isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"
-                            }`}
-                            title="Single Page Mode"
-                        >
-                            <Layers className="w-3.5 h-3.5" /> <span className="hidden sm:inline">1-Page</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setDoublePageMode(true);
-                            }}
-                            className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
-                                isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"
-                            }`}
-                            title="Double Page Mode"
-                        >
-                            <BookOpen className="w-3.5 h-3.5" /> <span className="hidden sm:inline">2-Page</span>
-                        </button>
-                    </div>
-                    
-                    {isMobile && (
-                        /* Force Landscape Orientation mode toggle */
-                        <button
-                            onClick={() => setForceLandscape(!forceLandscape)}
-                            className={`p-1.5 active:scale-90 border rounded-lg transition-all flex items-center gap-1 text-[10px] font-bold ${
-                                forceLandscape ? "bg-orange-500/20 border-orange-500/30 text-orange-400" : "bg-white/10 border-white/10 text-white"
-                            }`}
-                            title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
-                        >
-                            <RotateCw className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Navigation Buttons */}
-                <div className="flex items-center gap-2 sm:gap-4">
+                {/* Page Navigation */}
+                <div className="flex items-center gap-1">
                     <button
                         onClick={prevPage}
                         disabled={isLoading || currentPage === 1}
-                        className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
                         title="Previous Page"
                     >
-                        <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Prev</span>
+                        <ChevronLeft className="w-4 h-4 text-gray-300" />
                     </button>
+                    
+                    <span className="text-xs font-semibold text-gray-300 select-none min-w-[55px] text-center">
+                        {currentPage} / {numPages}
+                    </span>
+
                     <button
                         onClick={nextPage}
                         disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages)}
-                        className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-white/5 rounded-full sm:rounded-xl flex items-center justify-center gap-1 font-bold text-xs border border-white/5 active:scale-95 transition-all text-white shadow-md cursor-pointer"
+                        className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
                         title="Next Page"
                     >
-                        <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 text-gray-300" />
                     </button>
                 </div>
- 
-                <div className="text-[10px] text-gray-400 font-medium hidden md:block select-none">
-                    Tip: Drag pages or click arrows. Pinch / double-click to zoom
+
+                <div className="h-4 w-[1px] bg-white/10" />
+
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                        title="Zoom Out"
+                    >
+                        <ZoomOut className="w-4 h-4 text-gray-300" />
+                    </button>
+
+                    <span className="text-xs font-bold text-gray-300 select-none min-w-[35px] text-center">
+                        {Math.round(scale * 100)}%
+                    </span>
+
+                    <button
+                        onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                        title="Zoom In"
+                    >
+                        <ZoomIn className="w-4 h-4 text-gray-300" />
+                    </button>
                 </div>
+
+                <div className="h-4 w-[1px] bg-white/10" />
+
+                {/* Layout Mode Toggle */}
+                <button
+                    onClick={() => setDoublePageMode(!doublePageMode)}
+                    className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                    title={isDouble ? "Switch to 1-Page Layout" : "Switch to 2-Page Layout"}
+                >
+                    {isDouble ? <Layers className="w-4 h-4 text-gray-300" /> : <BookOpen className="w-4 h-4 text-gray-300" />}
+                </button>
+
+                {/* Fullscreen Toggle */}
+                <button
+                    onClick={toggleFullscreen}
+                    className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                    title="Toggle Fullscreen"
+                >
+                    {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
+                </button>
             </div>
  
             <style jsx global>{`
