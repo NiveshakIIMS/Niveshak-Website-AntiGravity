@@ -215,18 +215,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const isToolbarAction = target.closest("button") || target.closest("input");
                 if (isToolbarAction) return;
 
-                // Zoomed-in interaction: Tap screen edges to turn pages
-                if (scaleRef.current > 1.05) {
+                // Mobile Touch Edge-Tapping (any zoom scale) OR Desktop Zoomed-in Edge-Clicking
+                if (isMobile || scaleRef.current > 1.05) {
                     const width = window.innerWidth;
                     const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
                     const canFlipPrev = !isLoading && currentPage > 1;
 
-                    if (e.clientX < width * 0.2 && canFlipPrev) {
+                    if (e.clientX < width * 0.35 && canFlipPrev) {
                         prevPage();
+                        handleUserInteraction();
                         return;
                     }
-                    if (e.clientX > width * 0.8 && canFlipNext) {
+                    if (e.clientX > width * 0.65 && canFlipNext) {
                         nextPage();
+                        handleUserInteraction();
                         return;
                     }
                 }
@@ -267,7 +269,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             container.removeEventListener("wheel", handleWheelScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
-    }, [isLoading, isDouble, currentPage, numPages]);
+    }, [isLoading, isDouble, currentPage, numPages, isMobile]);
 
     // Sync scale state to ref for touch gesture handler
     const scaleRef = useRef(scale);
@@ -832,6 +834,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 >
                     {isDouble ? <Layers className="w-4 h-4 text-gray-300" /> : <BookOpen className="w-4 h-4 text-gray-300" />}
                 </button>
+
+                {/* Force Landscape Orientation mode toggle (Mobile 2-Pager only) */}
+                {isMobile && isDouble && (
+                    <button
+                        onClick={() => setForceLandscape(!forceLandscape)}
+                        className={`p-1.5 rounded-xl transition-all active:scale-90 ${
+                            forceLandscape ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "hover:bg-white/10 text-gray-300"
+                        }`}
+                        title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
+                    >
+                        <RotateCw className="w-4 h-4" />
+                    </button>
+                )}
 
                 {/* Fullscreen Toggle */}
                 <button
