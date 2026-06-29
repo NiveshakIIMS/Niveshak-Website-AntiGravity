@@ -94,8 +94,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     
     useEffect(() => { showToolbarRef.current = showToolbar; }, [showToolbar]);
 
-    // Calculated layout mode based on device, manual toggle, orientation, and forced landscape rotation
-    const isDouble = doublePageMode || (isMobile && isLandscape) || forceLandscape;
+    // Calculated layout mode based on device, manual toggle, and forced landscape rotation
+    const isDouble = doublePageMode || forceLandscape;
     const isDoubleLayout = isDouble; // Strictly bound to double-page mode to prevent mid-flip shrinking
 
     // 1. Detect Screen Size & Orientation
@@ -443,7 +443,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     width: pWidth,
                     height: pHeight,
                     size: "stretch",
-                    minWidth: 200,
+                    minWidth: isDouble ? 200 : 99999,
                     maxWidth: 1500,
                     minHeight: 300,
                     maxHeight: 1500,
