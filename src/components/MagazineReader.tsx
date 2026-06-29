@@ -90,9 +90,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Sync state values to references to prevent event listener re-bindings and clearTimeout cancellations
     const isFlippingRef = useRef(isFlipping);
     const isDraggingRef = useRef(isDragging);
+    const showToolbarRef = useRef(showToolbar);
     
     useEffect(() => { isFlippingRef.current = isFlipping; }, [isFlipping]);
     useEffect(() => { isDraggingRef.current = isDragging; }, [isDragging]);
+    useEffect(() => { showToolbarRef.current = showToolbar; }, [showToolbar]);
 
     // Calculated layout mode based on device, manual toggle, orientation, and forced landscape rotation
     const isDouble = !isMobile || mobileDoublePage || (isMobile && isLandscape) || forceLandscape;
@@ -106,14 +108,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
         handleResize();
         window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", checkSize);
+        return () => window.removeEventListener("resize", handleResize);
     }, []);
-
-    // Helper resize link
-    const checkSize = () => {
-        setIsMobile(window.innerWidth < 768);
-        setIsLandscape(window.innerWidth > window.innerHeight);
-    };
 
     // 2. Load PDF document
     useEffect(() => {
@@ -194,7 +190,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const container = containerRef.current;
         if (!container) return;
 
-        // Trigger toolbar display ONLY when touch/mouse action is OUTSIDE of the book wrapper
+        // Toggle toolbar display ONLY when touch/mouse action is OUTSIDE of the book wrapper
         const handleInteraction = (e: Event) => {
             const target = e.target as HTMLElement;
             const isInsideBook = bookWrapperRef.current?.contains(target);
@@ -202,7 +198,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 // Read distraction-free: don't reveal toolbars if touching pages
                 return;
             }
-            handleUserInteraction();
+            
+            // Toggle showing and hiding when clicking/touching outside page
+            if (showToolbarRef.current) {
+                setShowToolbar(false);
+                if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+            } else {
+                handleUserInteraction();
+            }
         };
 
         const handleWheelScroll = (e: WheelEvent) => {
@@ -221,12 +224,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         };
 
-        container.addEventListener("mousemove", handleInteraction);
+        container.addEventListener("mousedown", handleInteraction);
         container.addEventListener("touchstart", handleInteraction);
         container.addEventListener("wheel", handleWheelScroll);
 
         return () => {
-            container.removeEventListener("mousemove", handleInteraction);
+            container.removeEventListener("mousedown", handleInteraction);
             container.removeEventListener("touchstart", handleInteraction);
             container.removeEventListener("wheel", handleWheelScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
@@ -481,7 +484,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         dragStartXRef.current = e.clientX;
         dragCurrentXRef.current = e.clientX;
 
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        // Only capture pointer focus on standard flat zoom modes to prevent panning scroll lockups
+        if (scale <= 1.0) {
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        }
     };
 
     const handlePointerMove = (e: React.PointerEvent) => {
@@ -492,30 +498,70 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const handlePointerUp = (e: React.PointerEvent) => {
         if (!isDragging || isPinchActiveRef.current) return;
         setIsDragging(false);
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        
+        if (scale <= 1.0) {
+            try {
+                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+            } catch (err) {}
+        }
 
         const deltaX = dragCurrentXRef.current - dragStartXRef.current;
         const dragDistance = Math.abs(deltaX);
 
-        if (dragDistance < 15) {
-            const rect = bookWrapperRef.current?.getBoundingClientRect();
-            if (rect) {
-                const clickX = e.clientX - rect.left;
-                if (clickX < rect.width / 2) {
+        // Zoomed swipe navigation overlay: if zoomed in, let swiping at the edges turn the pages!
+        if (scale > 1.0 && dragDistance > 60) {
+            const container = containerRef.current;
+            if (container) {
+                const scrollLeft = container.scrollLeft;
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                
+                // Swipe right at left edge -> Page Prev
+                if (deltaX > 60 && scrollLeft <= 15) {
                     prevPage();
-                } else {
+                    return;
+                }
+                // Swipe left at right edge -> Page Next
+                if (deltaX < -60 && scrollLeft >= maxScroll - 15) {
                     nextPage();
+                    return;
                 }
             }
             return;
         }
 
-        const threshold = window.innerWidth * 0.15;
-        if (dragDistance > threshold) {
-            if (deltaX < 0) {
-                nextPage();
-            } else {
-                prevPage();
+        // Tap Click turn navigation
+        if (dragDistance < 15) {
+            const rect = bookWrapperRef.current?.getBoundingClientRect();
+            if (rect) {
+                // If forced mobile landscape mode, evaluate coordinates vertically along Y axis (rotated 90deg)
+                if (forceLandscape && isMobile) {
+                    const clickY = e.clientY - rect.top;
+                    if (clickY < rect.height / 2) {
+                        prevPage();
+                    } else {
+                        nextPage();
+                    }
+                } else {
+                    const clickX = e.clientX - rect.left;
+                    if (clickX < rect.width / 2) {
+                        prevPage();
+                    } else {
+                        nextPage();
+                    }
+                }
+            }
+            return;
+        }
+
+        // Flat view drag swipes
+        if (scale <= 1.0) {
+            const threshold = window.innerWidth * 0.15;
+            if (dragDistance > threshold) {
+                if (deltaX < 0) {
+                    nextPage();
+                } else {
+                    prevPage();
+                }
             }
         }
     };
@@ -863,7 +909,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)]"
                                 style={{
                                     width: `${pageWidth}px`,
-                                    // Fixed mobile double page flip symmetry: now centers flipping page on the spine (left: 50%) rather than left screen (left: 0px)
                                     left: isDouble ? "50%" : "0px",
                                     transformOrigin: "left center",
                                     transformStyle: "preserve-3d",
