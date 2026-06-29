@@ -215,6 +215,23 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const isToolbarAction = target.closest("button") || target.closest("input");
                 if (isToolbarAction) return;
 
+                // Zoomed-in interaction: Tap screen edges to turn pages
+                if (scaleRef.current > 1.05) {
+                    const width = window.innerWidth;
+                    const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
+                    const canFlipPrev = !isLoading && currentPage > 1;
+
+                    if (e.clientX < width * 0.2 && canFlipPrev) {
+                        prevPage();
+                        return;
+                    }
+                    if (e.clientX > width * 0.8 && canFlipNext) {
+                        nextPage();
+                        return;
+                    }
+                }
+
+                // Default: Toggle toolbar
                 if (showToolbarRef.current) {
                     setShowToolbar(false);
                     if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
@@ -250,7 +267,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             container.removeEventListener("wheel", handleWheelScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
-    }, []);
+    }, [isLoading, isDouble, currentPage, numPages]);
 
     // Sync scale state to ref for touch gesture handler
     const scaleRef = useRef(scale);
@@ -446,7 +463,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     usePortrait: !isDouble,
                     flippingTime: 850,
                     useMouseEvents: true,
-                    showPageCorners: true,
+                    showPageCorners: false,
                     disableFlipByClick: false,
                     mobileScrollSupport: false,
                     clickEventForward: true
@@ -562,11 +579,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         }
     };
 
-    // Double-click to zoom
-    const handleDoubleClick = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setScale((s) => (s > 1.05 ? 1.0 : 1.8));
-    };
+
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -674,7 +687,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 ref={containerRef}
                 className="flex-1 overflow-auto relative"
                 style={{ backgroundColor: "rgba(0,0,0,0.001)" }}
-                onDoubleClick={handleDoubleClick}
             >
                 {/* Fixed Navigation Overlays */}
                 <button
