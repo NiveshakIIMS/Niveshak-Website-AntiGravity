@@ -383,11 +383,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const scaleX = pageWidth / viewport.width;
             const scaleY = pageHeight / viewport.height;
             const fitScale = Math.min(scaleX, scaleY);
-            const finalViewport = page.getViewport({ scale: fitScale });
             
             const dpr = window.devicePixelRatio || 1;
-            const targetWidth = Math.round(finalViewport.width * dpr);
-            const targetHeight = Math.round(finalViewport.height * dpr);
+            const qualityMultiplier = 1.5; // Boost resolution by 1.5x for print-quality sharp text
+            const renderScale = fitScale * dpr * qualityMultiplier;
+            const finalViewport = page.getViewport({ scale: renderScale });
+            
+            const targetWidth = Math.round(finalViewport.width);
+            const targetHeight = Math.round(finalViewport.height);
 
             const offscreen = document.createElement("canvas");
             offscreen.width = targetWidth;
@@ -395,8 +398,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             
             const offscreenCtx = offscreen.getContext("2d");
             if (offscreenCtx) {
-                offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
                 const renderTask = page.render({
                     canvasContext: offscreenCtx,
                     viewport: finalViewport
