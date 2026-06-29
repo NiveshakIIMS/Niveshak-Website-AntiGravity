@@ -28,18 +28,6 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
     }, []);
 
     useEffect(() => {
-        const loadSlides = async () => {
-            try {
-                const loadedSlides = await dataService.getHeroSlides();
-                if (loadedSlides && loadedSlides.length > 0) {
-                    setSlides(loadedSlides);
-                }
-            } catch (err) {
-                console.error("Failed to load slides on client:", err);
-            }
-        };
-        loadSlides();
-
         const handleScroll = () => {
             const scrollY = window.scrollY;
             // Opacity logic for background
@@ -58,6 +46,22 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
         handleScroll();
         window.addEventListener("scroll", handleScroll);
 
+        const loadSlides = async () => {
+            try {
+                const loadedSlides = await dataService.getHeroSlides();
+                if (loadedSlides && loadedSlides.length > 0) {
+                    setSlides(loadedSlides);
+                }
+            } catch (err) {
+                console.error("Failed to load slides on client:", err);
+            }
+        };
+
+        // Only fetch slides on client mount if initialSlides was empty/unpopulated
+        if (!initialSlides || initialSlides.length === 0) {
+            loadSlides();
+        }
+
         const channel = supabase
             .channel("realtime-hero")
             .on(
@@ -73,7 +77,7 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
             window.removeEventListener("scroll", handleScroll);
             supabase.removeChannel(channel);
         };
-    }, [setLogoInNav]);
+    }, [setLogoInNav, initialSlides]);
 
     // Timer for Logo Transition
     useEffect(() => {
