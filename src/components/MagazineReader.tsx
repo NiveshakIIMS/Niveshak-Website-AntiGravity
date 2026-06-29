@@ -706,7 +706,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             >
                                 {/* The container for PageFlip */}
                                 <div 
-                                    key={isDouble ? "double" : "single"}
+                                    key={isDouble ? (forceLandscape ? "double-landscape" : "double-portrait") : "single"}
                                     ref={bookContainerRef}
                                     className="st-pageflip-book"
                                     style={{
