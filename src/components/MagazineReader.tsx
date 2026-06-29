@@ -703,7 +703,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         /* Zoom Scroll Container Wrapper (GPU scale sizing container) */
                         <div
                             style={{
-                                width: `${bookWidth * scale}px`,
+                                width: `${(isDouble ? bookWidth : bookWidth - 1) * scale}px`,
                                 height: `${bookHeight * scale}px`,
                                 position: "relative",
                                 transition: "width 350ms cubic-bezier(0.25, 1, 0.5, 1), height 350ms cubic-bezier(0.25, 1, 0.5, 1)",
@@ -713,7 +713,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             {/* Scaled Book Element */}
                             <div
                                 style={{
-                                    width: `${bookWidth}px`,
+                                    width: `${isDouble ? bookWidth : bookWidth - 1}px`,
                                     height: `${bookHeight}px`,
                                     transform: `scale(${scale}) translateX(${currentPage === 1 && isDouble ? -pageWidth / 2 : 0}px)`,
                                     transformOrigin: "top left",
