@@ -327,24 +327,16 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const availableWidth = wVal - padX;
 
         let height = availableHeight;
-        let width = height / pageRatio;
+        let width = (height / pageRatio) * 2;
 
-        if (isDoubleLayout) {
-            width = width * 2;
-            if (width > availableWidth) {
-                width = availableWidth;
-                height = (width / 2) * pageRatio;
-            }
-        } else {
-            if (width > availableWidth) {
-                width = availableWidth;
-                height = width * pageRatio;
-            }
+        if (width > availableWidth) {
+            width = availableWidth;
+            height = (width / 2) * pageRatio;
         }
 
-        // Ensure width is even when in double page layout to prevent subpixel gaps
+        // Ensure width is even to prevent subpixel gaps
         let finalWidth = Math.round(width);
-        if (isDoubleLayout && finalWidth % 2 !== 0) {
+        if (finalWidth % 2 !== 0) {
             finalWidth -= 1;
         }
 
@@ -436,13 +428,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const { PageFlip } = await import("page-flip");
                 
                 const dims = getBookDimensions();
-                const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
+                const pWidth = Math.round(dims.width / 2);
                 const pHeight = dims.height;
 
                 pageFlipInstance = new PageFlip(bookContainerRef.current, {
                     width: pWidth,
                     height: pHeight,
-                    size: "stretch",
+                    size: "fixed",
                     minWidth: isDouble ? 200 : 99999,
                     maxWidth: 1500,
                     minHeight: 300,
@@ -500,7 +492,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const endActive = Math.min(numPages, currentPage + 3);
 
         const dims = getBookDimensions();
-        const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
+        const pWidth = Math.round(dims.width / 2);
         const pHeight = dims.height;
 
         const renderWidth = Math.round(pWidth * debouncedScale);
@@ -590,7 +582,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const dims = getBookDimensions();
     const bookWidth = dims.width;
     const bookHeight = dims.height;
-    const pageWidth = isDouble ? Math.round(bookWidth / 2) : bookWidth;
+    const pageWidth = Math.round(bookWidth / 2);
 
     return (
         <div 
@@ -728,7 +720,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     position: "absolute",
                                     left: 0,
                                     top: 0,
-                                    transition: "width 350ms cubic-bezier(0.25, 1, 0.5, 1), height 350ms cubic-bezier(0.25, 1, 0.5, 1), transform 350ms cubic-bezier(0.25, 1, 0.5, 1)"
+                                    transition: "transform 350ms cubic-bezier(0.25, 1, 0.5, 1)"
                                 }}
                             >
                                 {/* The container for PageFlip */}
