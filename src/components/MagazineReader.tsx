@@ -712,13 +712,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const bookHeight = dims.height;
     
     // Fix: pageWidth is always halved on desktop double page layout
-    const pageWidth = isDoubleLayout ? (bookWidth / 2) : bookWidth;
+    const pageWidth = isDouble ? (bookWidth / 2) : bookWidth;
 
-    const showLeftPage = isDoubleLayout && (currentPage > 1 || isFlipping);
+    const showLeftPage = isDouble && (currentPage > 1 || isFlipping);
 
-    // Center Cover page layout using GPU translation shift on double page container
-    const needsCoverShift = isDouble && currentPage === 1 && !isFlipping;
-    const shiftX = needsCoverShift ? -pageWidth / 2 : 0;
+    // Keep the cover page only in center (without any black bars beside it, hide them)
+    const currentBookWidth = (isDouble && currentPage === 1 && !isFlipping) ? pageWidth : bookWidth;
 
     // Peak page curl skew value in mid-flight (skew peaks at 90deg, 0 at flat points)
     const progress = Math.abs(flipAngle) / 180;
@@ -805,10 +804,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </div>
             </div>
 
-            {/* Reader Stage (Scroll stage container) */}
+            {/* Reader Stage (Scroll stage container) with 0.1% background opacity to guarantee 100% WebKit mobile touch hit-testing */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-auto relative bg-transparent"
+                className="flex-1 overflow-auto relative"
+                style={{ backgroundColor: "rgba(0,0,0,0.001)" }}
             >
                 {/* Fixed Navigation Overlays */}
                 <button
@@ -840,12 +840,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                             ref={bookWrapperRef}
                             className="relative flex items-center justify-center shadow-[0_30px_70px_rgba(0,0,0,0.85)] bg-[#121212] p-2 rounded-lg border border-white/5 cursor-grab active:cursor-grabbing"
                             style={{
-                                width: `${bookWidth}px`,
+                                width: `${currentBookWidth}px`,
                                 height: `${bookHeight}px`,
                                 perspective: "2500px",
                                 transformStyle: "preserve-3d",
-                                transform: `translateX(${shiftX}px)`,
-                                transition: "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)"
+                                transition: "width 800ms cubic-bezier(0.25, 1, 0.5, 1), transform 800ms cubic-bezier(0.25, 1, 0.5, 1)"
                             }}
                             onPointerDown={handlePointerDown}
                             onPointerMove={handlePointerMove}
