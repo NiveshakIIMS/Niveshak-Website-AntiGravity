@@ -191,6 +191,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [isLoading]);
 
+    // Scroll coordinates tracking refs to lock and restore scroll positions during page flips
+    const lastScrollTopRef = useRef<number>(0);
+    const lastScrollLeftRef = useRef<number>(0);
+    const isFlippingRef = useRef<boolean>(false);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -215,28 +220,26 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const isToolbarAction = target.closest("button") || target.closest("input");
                 if (isToolbarAction) return;
 
-                // Zoomed-in interaction: Tap screen edges to turn pages
-                if (scaleRef.current > 1.05) {
-                    const width = window.innerWidth;
-                    const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
-                    const canFlipPrev = !isLoading && currentPage > 1;
-
-                    if (e.clientX < width * 0.2 && canFlipPrev) {
-                        prevPage();
-                        return;
-                    }
-                    if (e.clientX > width * 0.8 && canFlipNext) {
-                        nextPage();
-                        return;
-                    }
-                }
-
                 // Default: Toggle toolbar
                 if (showToolbarRef.current) {
                     setShowToolbar(false);
                     if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
                 } else {
                     handleUserInteraction();
+                }
+            }
+        };
+
+        const handleContainerDblClick = (e: MouseEvent) => {
+            if (scaleRef.current > 1.05) {
+                const width = window.innerWidth;
+                const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
+                const canFlipPrev = !isLoading && currentPage > 1;
+
+                if (e.clientX < width * 0.3 && canFlipPrev) {
+                    prevPage();
+                } else if (e.clientX > width * 0.7 && canFlipNext) {
+                    nextPage();
                 }
             }
         };
@@ -257,14 +260,25 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         };
 
+        const handleScroll = () => {
+            if (!isFlippingRef.current && container) {
+                lastScrollTopRef.current = container.scrollTop;
+                lastScrollLeftRef.current = container.scrollLeft;
+            }
+        };
+
         container.addEventListener("pointerdown", handleContainerPointerDown);
         container.addEventListener("pointerup", handleContainerPointerUp);
+        container.addEventListener("dblclick", handleContainerDblClick);
         container.addEventListener("wheel", handleWheelScroll);
+        container.addEventListener("scroll", handleScroll, { passive: true });
 
         return () => {
             container.removeEventListener("pointerdown", handleContainerPointerDown);
             container.removeEventListener("pointerup", handleContainerPointerUp);
+            container.removeEventListener("dblclick", handleContainerDblClick);
             container.removeEventListener("wheel", handleWheelScroll);
+            container.removeEventListener("scroll", handleScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
     }, [isLoading, isDouble, currentPage, numPages]);
@@ -484,6 +498,24 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         }
                     });
 
+                    pageFlipInstance.on("changeState", (e: any) => {
+                        if (active) {
+                            if (e.data !== "read") {
+                                isFlippingRef.current = true;
+                            } else {
+                                if (containerRef.current) {
+                                    containerRef.current.scrollTop = lastScrollTopRef.current;
+                                    containerRef.current.scrollLeft = lastScrollLeftRef.current;
+                                }
+                                setTimeout(() => {
+                                    if (active) {
+                                        isFlippingRef.current = false;
+                                    }
+                                }, 50);
+                            }
+                        }
+                    });
+
                     pageFlipRef.current = pageFlipInstance;
                     setIsPageFlipInit(true);
                 }
@@ -687,7 +719,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             <div
                 ref={containerRef}
                 className="flex-1 overflow-auto relative"
-                style={{ backgroundColor: "rgba(0,0,0,0.001)" }}
+                style={{ backgroundColor: "rgba(0,0,0,0.001)", overflowAnchor: "none" }}
             >
                 {/* Fixed Navigation Overlays */}
                 <button
