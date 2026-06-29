@@ -87,6 +87,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Pinch zoom isolation state
     const isPinchActiveRef = useRef<boolean>(false);
 
+    // Unified pointer interaction tracking refs
+    const interactionStartXRef = useRef<number>(0);
+    const interactionStartYRef = useRef<number>(0);
+    const interactionStartTimeRef = useRef<number>(0);
+
     // Sync state values to references to prevent event listener re-bindings and clearTimeout cancellations
     const isFlippingRef = useRef(isFlipping);
     const isDraggingRef = useRef(isDragging);
@@ -187,24 +192,44 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     };
 
     useEffect(() => {
+        if (!isLoading) {
+            handleUserInteraction();
+        }
+        return () => {
+            if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+        };
+    }, [isLoading]);
+
+    useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        // Toggle toolbar display ONLY when touch/mouse action is OUTSIDE of the book wrapper
-        const handleInteraction = (e: Event) => {
-            const target = e.target as HTMLElement;
-            const isInsideBook = bookWrapperRef.current?.contains(target);
-            if (isInsideBook) {
-                // Read distraction-free: don't reveal toolbars if touching pages
-                return;
-            }
+        const handleContainerPointerDown = (e: PointerEvent) => {
+            if (e.button !== 0 && e.pointerType === "mouse") return;
+            interactionStartXRef.current = e.clientX;
+            interactionStartYRef.current = e.clientY;
+            interactionStartTimeRef.current = Date.now();
+        };
+
+        const handleContainerPointerUp = (e: PointerEvent) => {
+            if (isPinchActiveRef.current) return;
             
-            // Toggle showing and hiding when clicking/touching outside page
-            if (showToolbarRef.current) {
-                setShowToolbar(false);
-                if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
-            } else {
-                handleUserInteraction();
+            const deltaX = e.clientX - interactionStartXRef.current;
+            const deltaY = e.clientY - interactionStartYRef.current;
+            const distance = Math.hypot(deltaX, deltaY);
+            const duration = Date.now() - interactionStartTimeRef.current;
+
+            if (distance < 10 && duration < 300) {
+                const target = e.target as HTMLElement;
+                const isToolbarAction = target.closest("button") || target.closest("input");
+                if (isToolbarAction) return;
+
+                if (showToolbarRef.current) {
+                    setShowToolbar(false);
+                    if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+                } else {
+                    handleUserInteraction();
+                }
             }
         };
 
@@ -224,13 +249,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         };
 
-        container.addEventListener("mousedown", handleInteraction);
-        container.addEventListener("touchstart", handleInteraction);
+        container.addEventListener("pointerdown", handleContainerPointerDown);
+        container.addEventListener("pointerup", handleContainerPointerUp);
         container.addEventListener("wheel", handleWheelScroll);
 
         return () => {
-            container.removeEventListener("mousedown", handleInteraction);
-            container.removeEventListener("touchstart", handleInteraction);
+            container.removeEventListener("pointerdown", handleContainerPointerDown);
+            container.removeEventListener("pointerup", handleContainerPointerUp);
             container.removeEventListener("wheel", handleWheelScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
@@ -869,6 +894,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 {showLeftPage && (
                                     <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-black/20 to-transparent pointer-events-none z-10" />
                                 )}
+
+                                {/* Static Page Flip Shadow Overlay */}
+                                {isFlipping && isAnimating && (
+                                    <div 
+                                        className={`absolute inset-0 pointer-events-none z-30 ${
+                                            direction === "next" ? "animate-shadow-left-reveal" : "animate-shadow-left-hide"
+                                        }`}
+                                    />
+                                )}
                             </div>
 
                             {/* RIGHT STATIC PAGE */}
@@ -912,26 +946,37 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         <div className="absolute inset-y-0 right-0 w-[1px] bg-black/20 z-20 pointer-events-none" />
                                     </>
                                 )}
+
+                                {/* Static Page Flip Shadow Overlay */}
+                                {isFlipping && isAnimating && (
+                                    <div 
+                                        className={`absolute inset-0 pointer-events-none z-30 ${
+                                            direction === "next" ? "animate-shadow-right-hide" : "animate-shadow-right-reveal"
+                                        }`}
+                                    />
+                                )}
                             </div>
 
                             {/* 3D FLIPPING SHEET OVERLAY (Unified Right-Hinged 3D Hinge Model) */}
                             <div
-                                className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)]"
+                                className={`absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)] ${
+                                    isAnimating 
+                                        ? (direction === "next" ? "animate-flip-next" : "animate-flip-prev") 
+                                        : ""
+                                }`}
                                 style={{
                                     width: `${pageWidth}px`,
                                     left: isDouble ? "50%" : "0px",
                                     transformOrigin: "left center",
                                     transformStyle: "preserve-3d",
-                                    transform: `rotateY(${flipAngle}deg) skewY(${direction === "next" ? -skewY : skewY}deg)`,
-                                    transition: isAnimating ? "transform 800ms cubic-bezier(0.25, 1, 0.5, 1)" : "none",
                                     pointerEvents: "none",
                                     visibility: isFlipping ? "visible" : "hidden",
-                                    opacity: isFlipping ? 1 : 0
+                                    opacity: isFlipping ? 1 : 0,
+                                    transform: !isAnimating ? `rotateY(${direction === "next" ? 0 : -180}deg) rotateZ(0deg) skewY(0deg)` : undefined
                                 }}
-                                onTransitionEnd={handleAnimationComplete}
+                                onAnimationEnd={handleAnimationComplete}
                             >
                                 {/* FRONT FACE */}
-                                {/** FRONT FACE */}
                                 <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
                                     <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
@@ -948,14 +993,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                             <div className="absolute inset-y-0 left-[8%] w-[1px] bg-black/15 pointer-events-none z-20" />
                                         </>
                                     )}
+
                                     {/* Crease shadow sweep */}
-                                    <div 
-                                        className="absolute inset-0 bg-black pointer-events-none z-30 transition-opacity duration-300"
-                                        style={{
-                                            opacity: isAnimating ? (direction === "next" ? 0.25 : 0) : 0,
-                                            mixBlendMode: "multiply"
-                                        }}
-                                    />
+                                    {isAnimating && (
+                                        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden" style={{ mixBlendMode: "multiply" }}>
+                                            <div 
+                                                className={`absolute inset-y-0 w-[200%] ${
+                                                    direction === "next" ? "animate-sweep-next" : "animate-sweep-prev"
+                                                }`}
+                                                style={{
+                                                    background: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.35) 48%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0) 100%)"
+                                                }}
+                                            />
+                                        </div>
+                                    )}
                                     <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 right-0 bg-gradient-to-l from-black/5 to-transparent" />
                                 </div>
 
@@ -966,14 +1017,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 >
                                     <canvas ref={canvasFlipBackRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+
                                     {/* Crease shadow sweep */}
-                                    <div 
-                                        className="absolute inset-0 bg-black pointer-events-none z-30 transition-opacity duration-300"
-                                        style={{
-                                            opacity: isAnimating ? (direction === "next" ? 0 : 0.25) : 0,
-                                            mixBlendMode: "multiply"
-                                        }}
-                                    />
+                                    {isAnimating && (
+                                        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden" style={{ mixBlendMode: "multiply" }}>
+                                            <div 
+                                                className={`absolute inset-y-0 w-[200%] ${
+                                                    direction === "next" ? "animate-sweep-next" : "animate-sweep-prev"
+                                                }`}
+                                                style={{
+                                                    background: "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.35) 48%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0) 100%)"
+                                                }}
+                                            />
+                                        </div>
+                                    )}
                                     <div className="absolute top-0 bottom-0 w-4 pointer-events-none z-10 left-0 bg-gradient-to-r from-black/5 to-transparent" />
                                 </div>
                             </div>
@@ -1073,6 +1130,175 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 .backface-hidden {
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
+                }
+
+                /* Realistic 3D Page Turn Keyframes */
+                @keyframes flip-next-anim {
+                    0% {
+                        transform: rotateY(0deg) rotateZ(0deg) skewY(0deg) scale(1);
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    }
+                    30% {
+                        transform: rotateY(-54deg) rotateZ(-2.5deg) skewY(-5deg) scale(0.98) translateX(-2px);
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                    }
+                    50% {
+                        transform: rotateY(-90deg) rotateZ(0deg) skewY(-7deg) scale(0.96) translateX(-4px);
+                        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+                    }
+                    70% {
+                        transform: rotateY(-126deg) rotateZ(2.5deg) skewY(-5deg) scale(0.98) translateX(-2px);
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                    }
+                    100% {
+                        transform: rotateY(-180deg) rotateZ(0deg) skewY(0deg) scale(1);
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    }
+                }
+
+                @keyframes flip-prev-anim {
+                    0% {
+                        transform: rotateY(-180deg) rotateZ(0deg) skewY(0deg) scale(1);
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    }
+                    30% {
+                        transform: rotateY(-126deg) rotateZ(2.5deg) skewY(5deg) scale(0.98) translateX(2px);
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                    }
+                    50% {
+                        transform: rotateY(-90deg) rotateZ(0deg) skewY(7deg) scale(0.96) translateX(4px);
+                        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+                    }
+                    70% {
+                        transform: rotateY(-54deg) rotateZ(-2.5deg) skewY(5deg) scale(0.98) translateX(2px);
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                    }
+                    100% {
+                        transform: rotateY(0deg) rotateZ(0deg) skewY(0deg) scale(1);
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    }
+                }
+
+                .animate-flip-next {
+                    animation: flip-next-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                .animate-flip-prev {
+                    animation: flip-prev-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                /* Crease shadow sweep animations */
+                @keyframes sweep-next-anim {
+                    0% {
+                        transform: translateX(50%);
+                        opacity: 0;
+                    }
+                    15% {
+                        opacity: 1;
+                    }
+                    85% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateX(-50%);
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes sweep-prev-anim {
+                    0% {
+                        transform: translateX(-50%);
+                        opacity: 0;
+                    }
+                    15% {
+                        opacity: 1;
+                    }
+                    85% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateX(50%);
+                        opacity: 0;
+                    }
+                }
+
+                .animate-sweep-next {
+                    animation: sweep-next-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                .animate-sweep-prev {
+                    animation: sweep-prev-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                /* Static page reveal/hide shadows */
+                @keyframes shadow-left-reveal-anim {
+                    0% {
+                        opacity: 0;
+                    }
+                    50% {
+                        opacity: 0.45;
+                        background: linear-gradient(to left, rgba(0,0,0,0.55), rgba(0,0,0,0));
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes shadow-left-hide-anim {
+                    0% {
+                        opacity: 0.55;
+                        background: linear-gradient(to left, rgba(0,0,0,0.65), rgba(0,0,0,0));
+                    }
+                    50% {
+                        opacity: 0.25;
+                        background: linear-gradient(to left, rgba(0,0,0,0.35), rgba(0,0,0,0));
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes shadow-right-reveal-anim {
+                    0% {
+                        opacity: 0;
+                    }
+                    50% {
+                        opacity: 0.45;
+                        background: linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0));
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes shadow-right-hide-anim {
+                    0% {
+                        opacity: 0.55;
+                        background: linear-gradient(to right, rgba(0,0,0,0.65), rgba(0,0,0,0));
+                    }
+                    50% {
+                        opacity: 0.25;
+                        background: linear-gradient(to right, rgba(0,0,0,0.35), rgba(0,0,0,0));
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                .animate-shadow-left-reveal {
+                    animation: shadow-left-reveal-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                .animate-shadow-left-hide {
+                    animation: shadow-left-hide-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                .animate-shadow-right-reveal {
+                    animation: shadow-right-reveal-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+
+                .animate-shadow-right-hide {
+                    animation: shadow-right-hide-anim 900ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
                 }
             `}</style>
         </div>
