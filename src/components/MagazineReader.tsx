@@ -43,8 +43,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Dynamic PDF aspect ratio
     const [pageRatio, setPageRatio] = useState<number>(1.414);
 
-    // Responsive Mobile Controls (2-page layout active by default on mobile)
-    const [mobileDoublePage, setMobileDoublePage] = useState<boolean>(true);
+    // Responsive Controls (2-page layout active by default)
+    const [doublePageMode, setDoublePageMode] = useState<boolean>(true);
     const [isLandscape, setIsLandscape] = useState<boolean>(false);
     const [forceLandscape, setForceLandscape] = useState<boolean>(false);
 
@@ -87,7 +87,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     useEffect(() => { showToolbarRef.current = showToolbar; }, [showToolbar]);
 
     // Calculated layout mode based on device, manual toggle, orientation, and forced landscape rotation
-    const isDouble = !isMobile || mobileDoublePage || (isMobile && isLandscape) || forceLandscape;
+    const isDouble = doublePageMode || (isMobile && isLandscape) || forceLandscape;
     const isDoubleLayout = isDouble; // Strictly bound to double-page mode to prevent mid-flip shrinking
 
     // 1. Detect Screen Size & Orientation
@@ -244,6 +244,69 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, []);
 
+    // Sync scale state to ref for touch gesture handler
+    const scaleRef = useRef(scale);
+    useEffect(() => {
+        scaleRef.current = scale;
+    }, [scale]);
+
+    // Mobile Pinch Gesture tracking for smooth zoom
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        let startDist = 0;
+        let startScale = 1.0;
+        let isPinching = false;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                isPinchActiveRef.current = true;
+                isPinching = true;
+                startDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                startScale = scaleRef.current;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault(); // prevent native scroll
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                if (startDist > 0) {
+                    const factor = dist / startDist;
+                    const newScale = Math.min(3.0, Math.max(0.6, startScale * factor));
+                    setScale(newScale);
+                    setZoomInput(Math.round(newScale * 100).toString());
+                }
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (isPinching) {
+                isPinching = false;
+                setTimeout(() => {
+                    isPinchActiveRef.current = false;
+                }, 200);
+            }
+        };
+
+        container.addEventListener("touchstart", handleTouchStart, { passive: true });
+        container.addEventListener("touchmove", handleTouchMove, { passive: false });
+        container.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+        return () => {
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchmove", handleTouchMove);
+            container.removeEventListener("touchend", handleTouchEnd);
+        };
+    }, []);
+
     // Helper: Calculate book dimensions fitting page aspect ratio exactly
     const getBookDimensions = () => {
         const hVal = forceLandscape ? window.innerWidth : window.innerHeight;
@@ -271,9 +334,15 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         }
 
+        // Ensure width is even when in double page layout to prevent subpixel gaps
+        let finalWidth = Math.round(width);
+        if (isDoubleLayout && finalWidth % 2 !== 0) {
+            finalWidth -= 1;
+        }
+
         return {
-            width: Math.round(width * scale),
-            height: Math.round(height * scale)
+            width: finalWidth,
+            height: Math.round(height)
         };
     };
 
@@ -322,8 +391,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
                     canvas.width = targetWidth;
                     canvas.height = targetHeight;
-                    canvas.style.width = `${finalViewport.width}px`;
-                    canvas.style.height = `${finalViewport.height}px`;
                 }
 
                 const ctx = canvas.getContext("2d");
@@ -415,7 +482,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
             pageFlipRef.current = null;
         };
-    }, [pdf, isLoading, isDouble, scale, isMobile, isLandscape, forceLandscape, numPages]);
+    }, [pdf, isLoading, isDouble, forceLandscape, numPages]);
 
     // Active pages renderer effect
     useEffect(() => {
@@ -428,6 +495,9 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const pWidth = isDouble ? Math.round(dims.width / 2) : dims.width;
         const pHeight = dims.height;
 
+        const renderWidth = Math.round(pWidth * scale);
+        const renderHeight = Math.round(pHeight * scale);
+
         for (let pageNum = startActive; pageNum <= endActive; pageNum++) {
             const canvas = pageCanvasesRef.current[pageNum];
             if (canvas) {
@@ -435,8 +505,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     pdf,
                     pageNum,
                     canvas,
-                    pWidth,
-                    pHeight,
+                    renderWidth,
+                    renderHeight,
                     `page-${pageNum}-${scale}`
                 );
             }
@@ -619,69 +689,91 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 </button>
 
                 {/* Centering Wrapper with Generous Scroll Padding, letting zoomed-in readers scroll past margins */}
-                <div className="flex items-center justify-center min-h-full min-w-full p-1 sm:p-20 md:p-36">
-                    {isLoading ? (
+                <div className="flex items-center justify-center min-h-full min-w-full p-1 sm:p-2 md:p-4">
+                    {isLoading || !isPageFlipInit ? (
                         <div className="flex flex-col items-center gap-4 text-white z-40 bg-black/40 p-6 rounded-2xl backdrop-blur-md">
                             <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
                             <span className="text-sm font-semibold tracking-wide animate-pulse">Loading magazine...</span>
                         </div>
                     ) : (
-                        /* The container for PageFlip */
-                        <div 
-                            ref={bookContainerRef}
-                            className="st-pageflip-book"
+                        /* Zoom Scroll Container Wrapper (GPU scale sizing container) */
+                        <div
                             style={{
-                                visibility: isPageFlipInit ? "visible" : "hidden",
-                                margin: "auto",
-                                boxShadow: "0 30px 70px rgba(0,0,0,0.85)",
-                                backgroundColor: "#121212",
-                                pointerEvents: scale > 1.05 ? "none" : "auto"
+                                width: `${bookWidth * scale}px`,
+                                height: `${bookHeight * scale}px`,
+                                position: "relative",
+                                transition: "width 200ms ease, height 200ms ease"
                             }}
-                            onDoubleClick={handleDoubleClick}
                         >
-                            {/* Render all pages */}
-                            {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
-                                const active = isPageActive(pageNum);
-                                return (
-                                    <div 
-                                        key={pageNum}
-                                        className="st-page-wrapper bg-[#151515] overflow-hidden select-none"
-                                        data-density={pageNum === 1 || pageNum === numPages ? "hard" : "soft"}
-                                        style={{
-                                            width: `${pageWidth}px`,
-                                            height: `${bookHeight}px`
-                                        }}
-                                    >
-                                        <div className="relative w-full h-full bg-[#151515] overflow-hidden flex items-center justify-center">
-                                            {active ? (
-                                                <canvas
-                                                    ref={(el) => {
-                                                        pageCanvasesRef.current[pageNum] = el;
-                                                    }}
-                                                    className="block max-w-full max-h-full m-auto"
-                                                />
-                                            ) : (
-                                                <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-                                                    <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                            {/* Scaled Book Element */}
+                            <div
+                                style={{
+                                    width: `${bookWidth}px`,
+                                    height: `${bookHeight}px`,
+                                    transform: `scale(${scale})`,
+                                    transformOrigin: "top left",
+                                    position: "absolute",
+                                    left: 0,
+                                    top: 0
+                                }}
+                            >
+                                {/* The container for PageFlip */}
+                                <div 
+                                    ref={bookContainerRef}
+                                    className="st-pageflip-book"
+                                    style={{
+                                        margin: "auto",
+                                        boxShadow: "0 30px 70px rgba(0,0,0,0.85)",
+                                        backgroundColor: "#121212",
+                                        pointerEvents: scale > 1.05 ? "none" : "auto"
+                                    }}
+                                    onDoubleClick={handleDoubleClick}
+                                >
+                                    {/* Render all pages */}
+                                    {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
+                                        const active = isPageActive(pageNum);
+                                        return (
+                                            <div 
+                                                key={pageNum}
+                                                className="st-page-wrapper bg-[#151515] overflow-hidden select-none"
+                                                data-density={pageNum === 1 || pageNum === numPages ? "hard" : "soft"}
+                                                style={{
+                                                    width: `${pageWidth}px`,
+                                                    height: `${bookHeight}px`
+                                                }}
+                                            >
+                                                <div className="relative w-full h-full bg-[#151515] overflow-hidden flex items-center justify-center">
+                                                    {active ? (
+                                                        <canvas
+                                                            ref={(el) => {
+                                                                pageCanvasesRef.current[pageNum] = el;
+                                                            }}
+                                                            className="block w-full h-full object-fill"
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                                                            <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                                                        </div>
+                                                    )}
+                                                    {/* Paper sheen overlay */}
+                                                    <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                                    
+                                                    {/* Inner Crease Shadow when two pages are open */}
+                                                    {isDoubleLayout && pageNum > 1 && pageNum < numPages && (
+                                                        <div 
+                                                            className={`absolute top-0 bottom-0 w-16 pointer-events-none z-10 ${
+                                                                pageNum % 2 === 0
+                                                                    ? "right-0 bg-gradient-to-l from-black/25 to-transparent" // Left side page: shadow on right
+                                                                    : "left-0 bg-gradient-to-r from-black/25 to-transparent"  // Right side page: shadow on left
+                                                            }`} 
+                                                        />
+                                                    )}
                                                 </div>
-                                            )}
-                                            {/* Paper sheen overlay */}
-                                            <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
-                                            
-                                            {/* Inner Crease Shadow when two pages are open */}
-                                            {isDoubleLayout && pageNum > 1 && pageNum < numPages && (
-                                                <div 
-                                                    className={`absolute top-0 bottom-0 w-16 pointer-events-none z-10 ${
-                                                        pageNum % 2 === 0
-                                                            ? "right-0 bg-gradient-to-l from-black/25 to-transparent" // Left side page: shadow on right
-                                                            : "left-0 bg-gradient-to-r from-black/25 to-transparent"  // Right side page: shadow on left
-                                                    }`} 
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -700,7 +792,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5">
                         <button
                             onClick={() => {
-                                setMobileDoublePage(false);
+                                setDoublePageMode(false);
                             }}
                             className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
                                 !isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"
@@ -711,7 +803,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         </button>
                         <button
                             onClick={() => {
-                                setMobileDoublePage(true);
+                                setDoublePageMode(true);
                             }}
                             className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
                                 isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"

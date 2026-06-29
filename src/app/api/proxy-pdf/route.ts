@@ -17,12 +17,16 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: `Failed to fetch PDF: ${response.statusText}` }, { status: response.status });
         }
 
-        const buffer = await response.arrayBuffer();
         const headers = new Headers();
         headers.set("Content-Type", "application/pdf");
-        headers.set("Cache-Control", "public, max-age=86400");
+        headers.set("Cache-Control", "public, max-age=86400, s-maxage=86400");
+        headers.set("Access-Control-Allow-Origin", "*");
 
-        return new NextResponse(buffer, { headers });
+        return new NextResponse(response.body, { 
+            status: response.status,
+            statusText: response.statusText,
+            headers 
+        });
     } catch (error) {
         console.error("Proxy PDF error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
