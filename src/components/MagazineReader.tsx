@@ -890,16 +890,27 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/20 to-transparent pointer-events-none z-10" />
                                 )}
                                 
-                                {/* Realistic Hardcover Book Styling for Page 1 (Cover Page) */}
+                                {/* Realistic Hardcover Book Shading Overlay for Page 1 (Cover Page) */}
                                 {currentPage === 1 && !isFlipping && (
                                     <>
-                                        {/* Premium Hardcover Leather Spine Binding on the left edge */}
-                                        <div className="absolute top-0 left-0 bottom-0 w-[14px] bg-gradient-to-r from-[#1c1410] to-[#2d201a] border-r border-[#c5a059]/30 z-20 shadow-[inset_-2px_0_5px_rgba(0,0,0,0.6)]" />
-                                        <div className="absolute top-0 left-[14px] bottom-0 w-[1px] bg-[#c5a059]/20 z-20" />
-                                        {/* Spine creasing shadow */}
-                                        <div className="absolute top-0 left-[15px] bottom-0 w-[20px] bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none z-15" />
-                                        {/* Outer binding cover paper shadow edges */}
-                                        <div className="absolute top-0 right-0 bottom-0 w-[1px] bg-black/15 z-20" />
+                                        {/* Realistic Spine highlight and hinge crease shadow without blocking page text */}
+                                        <div 
+                                            className="absolute inset-y-0 left-0 w-[45px] pointer-events-none z-20"
+                                            style={{
+                                                background: "linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.02) 2%, rgba(255,255,255,0.08) 5%, rgba(0,0,0,0.38) 8%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.05) 18%, rgba(0,0,0,0) 35%)"
+                                            }}
+                                        />
+                                        {/* Deep spine crease accent line */}
+                                        <div className="absolute inset-y-0 left-[8%] w-[1px] bg-black/15 pointer-events-none z-20" />
+                                        {/* Soft glare gloss sweep across cover */}
+                                        <div 
+                                            className="absolute inset-y-0 left-0 right-0 pointer-events-none z-25"
+                                            style={{
+                                                background: "linear-gradient(115deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0) 45%)"
+                                            }}
+                                        />
+                                        {/* Soft right page boundary edge shadow */}
+                                        <div className="absolute inset-y-0 right-0 w-[1px] bg-black/20 z-20 pointer-events-none" />
                                     </>
                                 )}
                             </div>
@@ -921,9 +932,23 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 onTransitionEnd={handleAnimationComplete}
                             >
                                 {/* FRONT FACE */}
+                                {/** FRONT FACE */}
                                 <div className="absolute inset-0 bg-white backface-hidden z-20 shadow-2xl">
                                     <canvas ref={canvasFlipFrontRef} className="block w-full h-full" />
                                     <div className="absolute inset-0 magazine-gloss pointer-events-none z-20" />
+                                    
+                                    {/* Cover Crease Shadow on Flipping Front (Cover) */}
+                                    {currentPage === 1 && (
+                                        <>
+                                            <div 
+                                                className="absolute inset-y-0 left-0 w-[45px] pointer-events-none z-20"
+                                                style={{
+                                                    background: "linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.02) 2%, rgba(255,255,255,0.08) 5%, rgba(0,0,0,0.38) 8%, rgba(0,0,0,0.15) 12%, rgba(0,0,0,0.05) 18%, rgba(0,0,0,0) 35%)"
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 left-[8%] w-[1px] bg-black/15 pointer-events-none z-20" />
+                                        </>
+                                    )}
                                     {/* Crease shadow sweep */}
                                     <div 
                                         className="absolute inset-0 bg-black pointer-events-none z-30 transition-opacity duration-300"
