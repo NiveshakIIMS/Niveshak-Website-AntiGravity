@@ -43,10 +43,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Dynamic PDF aspect ratio
     const [pageRatio, setPageRatio] = useState<number>(1.414);
 
-    // Responsive Mobile Controls
-    const [mobileDoublePage, setMobileDoublePage] = useState<boolean>(false);
+    // Responsive Mobile Controls (2-page layout active by default on mobile)
+    const [mobileDoublePage, setMobileDoublePage] = useState<boolean>(true);
     const [isLandscape, setIsLandscape] = useState<boolean>(false);
     const [forceLandscape, setForceLandscape] = useState<boolean>(false);
+
+    // Editable Zoom State
+    const [zoomInput, setZoomInput] = useState<string>("100");
 
     // 3D Hinge Page Flip States (Custom GPU Compositor Engine)
     const [isFlipping, setIsFlipping] = useState<boolean>(false);
@@ -62,6 +65,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     // Modern Distraction-free floating controls timeout
     const [showToolbar, setShowToolbar] = useState<boolean>(true);
     const toolbarTimeoutRef = useRef<any>(null);
+
+    // Scroll Activity trackers for toolbar triggers
+    const lastScrollDirRef = useRef<"up" | "down" | null>(null);
+    const scrollCountRef = useRef<number>(0);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const bookWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -99,8 +106,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
         handleResize();
         window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", checkSize);
     }, []);
+
+    // Helper resize link
+    const checkSize = () => {
+        setIsMobile(window.innerWidth < 768);
+        setIsLandscape(window.innerWidth > window.innerHeight);
+    };
 
     // 2. Load PDF document
     useEffect(() => {
@@ -137,6 +150,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             active = false;
         };
     }, [magazine, onClose]);
+
+    // Keep zoom percentage input in sync when scale state changes
+    useEffect(() => {
+        setZoomInput(Math.round(scale * 100).toString());
+    }, [scale]);
 
     // 3. Laptop Trackpad Pinch-to-zoom Integration
     useEffect(() => {
@@ -176,19 +194,47 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const container = containerRef.current;
         if (!container) return;
 
-        container.addEventListener("mousemove", handleUserInteraction);
-        container.addEventListener("touchstart", handleUserInteraction);
+        // Trigger toolbar display ONLY when touch/mouse action is OUTSIDE of the book wrapper
+        const handleInteraction = (e: Event) => {
+            const target = e.target as HTMLElement;
+            const isInsideBook = bookWrapperRef.current?.contains(target);
+            if (isInsideBook) {
+                // Read distraction-free: don't reveal toolbars if touching pages
+                return;
+            }
+            handleUserInteraction();
+        };
+
+        const handleWheelScroll = (e: WheelEvent) => {
+            if (e.ctrlKey) return;
+            const dir = e.deltaY > 0 ? "down" : "up";
+            if (dir === lastScrollDirRef.current) {
+                scrollCountRef.current += 1;
+            } else {
+                lastScrollDirRef.current = dir;
+                scrollCountRef.current = 1;
+            }
+
+            // Reveal toolbar if scrolling more than once in the same direction
+            if (scrollCountRef.current >= 2) {
+                handleUserInteraction();
+            }
+        };
+
+        container.addEventListener("mousemove", handleInteraction);
+        container.addEventListener("touchstart", handleInteraction);
+        container.addEventListener("wheel", handleWheelScroll);
 
         return () => {
-            container.removeEventListener("mousemove", handleUserInteraction);
-            container.removeEventListener("touchstart", handleUserInteraction);
+            container.removeEventListener("mousemove", handleInteraction);
+            container.removeEventListener("touchstart", handleInteraction);
+            container.removeEventListener("wheel", handleWheelScroll);
             if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
         };
     }, []);
 
     // Helper: Calculate book dimensions fitting page aspect ratio exactly
     const getBookDimensions = () => {
-        // Swap screen bounds if landscape viewport is forced via rotated layout container
         const hVal = forceLandscape ? window.innerWidth : window.innerHeight;
         const wVal = forceLandscape ? window.innerHeight : window.innerWidth;
 
@@ -202,14 +248,12 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         let width = height / pageRatio;
 
         if (isDoubleLayout) {
-            // Double page layout side-by-side
             width = width * 2;
             if (width > availableWidth) {
                 width = availableWidth;
                 height = (width / 2) * pageRatio;
             }
         } else {
-            // Single page portrait layout
             if (width > availableWidth) {
                 width = availableWidth;
                 height = width * pageRatio;
@@ -411,7 +455,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
     // 6. Interactive Drag-to-Flip Physics Handlers
     const handlePointerDown = (e: React.PointerEvent) => {
-        // Ignore navigation clicks/drags completely if touch pinch-zoom is active
         if (isFlipping || isLoading || isDragging || isPinchActiveRef.current) return;
 
         const wrapper = bookWrapperRef.current;
@@ -499,7 +542,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         const handleTouchStart = (e: TouchEvent) => {
             if (e.touches.length === 2) {
                 isPinchActiveRef.current = true;
-                setIsDragging(false); // Instantly cancel any active page dragging!
+                setIsDragging(false);
                 
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
@@ -548,7 +591,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             currentRatioRef.current = 1.0;
 
             if (e.touches.length === 0) {
-                // Short 200ms debounce buffer prevents trailing touch-lifts from triggering page turns
                 setTimeout(() => {
                     isPinchActiveRef.current = false;
                 }, 200);
@@ -565,6 +607,27 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             container.removeEventListener("touchend", handleTouchEnd);
         };
     }, [currentPage, isFlipping, isMobile, isDouble, forceLandscape]);
+
+    // Custom text input zoom handlers
+    const handleZoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setZoomInput(e.target.value);
+    };
+
+    const handleZoomInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            applyCustomZoom();
+        }
+    };
+
+    const applyCustomZoom = () => {
+        const val = parseInt(zoomInput.replace(/%/g, ""), 10);
+        if (!isNaN(val)) {
+            const clamped = Math.min(300, Math.max(50, val));
+            setScale(clamped / 100);
+        } else {
+            setZoomInput(Math.round(scale * 100).toString());
+        }
+    };
 
     // 8. Double-click to zoom
     const handleDoubleClick = (e: React.MouseEvent) => {
@@ -622,7 +685,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 background: "radial-gradient(circle, rgba(13, 27, 42, 0.94) 0%, rgba(6, 12, 20, 0.98) 100%)",
                 backdropFilter: "blur(35px)",
                 WebkitBackdropFilter: "blur(35px)",
-                // Rotates the entire viewport reader 90 degrees if forceLandscape is selected on mobile
                 ...(forceLandscape && isMobile ? {
                     width: "100vh",
                     height: "100vw",
@@ -654,7 +716,21 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     >
                         <ZoomOut className="w-4 h-4 text-gray-300" />
                     </button>
-                    <span className="text-[10px] sm:text-xs font-bold px-1 text-gray-300 w-12 text-center select-none bg-white/5 py-1 rounded-md">{Math.round(scale * 100)}%</span>
+                    
+                    {/* Custom Text input to type custom zoom size percentage */}
+                    <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-md border border-white/10 w-[60px] justify-center">
+                        <input
+                            type="text"
+                            value={zoomInput}
+                            onChange={handleZoomInputChange}
+                            onKeyDown={handleZoomInputKeyDown}
+                            onBlur={applyCustomZoom}
+                            className="text-[10px] sm:text-xs font-bold text-gray-300 w-8 text-center bg-transparent border-none outline-none focus:ring-0 focus:text-white p-0"
+                            title="Set custom zoom % (Enter to apply)"
+                        />
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 select-none">%</span>
+                    </div>
+
                     <button
                         onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
                         className="p-1.5 hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5 active:scale-90"
@@ -767,9 +843,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 {isDoubleLayout && currentPage > 1 && (
                                     <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-black/20 to-transparent pointer-events-none z-10" />
                                 )}
-                                {/* Cover Spine creases */}
-                                {!isMobile && currentPage === 1 && !isFlipping && (
-                                    <div className="absolute top-0 left-0 bottom-0 w-[5px] bg-black/25 pointer-events-none z-10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.4)]" />
+                                
+                                {/* Realistic Hardcover Book Styling for Page 1 (Cover Page) */}
+                                {currentPage === 1 && !isFlipping && (
+                                    <>
+                                        {/* Premium Hardcover Leather Spine Binding on the left edge */}
+                                        <div className="absolute top-0 left-0 bottom-0 w-[14px] bg-gradient-to-r from-[#1c1410] to-[#2d201a] border-r border-[#c5a059]/30 z-20 shadow-[inset_-2px_0_5px_rgba(0,0,0,0.6)]" />
+                                        <div className="absolute top-0 left-[14px] bottom-0 w-[1px] bg-[#c5a059]/20 z-20" />
+                                        {/* Spine creasing shadow */}
+                                        <div className="absolute top-0 left-[15px] bottom-0 w-[20px] bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none z-15" />
+                                        {/* Outer binding cover paper shadow edges */}
+                                        <div className="absolute top-0 right-0 bottom-0 w-[1px] bg-black/15 z-20" />
+                                    </>
                                 )}
                             </div>
 
@@ -778,7 +863,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                 className="absolute top-2 bottom-2 z-30 shadow-[0_20px_50px_rgba(0,0,0,0.65)]"
                                 style={{
                                     width: `${pageWidth}px`,
-                                    left: (!isDouble || isMobile) ? "0px" : "50%",
+                                    // Fixed mobile double page flip symmetry: now centers flipping page on the spine (left: 50%) rather than left screen (left: 0px)
+                                    left: isDouble ? "50%" : "0px",
                                     transformOrigin: "left center",
                                     transformStyle: "preserve-3d",
                                     transform: `rotateY(${flipAngle}deg) skewY(${direction === "next" ? -skewY : skewY}deg)`,
@@ -836,33 +922,43 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-xs font-semibold text-gray-300 tracking-wide select-none">{getPageRangeString()}</span>
                     
-                    {/* Active Mode Indicator label */}
-                    <span className="text-[9px] sm:text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-md font-bold uppercase select-none">
-                        {isDouble ? "2-Page" : "1-Page"}
-                    </span>
-
-                    {/* Toggle Layout Mode Button (Mobile Only) */}
+                    {/* Segmented Mode Selector Controls (both desktop & mobile layout controls) */}
+                    <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5">
+                        <button
+                            onClick={() => {
+                                setMobileDoublePage(false);
+                            }}
+                            className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
+                                !isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"
+                            }`}
+                            title="Single Page Mode"
+                        >
+                            <Layers className="w-3.5 h-3.5" /> <span className="hidden sm:inline">1-Page</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setMobileDoublePage(true);
+                            }}
+                            className={`p-1 px-2 rounded-md transition-all text-[10px] font-bold flex items-center gap-1.5 ${
+                                isDouble ? "bg-orange-500 text-white shadow-md" : "hover:bg-white/5 text-gray-400 hover:text-white"
+                            }`}
+                            title="Double Page Mode"
+                        >
+                            <BookOpen className="w-3.5 h-3.5" /> <span className="hidden sm:inline">2-Page</span>
+                        </button>
+                    </div>
+                    
                     {isMobile && (
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => setMobileDoublePage(!mobileDoublePage)}
-                                className="p-1.5 bg-white/10 hover:bg-white/20 active:scale-90 border border-white/10 rounded-lg text-white transition-all flex items-center gap-1 text-[10px] font-bold"
-                                title={mobileDoublePage ? "Switch to Single Page" : "Switch to Double Page"}
-                            >
-                                {mobileDoublePage ? <Layers className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-                            </button>
-                            
-                            {/* Force Landscape Orientation mode toggle (useful if user has phone rotation lock on) */}
-                            <button
-                                onClick={() => setForceLandscape(!forceLandscape)}
-                                className={`p-1.5 active:scale-90 border rounded-lg transition-all flex items-center gap-1 text-[10px] font-bold ${
-                                    forceLandscape ? "bg-orange-500/20 border-orange-500/30 text-orange-400" : "bg-white/10 border-white/10 text-white"
-                                }`}
-                                title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
-                            >
-                                <RotateCw className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
+                        /* Force Landscape Orientation mode toggle */
+                        <button
+                            onClick={() => setForceLandscape(!forceLandscape)}
+                            className={`p-1.5 active:scale-90 border rounded-lg transition-all flex items-center gap-1 text-[10px] font-bold ${
+                                forceLandscape ? "bg-orange-500/20 border-orange-500/30 text-orange-400" : "bg-white/10 border-white/10 text-white"
+                            }`}
+                            title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
+                        >
+                            <RotateCw className="w-3.5 h-3.5" />
+                        </button>
                     )}
                 </div>
 
