@@ -445,8 +445,11 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     showCover: isDouble,
                     usePortrait: !isDouble,
                     flippingTime: 850,
+                    useMouseEvents: true,
+                    showPageCorners: true,
+                    disableFlipByClick: false,
                     mobileScrollSupport: false,
-                    clickEventForward: false
+                    clickEventForward: true
                 });
 
                 const pages = bookContainerRef.current.querySelectorAll(".st-page-wrapper");
@@ -671,6 +674,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 ref={containerRef}
                 className="flex-1 overflow-auto relative"
                 style={{ backgroundColor: "rgba(0,0,0,0.001)" }}
+                onDoubleClick={handleDoubleClick}
             >
                 {/* Fixed Navigation Overlays */}
                 <button
@@ -737,7 +741,6 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         backgroundColor: "#121212",
                                         pointerEvents: scale > 1.05 ? "none" : "auto"
                                     }}
-                                    onDoubleClick={handleDoubleClick}
                                 >
                                     {/* Render all pages */}
                                     {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
