@@ -435,6 +435,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     width: pWidth,
                     height: pHeight,
                     size: "fixed",
+                    autoSize: false,
                     minWidth: isDouble ? 200 : 99999,
                     maxWidth: 1500,
                     minHeight: 300,
@@ -729,6 +730,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                     ref={bookContainerRef}
                                     className="st-pageflip-book"
                                     style={{
+                                        width: `${isDouble ? bookWidth : bookWidth - 1}px`,
+                                        height: `${bookHeight}px`,
                                         margin: "auto",
                                         boxShadow: "0 30px 70px rgba(0,0,0,0.85)",
                                         backgroundColor: "#121212",
@@ -742,14 +745,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         return (
                                             <div 
                                                 key={pageNum}
-                                                className="st-page-wrapper bg-[#151515] overflow-hidden select-none"
+                                                className="st-page-wrapper bg-white overflow-hidden select-none"
                                                 data-density={isDouble && (pageNum === 1 || pageNum === numPages) ? "hard" : "soft"}
                                                 style={{
                                                     width: `${pageWidth}px`,
                                                     height: `${bookHeight}px`
                                                 }}
                                             >
-                                                <div className="relative w-full h-full bg-[#151515] overflow-hidden flex items-center justify-center">
+                                                <div className="relative w-full h-full bg-white overflow-hidden flex items-center justify-center">
                                                     {active ? (
                                                         <canvas
                                                             ref={(el) => {
