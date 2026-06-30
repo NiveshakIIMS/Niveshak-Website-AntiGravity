@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, TrendingUp, Save, BarChart3, Calendar } from "lucide-react";
 import { dataService, NAVData, calculateTradingYears } from "@/services/dataService";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import AdminButton from "./AdminButton";
 
 export default function NIFManager() {
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [data, setData] = useState<NAVData[]>([]);
     const [metrics, setMetrics] = useState<any>({ annualizedReturn: "", totalAUM: "", ytdReturn: "" });
     const [newEntry, setNewEntry] = useState({ date: "", value: "", nifty50: "" });
@@ -288,13 +289,18 @@ export default function NIFManager() {
                 <div className="flex gap-3">
                     <div className="relative overflow-hidden">
                         <input
+                            ref={fileInputRef}
                             type="file"
                             accept=".xlsx, .xls"
                             onChange={handleFileUpload}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            title="Upload Excel File"
+                            className="hidden"
                         />
-                        <AdminButton variant="success" icon={<Save className="w-5 h-5" />} type="button">
+                        <AdminButton
+                            variant="success"
+                            icon={<Save className="w-5 h-5" />}
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
                             Bulk Upload Excel
                         </AdminButton>
                     </div>

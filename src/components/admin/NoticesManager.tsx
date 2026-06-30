@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Save, FileText, Link as LinkIcon, Upload } from "lucide-react";
+import { Plus, Trash2, Save, FileText, Link as LinkIcon } from "lucide-react";
 import { dataService, Notice } from "@/services/dataService";
 import { motion, AnimatePresence } from "framer-motion";
 import MediaInput from "./MediaInput";
@@ -93,7 +93,8 @@ export default function NoticesManager() {
                 <div className="space-y-4">
                     <AdminButton
                         onClick={startNew}
-                        className="w-full py-4 border-2 border-dashed border-gray-300 dark:border-gray-700 bg-card/50 hover:bg-card hover:border-purple-500 hover:text-purple-500 rounded-xl"
+                        variant="ghost"
+                        className="w-full py-4 border-2 border-dashed border-gray-300 dark:border-gray-700 bg-card/50 hover:bg-card hover:border-purple-500 hover:text-purple-500 text-muted-foreground rounded-xl"
                         icon={<Plus className="w-5 h-5" />}
                     >
                         Post New Notice
