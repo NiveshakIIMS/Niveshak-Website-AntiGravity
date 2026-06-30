@@ -727,8 +727,8 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                                         height: `${bookHeight}px`,
                                         margin: "auto",
                                         boxShadow: "0 30px 70px rgba(0,0,0,0.85)",
-                                        backgroundColor: "#121212",
-                                        pointerEvents: scale > 1.05 ? "none" : "auto"
+                                        backgroundColor: "#000000",
+                                        pointerEvents: "auto"
                                     }}
                                 >
                                     {/* Render all pages */}
