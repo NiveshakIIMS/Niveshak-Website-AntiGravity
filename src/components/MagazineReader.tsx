@@ -218,6 +218,32 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const distance = Math.hypot(deltaX, deltaY);
             const duration = Date.now() - interactionStartTimeRef.current;
 
+            // 1. Swipe Gesture Page Turning (Linear touch swiping)
+            const isSwipe = distance > 30 && duration < 350;
+            if (isSwipe) {
+                const useRotatedCoords = isMobile && forceLandscape;
+                const deltaVal = useRotatedCoords ? deltaY : deltaX;
+                const crossDeltaVal = useRotatedCoords ? deltaX : deltaY;
+
+                // Ensure swipe is horizontal relative to the book orientation
+                if (Math.abs(deltaVal) > Math.abs(crossDeltaVal) * 1.2) {
+                    const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
+                    const canFlipPrev = !isLoading && currentPage > 1;
+
+                    if (deltaVal > 0 && canFlipPrev) {
+                        prevPage();
+                        handleUserInteraction();
+                        return;
+                    }
+                    if (deltaVal < 0 && canFlipNext) {
+                        nextPage();
+                        handleUserInteraction();
+                        return;
+                    }
+                }
+            }
+
+            // 2. Click/Tap Interaction (taps/clicks must have very little movement)
             if (distance < 10 && duration < 300) {
                 const target = e.target as HTMLElement;
                 const isToolbarAction = target.closest("button") || target.closest("input");
@@ -299,7 +325,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         let isPinching = false;
 
         const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length === 2) {
+            if (e.touches.length >= 2) {
                 isPinchActiveRef.current = true;
                 isPinching = true;
                 startDist = Math.hypot(
@@ -307,10 +333,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 startScale = scaleRef.current;
+                e.stopPropagation(); // Stop propagation down to page-flip children
             }
         };
 
         const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length >= 2) {
+                e.stopPropagation(); // Stop propagation down to page-flip children
+            }
             if (isPinching && e.touches.length === 2) {
                 e.preventDefault(); // prevent native scroll
                 const dist = Math.hypot(
@@ -329,23 +359,24 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             }
         };
 
-        const handleTouchEnd = () => {
+        const handleTouchEnd = (e: TouchEvent) => {
             if (isPinching) {
                 isPinching = false;
                 setTimeout(() => {
                     isPinchActiveRef.current = false;
                 }, 200);
+                e.stopPropagation(); // Stop propagation down to page-flip children
             }
         };
 
-        container.addEventListener("touchstart", handleTouchStart, { passive: true });
-        container.addEventListener("touchmove", handleTouchMove, { passive: false });
-        container.addEventListener("touchend", handleTouchEnd, { passive: true });
+        container.addEventListener("touchstart", handleTouchStart, { capture: true, passive: false });
+        container.addEventListener("touchmove", handleTouchMove, { capture: true, passive: false });
+        container.addEventListener("touchend", handleTouchEnd, { capture: true, passive: false });
 
         return () => {
-            container.removeEventListener("touchstart", handleTouchStart);
-            container.removeEventListener("touchmove", handleTouchMove);
-            container.removeEventListener("touchend", handleTouchEnd);
+            container.removeEventListener("touchstart", handleTouchStart, { capture: true });
+            container.removeEventListener("touchmove", handleTouchMove, { capture: true });
+            container.removeEventListener("touchend", handleTouchEnd, { capture: true });
         };
     }, []);
 
@@ -865,14 +896,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
                     >
                         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            {/* Rotated device/phone in the center */}
-                            <rect x="9" y="5" width="6" height="14" rx="1.5" transform="rotate(45 12 12)" />
-                            {/* Left arrow revolving up */}
-                            <path d="M5.5 15A7 7 0 0 1 5.5 9" />
-                            <polyline points="8 9 5 9 5 12" />
-                            {/* Right arrow revolving down */}
-                            <path d="M18.5 9A7 7 0 0 1 18.5 15" />
-                            <polyline points="16 15 19 15 19 12" />
+                            {/* Vertical Smartphone Outline */}
+                            <rect x="8" y="4" width="8" height="16" rx="2" />
+                            {/* Top Speaker Capsule */}
+                            <line x1="11" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1.5" />
+                            {/* Bottom Home Indicator Capsule */}
+                            <line x1="11" y1="18" x2="13" y2="18" stroke="currentColor" strokeWidth="1.5" />
+                            
+                            {/* Left Revolving Arrow curving Upwards */}
+                            <path d="M4.5 15.5A7 7 0 0 1 4.5 8.5" />
+                            <polyline points="2.5 10.5 4.5 8.5 6.5 10.5" />
+                            
+                            {/* Right Revolving Arrow curving Downwards */}
+                            <path d="M19.5 8.5A7 7 0 0 1 19.5 15.5" />
+                            <polyline points="17.5 13.5 19.5 15.5 21.5 13.5" />
                         </svg>
                     </button>
                 )}
