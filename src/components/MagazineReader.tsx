@@ -98,11 +98,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const isDouble = doublePageMode || forceLandscape;
     const isDoubleLayout = isDouble; // Strictly bound to double-page mode to prevent mid-flip shrinking
 
-    // 1. Detect Screen Size & Orientation
+    // 1. Detect Screen Size & Orientation & Set Default Mobile Reading Mode (2-pager Landscape)
+    const hasDefaultedMobileRef = useRef<boolean>(false);
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
             setIsLandscape(window.innerWidth > window.innerHeight);
+
+            // Change default reading mode on mobile to 2-pager landscape by default
+            if (mobile && !hasDefaultedMobileRef.current) {
+                hasDefaultedMobileRef.current = true;
+                setForceLandscape(true);
+            }
         };
         handleResize();
         window.addEventListener("resize", handleResize);
@@ -217,16 +225,20 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                 // Mobile Touch Edge-Tapping (any zoom scale) OR Desktop Zoomed-in Edge-Clicking
                 if (isMobile || scaleRef.current > 1.05) {
-                    const width = window.innerWidth;
+                    // In mobile landscape mode, the stage is rotated by 90deg, so left/right pages map to physical top/bottom coordinates (clientY)
+                    const useRotatedCoords = isMobile && forceLandscape;
+                    const clientVal = useRotatedCoords ? e.clientY : e.clientX;
+                    const limitVal = useRotatedCoords ? window.innerHeight : window.innerWidth;
+
                     const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
                     const canFlipPrev = !isLoading && currentPage > 1;
 
-                    if (e.clientX < width * 0.35 && canFlipPrev) {
+                    if (clientVal < limitVal * 0.35 && canFlipPrev) {
                         prevPage();
                         handleUserInteraction();
                         return;
                     }
-                    if (e.clientX > width * 0.65 && canFlipNext) {
+                    if (clientVal > limitVal * 0.65 && canFlipNext) {
                         nextPage();
                         handleUserInteraction();
                         return;
@@ -307,7 +319,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 );
                 if (startDist > 0) {
                     const factor = dist / startDist;
-                    const newScale = Math.min(3.0, Math.max(0.6, startScale * factor));
+                    // Apply a damping factor (0.35) to prevent overly sensitive zoom jumps
+                    const damping = 0.35;
+                    const dampedFactor = 1 + (factor - 1) * damping;
+                    const newScale = Math.min(3.0, Math.max(0.6, startScale * dampedFactor));
                     setScale(newScale);
                     setZoomInput(Math.round(newScale * 100).toString());
                 }
@@ -811,9 +826,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                         <ZoomOut className="w-4 h-4 text-gray-300" />
                     </button>
 
-                    <span className="text-xs font-bold text-gray-300 select-none min-w-[35px] text-center">
-                        {Math.round(scale * 100)}%
-                    </span>
+                    <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-md border border-white/10 w-[55px] justify-center select-none">
+                        <input
+                            type="text"
+                            value={zoomInput}
+                            onChange={handleZoomInputChange}
+                            onKeyDown={handleZoomInputKeyDown}
+                            onBlur={applyCustomZoom}
+                            className="text-[10px] sm:text-xs font-bold text-gray-300 w-8 text-center bg-transparent border-none outline-none focus:ring-0 focus:text-white p-0"
+                            title="Set custom zoom % (Enter to apply)"
+                        />
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 select-none">%</span>
+                    </div>
 
                     <button
                         onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
