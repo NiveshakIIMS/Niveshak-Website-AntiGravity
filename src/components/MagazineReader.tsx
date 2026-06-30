@@ -814,114 +814,113 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
             {/* Bottom Floating Glass Toolbar */}
             <div 
-                className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4 text-white z-50 shadow-2xl transition-all duration-500 ease-in-out ${
+                className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-3 sm:px-5 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col items-center gap-2 text-white z-50 shadow-2xl transition-all duration-500 ease-in-out w-fit max-w-[95%] ${
                     showToolbar ? "translate-y-0 opacity-100 scale-100" : "translate-y-24 opacity-0 scale-95 pointer-events-none"
                 }`}
             >
-                {/* Page Navigation */}
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={prevPage}
-                        disabled={isLoading || currentPage === 1}
-                        className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
-                        title="Previous Page"
-                    >
-                        <ChevronLeft className="w-4 h-4 text-gray-300" />
-                    </button>
-                    
-                    <span className="text-xs font-semibold text-gray-300 select-none min-w-[55px] text-center">
-                        {currentPage} / {numPages}
-                    </span>
+                {/* Row 1: Main controls */}
+                <div className="flex items-center gap-2 sm:gap-4 select-none">
+                    {/* Page Navigation */}
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={prevPage}
+                            disabled={isLoading || currentPage === 1}
+                            className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
+                            title="Previous Page"
+                        >
+                            <ChevronLeft className="w-4 h-4 text-gray-300" />
+                        </button>
+                        
+                        <span className="text-xs font-semibold text-gray-300 select-none min-w-[45px] sm:min-w-[55px] text-center">
+                            {currentPage} / {numPages}
+                        </span>
 
-                    <button
-                        onClick={nextPage}
-                        disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages)}
-                        className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
-                        title="Next Page"
-                    >
-                        <ChevronRight className="w-4 h-4 text-gray-300" />
-                    </button>
-                </div>
-
-                <div className="h-4 w-[1px] bg-white/10" />
-
-                {/* Zoom Controls */}
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
-                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
-                        title="Zoom Out"
-                    >
-                        <ZoomOut className="w-4 h-4 text-gray-300" />
-                    </button>
-
-                    <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-md border border-white/10 w-[55px] justify-center select-none">
-                        <input
-                            type="text"
-                            value={zoomInput}
-                            onChange={handleZoomInputChange}
-                            onKeyDown={handleZoomInputKeyDown}
-                            onBlur={applyCustomZoom}
-                            className="text-[10px] sm:text-xs font-bold text-gray-300 w-8 text-center bg-transparent border-none outline-none focus:ring-0 focus:text-white p-0"
-                            title="Set custom zoom % (Enter to apply)"
-                        />
-                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 select-none">%</span>
+                        <button
+                            onClick={nextPage}
+                            disabled={isLoading || (isDouble ? currentPage + 1 >= numPages : currentPage === numPages)}
+                            className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-xl transition-all active:scale-90"
+                            title="Next Page"
+                        >
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </button>
                     </div>
 
+                    <div className="h-4 w-[1px] bg-white/10" />
+
+                    {/* Zoom Controls */}
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setScale((s) => Math.max(0.6, s - 0.15))}
+                            className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                            title="Zoom Out"
+                        >
+                            <ZoomOut className="w-4 h-4 text-gray-300" />
+                        </button>
+
+                        <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-md border border-white/10 w-[55px] justify-center select-none">
+                            <input
+                                type="text"
+                                value={zoomInput}
+                                onChange={handleZoomInputChange}
+                                onKeyDown={handleZoomInputKeyDown}
+                                onBlur={applyCustomZoom}
+                                className="text-[10px] sm:text-xs font-bold text-gray-300 w-8 text-center bg-transparent border-none outline-none focus:ring-0 focus:text-white p-0"
+                                title="Set custom zoom % (Enter to apply)"
+                            />
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-400 select-none">%</span>
+                        </div>
+
+                        <button
+                            onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
+                            className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                            title="Zoom In"
+                        >
+                            <ZoomIn className="w-4 h-4 text-gray-300" />
+                        </button>
+                    </div>
+
+                    <div className="h-4 w-[1px] bg-white/10" />
+
+                    {/* Layout Mode Toggle */}
                     <button
-                        onClick={() => setScale((s) => Math.min(2.5, s + 0.15))}
+                        onClick={() => setDoublePageMode(!doublePageMode)}
                         className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
-                        title="Zoom In"
+                        title={isDouble ? "Switch to 1-Page Layout" : "Switch to 2-Page Layout"}
                     >
-                        <ZoomIn className="w-4 h-4 text-gray-300" />
+                        {isDouble ? <Layers className="w-4 h-4 text-gray-300" /> : <BookOpen className="w-4 h-4 text-gray-300" />}
+                    </button>
+
+                    {/* Fullscreen Toggle */}
+                    <button
+                        onClick={toggleFullscreen}
+                        className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+                        title="Toggle Fullscreen"
+                    >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
                     </button>
                 </div>
 
-                <div className="h-4 w-[1px] bg-white/10" />
-
-                {/* Layout Mode Toggle */}
-                <button
-                    onClick={() => setDoublePageMode(!doublePageMode)}
-                    className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
-                    title={isDouble ? "Switch to 1-Page Layout" : "Switch to 2-Page Layout"}
-                >
-                    {isDouble ? <Layers className="w-4 h-4 text-gray-300" /> : <BookOpen className="w-4 h-4 text-gray-300" />}
-                </button>
-
-                {/* Force Landscape Orientation mode toggle (Mobile 2-Pager only) */}
+                {/* Row 2: Portrait/Landscape selector (Mobile 2-Pager only) */}
                 {isMobile && isDouble && (
-                    <button
-                        onClick={() => setForceLandscape(!forceLandscape)}
-                        className="p-1.5 bg-white text-[#1c1c1e] hover:bg-white/95 rounded-full transition-all active:scale-90 shadow-lg flex items-center justify-center w-8 h-8 flex-shrink-0"
-                        title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
-                    >
-                        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            {/* Vertical Smartphone Outline */}
-                            <rect x="8" y="4" width="8" height="16" rx="2" />
-                            {/* Top Speaker Capsule */}
-                            <line x1="11" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1.5" />
-                            {/* Bottom Home Indicator Capsule */}
-                            <line x1="11" y1="18" x2="13" y2="18" stroke="currentColor" strokeWidth="1.5" />
-                            
-                            {/* Left Revolving Arrow curving Upwards */}
-                            <path d="M4.5 15.5A7 7 0 0 1 4.5 8.5" />
-                            <polyline points="2.5 10.5 4.5 8.5 6.5 10.5" />
-                            
-                            {/* Right Revolving Arrow curving Downwards */}
-                            <path d="M19.5 8.5A7 7 0 0 1 19.5 15.5" />
-                            <polyline points="17.5 13.5 19.5 15.5 21.5 13.5" />
-                        </svg>
-                    </button>
+                    <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 text-[10px] font-bold select-none mt-1">
+                        <button
+                            onClick={() => setForceLandscape(false)}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                                !forceLandscape ? "bg-white text-black shadow-sm" : "text-gray-400 hover:text-white"
+                            }`}
+                        >
+                            Portrait
+                        </button>
+                        <button
+                            onClick={() => setForceLandscape(true)}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                                forceLandscape ? "bg-white text-black shadow-sm" : "text-gray-400 hover:text-white"
+                            }`}
+                        >
+                            Landscape
+                        </button>
+                    </div>
                 )}
-
-                {/* Fullscreen Toggle */}
-                <button
-                    onClick={toggleFullscreen}
-                    className="p-1.5 hover:bg-white/10 rounded-xl transition-all active:scale-90"
-                    title="Toggle Fullscreen"
-                >
-                    {isFullscreen ? <Minimize2 className="w-4 h-4 text-gray-300" /> : <Maximize2 className="w-4 h-4 text-gray-300" />}
-                </button>
             </div>
  
             <style jsx global>{`
