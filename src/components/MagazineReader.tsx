@@ -272,27 +272,25 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     return;
                 }
 
-                // If touched inside the pages, page turns by touching should happen but NEVER trigger toolbar
-                if (isMobile || scaleRef.current > 1.05) {
-                    // In mobile landscape mode, the stage is rotated by 90deg, so left/right pages map to physical top/bottom coordinates (clientY)
-                    const useRotatedCoords = isMobile && forceLandscape;
-                    const clientVal = useRotatedCoords ? e.clientY : e.clientX;
-                    const limitVal = useRotatedCoords ? window.innerHeight : window.innerWidth;
+                // If touched/clicked inside the pages, page turns should happen ONLY if clicked on the 30% left/right edges of the screen/viewport
+                const useRotatedCoords = isMobile && forceLandscape;
+                const clientVal = useRotatedCoords ? e.clientY : e.clientX;
+                const limitVal = useRotatedCoords ? window.innerHeight : window.innerWidth;
 
-                    const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
-                    const canFlipPrev = !isLoading && currentPage > 1;
+                const canFlipNext = !isLoading && (isDouble ? currentPage + 1 < numPages : currentPage < numPages);
+                const canFlipPrev = !isLoading && currentPage > 1;
 
-                    if (clientVal < limitVal * 0.35 && canFlipPrev) {
-                        prevPage();
-                        if (showToolbarRef.current) handleUserInteraction();
-                        return;
-                    }
-                    if (clientVal > limitVal * 0.65 && canFlipNext) {
-                        nextPage();
-                        if (showToolbarRef.current) handleUserInteraction();
-                        return;
-                    }
+                if (clientVal < limitVal * 0.30 && canFlipPrev) {
+                    prevPage();
+                    if (showToolbarRef.current) handleUserInteraction();
+                    return;
                 }
+                if (clientVal > limitVal * 0.70 && canFlipNext) {
+                    nextPage();
+                    if (showToolbarRef.current) handleUserInteraction();
+                    return;
+                }
+                // Clicking in the middle (between 30% and 70%) of the magazine does absolutely nothing
             }
         };
 
@@ -528,7 +526,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                     flippingTime: 850,
                     useMouseEvents: true,
                     showPageCorners: false,
-                    disableFlipByClick: false,
+                    disableFlipByClick: true,
                     mobileScrollSupport: false,
                     clickEventForward: true
                 });
