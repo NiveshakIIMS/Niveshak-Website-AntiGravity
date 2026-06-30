@@ -88,6 +88,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
     const interactionStartXRef = useRef<number>(0);
     const interactionStartYRef = useRef<number>(0);
     const interactionStartTimeRef = useRef<number>(0);
+    const interactionStartTargetRef = useRef<HTMLElement | null>(null);
 
     // Sync state values to references to prevent event listener re-bindings and clearTimeout cancellations
     const showToolbarRef = useRef(showToolbar);
@@ -208,6 +209,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             interactionStartXRef.current = e.clientX;
             interactionStartYRef.current = e.clientY;
             interactionStartTimeRef.current = Date.now();
+            interactionStartTargetRef.current = e.target as HTMLElement;
         };
 
         const handleContainerPointerUp = (e: PointerEvent) => {
@@ -218,9 +220,13 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const distance = Math.hypot(deltaX, deltaY);
             const duration = Date.now() - interactionStartTimeRef.current;
 
+            const startTarget = interactionStartTargetRef.current;
+            const startInsideBook = !!startTarget?.closest(".st-pageflip-book");
+
             // 1. Swipe Gesture Page Turning (Linear touch swiping)
+            // Swiping to turn pages should only happen if the swipe started inside the magazine
             const isSwipe = distance > 30 && duration < 350;
-            if (isSwipe) {
+            if (isSwipe && startInsideBook) {
                 const useRotatedCoords = isMobile && forceLandscape;
                 const deltaVal = useRotatedCoords ? deltaY : deltaX;
                 const crossDeltaVal = useRotatedCoords ? deltaX : deltaY;
@@ -232,12 +238,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                     if (deltaVal > 0 && canFlipPrev) {
                         prevPage();
-                        handleUserInteraction();
+                        // Swipe touches should not trigger the toolbar to come back (stay hidden)
+                        if (showToolbarRef.current) {
+                            handleUserInteraction();
+                        }
                         return;
                     }
                     if (deltaVal < 0 && canFlipNext) {
                         nextPage();
-                        handleUserInteraction();
+                        // Swipe touches should not trigger the toolbar to come back (stay hidden)
+                        if (showToolbarRef.current) {
+                            handleUserInteraction();
+                        }
                         return;
                     }
                 }
@@ -249,7 +261,18 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 const isToolbarAction = target.closest("button") || target.closest("input");
                 if (isToolbarAction) return;
 
-                // Mobile Touch Edge-Tapping (any zoom scale) OR Desktop Zoomed-in Edge-Clicking
+                if (!startInsideBook) {
+                    // Touching in the black area outside the magazine triggers the toolbox to appear/toggle
+                    if (showToolbarRef.current) {
+                        setShowToolbar(false);
+                        if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
+                    } else {
+                        handleUserInteraction();
+                    }
+                    return;
+                }
+
+                // If touched inside the pages, page turns by touching should happen but NEVER trigger toolbar
                 if (isMobile || scaleRef.current > 1.05) {
                     // In mobile landscape mode, the stage is rotated by 90deg, so left/right pages map to physical top/bottom coordinates (clientY)
                     const useRotatedCoords = isMobile && forceLandscape;
@@ -261,22 +284,14 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
 
                     if (clientVal < limitVal * 0.35 && canFlipPrev) {
                         prevPage();
-                        handleUserInteraction();
+                        if (showToolbarRef.current) handleUserInteraction();
                         return;
                     }
                     if (clientVal > limitVal * 0.65 && canFlipNext) {
                         nextPage();
-                        handleUserInteraction();
+                        if (showToolbarRef.current) handleUserInteraction();
                         return;
                     }
-                }
-
-                // Default: Toggle toolbar
-                if (showToolbarRef.current) {
-                    setShowToolbar(false);
-                    if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
-                } else {
-                    handleUserInteraction();
                 }
             }
         };
