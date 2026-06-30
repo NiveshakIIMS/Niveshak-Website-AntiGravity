@@ -623,9 +623,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         <div 
             className="fixed inset-0 z-50 flex flex-col justify-between select-none transition-colors duration-500"
             style={{
-                background: "radial-gradient(circle, rgba(13, 27, 42, 0.94) 0%, rgba(6, 12, 20, 0.98) 100%)",
-                backdropFilter: "blur(35px)",
-                WebkitBackdropFilter: "blur(35px)",
+                backgroundColor: "#000000",
                 ...(forceLandscape && isMobile ? {
                     width: "100vh",
                     height: "100vw",
@@ -645,7 +643,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 }`}
             >
                 <div className="flex flex-col min-w-0 pr-4">
-                    <span className="font-bold text-xs sm:text-sm text-orange-500 tracking-wide uppercase whitespace-normal">{magazine.title}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#00A8E8] tracking-wide uppercase whitespace-normal">{magazine.title}</span>
                     <span className="text-[10px] text-gray-400 font-medium">{magazine.issueMonth} {magazine.issueYear}</span>
                 </div>
 
@@ -863,12 +861,19 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
                 {isMobile && isDouble && (
                     <button
                         onClick={() => setForceLandscape(!forceLandscape)}
-                        className={`p-1.5 rounded-xl transition-all active:scale-90 ${
-                            forceLandscape ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "hover:bg-white/10 text-gray-300"
-                        }`}
+                        className="p-1.5 bg-white text-[#1c1c1e] hover:bg-white/95 rounded-full transition-all active:scale-90 shadow-lg flex items-center justify-center w-8 h-8 flex-shrink-0"
                         title={forceLandscape ? "Disable Forced Landscape" : "Force Landscape Mode"}
                     >
-                        <RotateCw className="w-4 h-4" />
+                        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Rotated device/phone in the center */}
+                            <rect x="9" y="5" width="6" height="14" rx="1.5" transform="rotate(45 12 12)" />
+                            {/* Left arrow revolving up */}
+                            <path d="M5.5 15A7 7 0 0 1 5.5 9" />
+                            <polyline points="8 9 5 9 5 12" />
+                            {/* Right arrow revolving down */}
+                            <path d="M18.5 9A7 7 0 0 1 18.5 15" />
+                            <polyline points="16 15 19 15 19 12" />
+                        </svg>
                     </button>
                 )}
 
