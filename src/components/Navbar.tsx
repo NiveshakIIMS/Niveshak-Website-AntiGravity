@@ -60,12 +60,12 @@ export default function Navbar() {
         <>
             <nav className="fixed w-full z-50 transition-all duration-300 bg-navy-900/70 border-b border-navy-800 shadow-lg backdrop-blur-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20 relative">
+                <div className="flex items-center justify-between lg:justify-center gap-3 lg:gap-5 xl:gap-6 h-20 relative w-full">
 
                     {/* Left Logos Wrapper */}
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 h-20">
+                    <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 h-20">
                         {/* Section 1: IIM Shillong Logo (Left) */}
-                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
+                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
                             <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
                         </a>
 
@@ -76,14 +76,14 @@ export default function Navbar() {
                                     <>
                                         <motion.div
                                             layoutId="niveshak-logo"
-                                            className="relative w-9 h-9 sm:w-10 sm:h-10 transform transition-transform group-hover:scale-110 shrink-0"
+                                            className="relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 transform transition-transform group-hover:scale-110 shrink-0"
                                             transition={{ duration: 0.5 }}
                                         >
                                             <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
                                         </motion.div>
                                         <motion.span
                                             layoutId="niveshak-title"
-                                            className="font-bold text-lg sm:text-xl tracking-tight text-white block whitespace-nowrap shrink-0"
+                                            className="font-bold text-sm sm:text-base md:text-lg lg:text-xl tracking-tight text-white block whitespace-nowrap shrink-0"
                                             transition={{ duration: 0.5 }}
                                         >
                                             NIVESHAK
@@ -97,7 +97,7 @@ export default function Navbar() {
                     {/* Section 3: Right Side (Desktop & Mobile) */}
                     <div className="flex items-center gap-2 lg:gap-3 xl:gap-4 shrink-0">
                         {/* Desktop Navigation & Actions (Visible on Laptop/Desktop lg: 1024px+) */}
-                        <div className="hidden lg:flex items-center gap-2 lg:gap-3 xl:gap-4 shrink-0">
+                        <div className="hidden lg:flex items-center gap-3 lg:gap-4 xl:gap-5 shrink-0">
                             {/* Nav Items Container */}
                             <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm relative shrink-0">
                                 {navItems.map((item) => {
@@ -163,34 +163,33 @@ export default function Navbar() {
                             </Link>
                         </div>
 
-                        {/* Mobile Theme Toggle Icon (Visible on mobile/tablet < lg) */}
-                        <button
-                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                            className="flex lg:hidden p-2 bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white rounded-full transition-all border border-navy-700/50 active:scale-95 shrink-0"
-                            aria-label="Toggle Theme"
-                        >
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={theme}
-                                    initial={{ scale: 0.6, opacity: 0, rotate: -45 }}
-                                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                                    exit={{ scale: 0.6, opacity: 0, rotate: 45 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    {theme === 'light' ? <Sun className="w-5 h-5 text-white" /> : <Moon className="w-5 h-5 text-blue-300" />}
-                                </motion.div>
-                            </AnimatePresence>
-                        </button>
+                        {/* Mobile Theme Toggle Icon & Menu Button */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
+                            <button
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                                className="p-1.5 sm:p-2 bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white rounded-full transition-all border border-navy-700/50 active:scale-95 shrink-0"
+                                aria-label="Toggle Theme"
+                            >
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={theme}
+                                        initial={{ scale: 0.6, opacity: 0, rotate: -45 }}
+                                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                        exit={{ scale: 0.6, opacity: 0, rotate: 45 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        {theme === 'light' ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-300" />}
+                                    </motion.div>
+                                </AnimatePresence>
+                            </button>
 
-                        {/* Mobile Menu Button (Visible on mobile/tablet < lg) */}
-                        <div className="flex items-center lg:hidden shrink-0">
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
                                 type="button"
-                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-800 focus:outline-none"
+                                className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-800 focus:outline-none shrink-0"
                             >
                                 <span className="sr-only">Open main menu</span>
-                                {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                                {isOpen ? <X className="block h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="block h-5 w-5 sm:h-6 sm:w-6" />}
                             </button>
                         </div>
                     </div>
