@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -19,10 +20,7 @@ export default function ResourcesSection({ resources: initialResources = [], sho
     const [isLoading, setIsLoading] = useState(initialResources.length === 0);
 
     useEffect(() => {
-        if (initialResources.length > 0) {
-            setResources(initialResources);
-            setIsLoading(false);
-        } else {
+        if (initialResources.length === 0) {
             setIsLoading(true);
         }
 

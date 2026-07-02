@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Plus, Trash2, GripVertical, Check, X, Linkedin, Instagram, Facebook, Twitter, Youtube, Mail, Link as LinkIcon, Globe } from "lucide-react";
+import { Save, Plus, Trash2, Check, X, Linkedin, Instagram, Facebook, Twitter, Youtube, Mail, Globe } from "lucide-react";
 import { dataService, SocialLink } from "@/services/dataService";
 import AdminButton from "./AdminButton";
 

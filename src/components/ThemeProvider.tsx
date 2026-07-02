@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -19,6 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Check local storage only
         const savedTheme = localStorage.getItem("theme") as Theme | null;
         if (savedTheme) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTheme(savedTheme);
         }
         // Default is already 'light' in useState, so we don't need to do anything else.

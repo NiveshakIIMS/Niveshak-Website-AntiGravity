@@ -17,10 +17,6 @@ export default function EventsClient({ initialEvents = [] }: EventsClientProps) 
     const [month, setMonth] = useState("All");
 
     useEffect(() => {
-        if (initialEvents.length > 0) {
-            setEvents(initialEvents);
-        }
-
         const fetchFreshEvents = () => {
             dataService.getEvents()
                 .then(freshEvents => {

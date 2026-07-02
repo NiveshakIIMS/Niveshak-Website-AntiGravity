@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -98,7 +99,7 @@ async function handleProxy(request: NextRequest, context: { params: Promise<{ pa
                 }, { status: 400 });
             }
             body = request.body;
-        } catch (e) {
+        } catch {
             // Non-JSON or malformed payloads fallback
             body = request.body;
         }

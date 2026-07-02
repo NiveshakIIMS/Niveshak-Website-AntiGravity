@@ -2,8 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { ArrowRight, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { dataService, HeroSlide } from "@/services/dataService";
 import { isVideoUrl } from "@/lib/utils";
@@ -24,6 +23,7 @@ export default function Hero({ initialSlides = [] }: HeroProps) {
 
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
 

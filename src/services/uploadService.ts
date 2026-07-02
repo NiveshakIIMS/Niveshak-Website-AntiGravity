@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 
-interface UploadResponse {
+export interface UploadResponse {
     uploadUrl: string;
     publicUrl: string;
     key: string;

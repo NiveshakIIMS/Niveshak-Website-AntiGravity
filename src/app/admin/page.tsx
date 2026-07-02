@@ -28,7 +28,7 @@ export default function AdminPage() {
             return;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.auth.getUser();
         // Check if user has enrolled factors
         const { data: factors } = await supabase.auth.mfa.listFactors();
         const hasFactors = factors && factors.totp.length > 0;
@@ -53,6 +53,7 @@ export default function AdminPage() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {

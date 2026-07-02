@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Security validation and input sanitization helpers.
  */
@@ -57,7 +58,7 @@ export function validateUrl(url: string | null | undefined): string {
             return parsed.toString();
         }
         return "";
-    } catch (_) {
+    } catch {
         return ""; // Invalid URL
     }
 }

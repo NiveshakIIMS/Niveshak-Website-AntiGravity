@@ -1,5 +1,6 @@
 
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/lib/supabaseClient";
 import { R2_DOMAIN } from "@/lib/constants";
 
@@ -241,7 +242,7 @@ export const dataService = {
         const { data: globalData, error: globalError } = await supabase.from('about_content').select('*').eq('id', 'about').single();
 
         // Fetch sections
-        const { data: sectionsData, error: sectionsError } = await supabase
+        const { data: sectionsData } = await supabase
             .from('about_sections')
             .select('*')
             .order('display_order', { ascending: true });

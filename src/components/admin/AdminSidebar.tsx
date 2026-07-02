@@ -1,8 +1,8 @@
 "use client";
 
-import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, Settings, LogOut, FileText, ArrowLeft, Image as ImageIcon, Award, X, Calculator, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Calendar, TrendingUp, LogOut, FileText, ArrowLeft, Image as ImageIcon, Award, X, Calculator, Sun, Moon } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface AdminSidebarProps {

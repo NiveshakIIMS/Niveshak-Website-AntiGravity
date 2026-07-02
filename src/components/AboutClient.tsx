@@ -53,12 +53,6 @@ export default function AboutClient({ data: initialData }: AboutClientProps) {
         <BookOpen key="book" className="w-8 h-8 text-blue-400" />
     ];
 
-    const features = data?.cards ? data.cards.map((card, idx) => ({
-        icon: icons[idx] || <Target className="w-8 h-8 text-blue-400" />,
-        title: card.title,
-        description: card.description
-    })) : [];
-
     // Helper to split title for styling (Last word accent)
     const renderTitle = (title: string) => {
         if (!title) return "";

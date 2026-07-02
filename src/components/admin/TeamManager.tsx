@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Users, Save, X, Linkedin, Mail, Award } from "lucide-react";
+import { Plus, Trash2, Edit2, Users, X, Linkedin, Mail, Award } from "lucide-react";
 import { dataService, TeamMember, HallOfFameMember } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";

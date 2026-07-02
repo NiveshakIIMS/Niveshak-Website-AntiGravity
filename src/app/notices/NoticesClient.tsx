@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { dataService, Notice } from "@/services/dataService";
 import NoticeCard from "@/components/NoticeCard";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -19,10 +18,6 @@ export default function NoticesClient({ initialNotices = [] }: NoticesClientProp
     const [month, setMonth] = useState("All");
 
     useEffect(() => {
-        if (initialNotices.length > 0) {
-            setNotices(initialNotices);
-        }
-
         const fetchFreshNotices = () => {
             dataService.getNotices()
                 .then(freshNotices => {
@@ -116,7 +111,7 @@ export default function NoticesClient({ initialNotices = [] }: NoticesClientProp
                     <div className="flex flex-col md:flex-row justify-center items-center gap-6">
                         {/* Filters */}
                         <div className="flex flex-wrap justify-center gap-3">
-                            {categories.map((cat, idx) => (
+                            {categories.map((cat) => (
                                 <button
                                     key={cat}
                                     onClick={() => setFilter(cat)}

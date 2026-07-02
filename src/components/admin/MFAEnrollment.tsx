@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import QRCode from "qrcode";
-import { Copy, Check, ShieldCheck, Loader2, AlertTriangle, X } from "lucide-react";
+import { Copy, ShieldCheck, Loader2, AlertTriangle, X } from "lucide-react";
 
 interface MFAEnrollmentProps {
     onEnrollmentComplete: () => void;
@@ -37,7 +37,7 @@ export default function MFAEnrollment({ onEnrollmentComplete, onCancel }: MFAEnr
                     for (const factor of factors.totp) {
                         try {
                             await supabase.auth.mfa.unenroll({ factorId: factor.id });
-                        } catch (e) {
+                        } catch {
                             console.warn("Retrying cleanup for factor:", factor.id);
                         }
                     }

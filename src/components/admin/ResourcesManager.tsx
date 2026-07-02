@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Link as LinkIcon, FileText, Image as ImageIcon, Save, Loader2, X } from "lucide-react";
+import { Plus, Link as LinkIcon, FileText, Image as ImageIcon, Save, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService, Resource } from "@/services/dataService";
 import { uploadService } from "@/services/uploadService";

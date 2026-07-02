@@ -30,7 +30,7 @@ export default function MFAVerification({ onVerifySuccess }: MFAVerificationProp
                 throw new Error("No MFA factor found.");
             }
 
-            const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+            const { error } = await supabase.auth.mfa.challengeAndVerify({
                 factorId: totpFactor.id,
                 code: code,
             });

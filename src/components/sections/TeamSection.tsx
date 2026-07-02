@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,10 +19,7 @@ export default function TeamSection({ showTitle = true, showHallOfFame = false, 
     const [isLoading, setIsLoading] = useState(initialMembers.length === 0);
 
     useEffect(() => {
-        if (initialMembers.length > 0) {
-            setMembers(initialMembers);
-            setIsLoading(false);
-        } else {
+        if (initialMembers.length === 0) {
             setIsLoading(true);
         }
 

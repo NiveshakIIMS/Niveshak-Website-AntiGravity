@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
 "use client";
 
 import { useState, useEffect } from "react";
 import { dataService, NAVData, NIFInvestment, calculateTradingYears } from "@/services/dataService";
 import Footer from "@/components/Footer";
 import Link from "next/link";
-import { ArrowLeft, Calculator, TrendingUp, TrendingDown, ArrowUpRight, Activity, Calendar, Info, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingUp, TrendingDown, ArrowUpRight, Activity, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CalculatorClientProps {

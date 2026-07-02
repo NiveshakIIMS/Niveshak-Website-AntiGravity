@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Calendar, BookOpen, Save, X, Download } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
 import { dataService, Magazine } from "@/services/dataService";
 import MediaInput from "./MediaInput";
 import { motion, AnimatePresence } from "framer-motion";

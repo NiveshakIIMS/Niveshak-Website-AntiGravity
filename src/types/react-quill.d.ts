@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'react-quill' {
     import React from 'react';
     export interface ReactQuillProps {

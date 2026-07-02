@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react/no-unescaped-entities */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -40,15 +40,15 @@ export default function RedemptionManager() {
         'link'
     ];
 
-    useEffect(() => {
-        loadCards();
-        dataService.getRedemptionLink().then(setRedeemLink);
-    }, []);
-
     const loadCards = async () => {
         const data = await dataService.getRedemptionCards();
         setCards(data);
     };
+
+    useEffect(() => {
+        loadCards();
+        dataService.getRedemptionLink().then(setRedeemLink);
+    }, []);
 
     const handleSaveLink = async () => {
         setLinkSaving(true);

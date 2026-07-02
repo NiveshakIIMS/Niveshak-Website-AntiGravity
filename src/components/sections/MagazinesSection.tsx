@@ -1,6 +1,6 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { motion } from "framer-motion";
 import { BookOpen, FileText, ArrowRight, ArrowDownUp, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { dataService, Magazine } from "@/services/dataService";

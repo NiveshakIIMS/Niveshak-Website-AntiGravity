@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { dataService, NAVData, NIFMetrics, calculateTradingYears } from "@/services/dataService";
@@ -45,6 +44,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -288,7 +288,7 @@ export default function DashboardClient({ initialNAVData = [], initialMetrics = 
                                                 verticalAlign="bottom"
                                                 height={36}
                                                 iconType="circle"
-                                                formatter={(value, entry: any) => <span className="text-foreground font-medium ml-1">{value}</span>}
+                                                formatter={(value) => <span className="text-foreground font-medium ml-1">{value}</span>}
                                             />
                                         </PieChart>
                                     </ResponsiveContainer>

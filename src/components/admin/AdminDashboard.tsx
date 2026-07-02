@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ShieldCheck, Menu, LayoutDashboard } from "lucide-react";
 import AdminSidebar from "./AdminSidebar";
 import HeroManager from "./HeroManager";

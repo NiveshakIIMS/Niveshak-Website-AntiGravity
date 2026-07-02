@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Youtube, Check, Copy, Globe } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Mail, Youtube, Globe } from "lucide-react";
 import { dataService, SocialLink } from "@/services/dataService";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -65,9 +65,9 @@ export default function Footer() {
                             <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
                                 <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
                             </a>
-                            <a href="/" className="shrink-0 hover:opacity-90 transition-opacity">
+                            <Link href="/" className="shrink-0 hover:opacity-90 transition-opacity">
                                 <img src="/logo.png" alt="Niveshak" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
-                            </a>
+                            </Link>
                         </div>
                         <div className="flex flex-col gap-4 pt-0 lg:pt-1.5 pl-0 lg:pl-2">
                             <h3 className="text-lg font-semibold text-white uppercase tracking-wide leading-none">Niveshak</h3>

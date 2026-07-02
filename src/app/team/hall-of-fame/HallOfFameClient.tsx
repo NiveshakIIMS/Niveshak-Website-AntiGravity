@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,10 +23,7 @@ export default function HallOfFameClient({ initialMembers = [] }: HallOfFameClie
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // A-Z default
 
     useEffect(() => {
-        if (initialMembers.length > 0) {
-            setMembers(initialMembers);
-            setLoading(false);
-        } else {
+        if (initialMembers.length === 0) {
             setLoading(true);
         }
 
