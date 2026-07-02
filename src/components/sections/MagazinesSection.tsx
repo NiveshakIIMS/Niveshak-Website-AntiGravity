@@ -233,7 +233,7 @@ function MagazineCard({ mag, index = 0, onOpenReader }: { mag: Magazine; index?:
                     {hasReaderSupport && (
                         <button
                             onClick={() => onOpenReader(mag)}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 dark:bg-accent text-white font-bold text-sm shadow-md hover:bg-orange-700 dark:hover:bg-blue-600 active:scale-95 transition-all ${
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-white font-bold text-sm shadow-md shadow-accent/25 hover:bg-blue-600 active:scale-95 transition-all ${
                                 pdfLink ? "flex-1" : "w-full"
                             }`}
                         >
