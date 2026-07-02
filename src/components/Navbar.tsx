@@ -157,6 +157,20 @@ export default function Navbar() {
                                 </motion.div>
                             </button>
 
+                            {/* Install App Button */}
+                            <button
+                                onClick={() => {
+                                    if (window.showNiveshakInstallPrompt) {
+                                        window.showNiveshakInstallPrompt();
+                                    }
+                                }}
+                                className="px-3 lg:px-4 py-2 rounded-full bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-wide transition-all border border-navy-700/50 flex items-center gap-1.5 shrink-0"
+                                title="Install Niveshak App"
+                            >
+                                <Download className="w-3.5 h-3.5 text-accent" />
+                                <span>Install App</span>
+                            </button>
+
                             {/* Admin Button */}
                             <Link href="/admin" className="px-4 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap shrink-0">
                                 Admin
@@ -238,8 +252,6 @@ export default function Navbar() {
                                     setIsOpen(false);
                                     if (window.showNiveshakInstallPrompt) {
                                         window.showNiveshakInstallPrompt();
-                                    } else {
-                                        alert("PWA installation is not supported on this browser/device. Try opening in Safari (iOS) or Chrome (Android).");
                                     }
                                 }}
                                 className="w-full text-left block px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide text-gray-300 hover:text-white hover:bg-navy-800 transition-colors flex items-center justify-between"
