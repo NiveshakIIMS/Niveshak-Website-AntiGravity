@@ -65,9 +65,9 @@ export default function Footer() {
                             <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
                                 <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
                             </a>
-                            <Link href="/" className="shrink-0 hover:opacity-90 transition-opacity">
+                            <a href="/" className="shrink-0 hover:opacity-90 transition-opacity">
                                 <img src="/logo.png" alt="Niveshak" className="w-24 h-24 lg:w-28 lg:h-28 bg-white rounded-full p-0.5 object-contain shadow-lg" />
-                            </Link>
+                            </a>
                         </div>
                         <div className="flex flex-col gap-4 pt-0 lg:pt-1.5 pl-0 lg:pl-2">
                             <h3 className="text-lg font-semibold text-white uppercase tracking-wide leading-none">Niveshak</h3>
@@ -85,7 +85,6 @@ export default function Footer() {
                             <li><Link href="/team" className="hover:text-blue-400 transition-colors">Team</Link></li>
                             <li><Link href="/magazines" className="hover:text-blue-400 transition-colors">Niveshak Magazine</Link></li>
                             <li><Link href="/dashboard" className="hover:text-blue-400 transition-colors">NIF Dashboard</Link></li>
-                            <li><button onClick={() => window.showNiveshakInstallPrompt?.()} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Install Web App</button></li>
                         </ul>
                     </div>
 
