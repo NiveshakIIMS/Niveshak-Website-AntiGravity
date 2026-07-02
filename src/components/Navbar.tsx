@@ -60,7 +60,7 @@ export default function Navbar() {
         <>
             <nav className="fixed w-full z-50 transition-all duration-300 bg-navy-900/70 border-b border-navy-800 shadow-lg backdrop-blur-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between lg:justify-center gap-3 lg:gap-5 xl:gap-6 h-20 relative w-full">
+                <div className="flex items-center justify-center gap-2.5 sm:gap-3.5 lg:gap-5 xl:gap-6 h-20 relative w-full">
 
                     {/* Left Logos Wrapper */}
                     <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 h-20">
@@ -83,7 +83,7 @@ export default function Navbar() {
                                         </motion.div>
                                         <motion.span
                                             layoutId="niveshak-title"
-                                            className="font-bold text-sm sm:text-base md:text-lg lg:text-xl tracking-tight text-white block whitespace-nowrap shrink-0"
+                                            className="font-extrabold text-base sm:text-lg md:text-xl lg:text-xl tracking-tight text-white block whitespace-nowrap shrink-0"
                                             transition={{ duration: 0.5 }}
                                         >
                                             NIVESHAK
