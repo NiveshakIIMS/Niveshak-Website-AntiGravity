@@ -63,27 +63,27 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20 relative">
 
                     {/* Left Logos Wrapper */}
-                    <div className="flex items-center gap-3 w-auto h-20">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 h-20">
                         {/* Section 1: IIM Shillong Logo (Left) */}
-                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
+                        <a href="https://www.iimshillong.ac.in/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-white rounded-full p-0.5 overflow-hidden shadow-sm hover:scale-105 transition-transform shrink-0">
                             <img src="/iim-shillong-logo.png" alt="IIM Shillong" className="w-full h-full object-contain" />
                         </a>
 
                         {/* Section 2: Niveshak Logo */}
-                        <div className="flex-shrink-0 w-auto h-20 overflow-visible relative flex items-center justify-center">
-                            <Link href="/" className="flex items-center gap-3 group">
+                        <div className="shrink-0 w-auto h-20 overflow-visible relative flex items-center justify-center">
+                            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
                                 {isLogoInNav && (
                                     <>
                                         <motion.div
                                             layoutId="niveshak-logo"
-                                            className="relative w-10 h-10 transform transition-transform group-hover:scale-110"
+                                            className="relative w-9 h-9 sm:w-10 sm:h-10 transform transition-transform group-hover:scale-110 shrink-0"
                                             transition={{ duration: 0.5 }}
                                         >
                                             <img className="w-full h-full object-contain" src="/logo.png" alt="Niveshak Logo" />
                                         </motion.div>
                                         <motion.span
                                             layoutId="niveshak-title"
-                                            className="font-bold text-xl tracking-tight text-white block whitespace-nowrap"
+                                            className="font-bold text-lg sm:text-xl tracking-tight text-white block whitespace-nowrap shrink-0"
                                             transition={{ duration: 0.5 }}
                                         >
                                             NIVESHAK
@@ -95,18 +95,18 @@ export default function Navbar() {
                     </div>
 
                     {/* Section 3: Right Side (Desktop & Mobile) */}
-                    <div className="flex items-center gap-2.5 md:gap-4">
-                        {/* Desktop Navigation & Actions */}
-                        <div className="hidden md:flex items-center gap-3 lg:gap-4">
+                    <div className="flex items-center gap-2 lg:gap-3 xl:gap-4 shrink-0">
+                        {/* Desktop Navigation & Actions (Visible on Laptop/Desktop lg: 1024px+) */}
+                        <div className="hidden lg:flex items-center gap-2 lg:gap-3 xl:gap-4 shrink-0">
                             {/* Nav Items Container */}
-                            <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm relative">
+                            <div className="flex bg-navy-800/50 p-1 rounded-full border border-navy-700/50 backdrop-blur-sm relative shrink-0">
                                 {navItems.map((item) => {
                                     const active = isActive(item.href);
                                     return (
                                         <Link
                                             key={item.name}
                                             href={item.href}
-                                            className={`relative px-3 lg:px-4 py-1.5 lg:py-2 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-colors duration-300 whitespace-nowrap z-10 ${active
+                                            className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11px] xl:text-xs font-bold uppercase tracking-wider transition-colors duration-300 whitespace-nowrap z-10 ${active
                                                 ? "text-navy-900"
                                                 : "text-gray-300 hover:text-white hover:bg-navy-800/30"
                                                 }`}
@@ -127,14 +127,14 @@ export default function Navbar() {
                             {/* Theme Toggle (Neumorphic Pill) */}
                             <button
                                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                                className="relative flex items-center w-[90px] lg:w-[104px] h-[34px] lg:h-[40px] rounded-full bg-navy-900/90 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50"
+                                className="relative flex items-center w-[84px] xl:w-[96px] h-[32px] xl:h-[36px] rounded-full bg-navy-900/90 shadow-[inset_0_3px_6px_rgba(0,0,0,0.6),inset_0_-1px_2px_rgba(255,255,255,0.05)] p-1 shrink-0 outline-none border border-navy-800/50"
                                 aria-label="Toggle Theme"
                                 style={{ justifyContent: theme === 'light' ? 'flex-start' : 'flex-end' }}
                             >
                                 {/* Text Background */}
-                                <div className="absolute inset-0 flex items-center justify-between px-2.5 lg:px-3.5 pointer-events-none">
-                                    <span className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'dark' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>DARK</span>
-                                    <span className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'light' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>LIGHT</span>
+                                <div className="absolute inset-0 flex items-center justify-between px-2 xl:px-3 pointer-events-none">
+                                    <span className={`text-[9px] xl:text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'dark' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>DARK</span>
+                                    <span className={`text-[9px] xl:text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300 ${theme === 'light' ? 'text-gray-300 opacity-100' : 'opacity-0'}`}>LIGHT</span>
                                 </div>
                                 
                                 {/* Thumb */}
@@ -151,36 +151,22 @@ export default function Navbar() {
                                             exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
                                             transition={{ duration: 0.2 }}
                                         >
-                                            {theme === 'light' ? <Sun className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-white" /> : <Moon className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-300" />}
+                                            {theme === 'light' ? <Sun className="w-3.5 h-3.5 text-white" /> : <Moon className="w-3.5 h-3.5 text-blue-300" />}
                                         </motion.div>
                                     </AnimatePresence>
                                 </motion.div>
                             </button>
 
-                            {/* Install App Button */}
-                            <button
-                                onClick={() => {
-                                    if (window.showNiveshakInstallPrompt) {
-                                        window.showNiveshakInstallPrompt();
-                                    }
-                                }}
-                                className="px-3 lg:px-4 py-2 rounded-full bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-wide transition-all border border-navy-700/50 flex items-center gap-1.5 shrink-0"
-                                title="Install Niveshak App"
-                            >
-                                <Download className="w-3.5 h-3.5 text-accent" />
-                                <span>Install App</span>
-                            </button>
-
                             {/* Admin Button */}
-                            <Link href="/admin" className="px-4 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap shrink-0">
+                            <Link href="/admin" className="px-3.5 xl:px-5 py-1.5 xl:py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[11px] xl:text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-all transform hover:-translate-y-0.5 shadow-md whitespace-nowrap shrink-0">
                                 Admin
                             </Link>
                         </div>
 
-                        {/* Mobile Theme Toggle Icon (Just the icon, visible on mobile only) */}
+                        {/* Mobile Theme Toggle Icon (Visible on mobile/tablet < lg) */}
                         <button
                             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                            className="flex md:hidden p-2 bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white rounded-full transition-all border border-navy-700/50 active:scale-95 shrink-0"
+                            className="flex lg:hidden p-2 bg-navy-800/60 hover:bg-navy-800 text-gray-300 hover:text-white rounded-full transition-all border border-navy-700/50 active:scale-95 shrink-0"
                             aria-label="Toggle Theme"
                         >
                             <AnimatePresence mode="wait">
@@ -196,8 +182,8 @@ export default function Navbar() {
                             </AnimatePresence>
                         </button>
 
-                        {/* Mobile Menu Button */}
-                        <div className="flex items-center md:hidden">
+                        {/* Mobile Menu Button (Visible on mobile/tablet < lg) */}
+                        <div className="flex items-center lg:hidden shrink-0">
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
                                 type="button"
@@ -212,8 +198,8 @@ export default function Navbar() {
             </div>
         </nav>
 
-        {/* Mobile Menu Dropdown Card (Floating glassmorphism card with cool spring animations) */}
-        <div className="fixed inset-x-0 top-0 z-40 pointer-events-none md:hidden">
+        {/* Mobile Menu Dropdown Card (Floating glassmorphism card for < lg screens) */}
+        <div className="fixed inset-x-0 top-0 z-40 pointer-events-none lg:hidden">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
