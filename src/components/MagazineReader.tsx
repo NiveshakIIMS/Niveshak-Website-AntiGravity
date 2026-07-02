@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -224,9 +225,10 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             const startInsideBook = !!startTarget?.closest(".st-pageflip-book");
 
             // 1. Swipe Gesture Page Turning (Linear touch swiping)
-            // Swiping to turn pages should only happen if the swipe started inside the magazine
+            // Swiping to turn pages should only happen if the swipe started inside the magazine and reader is not zoomed in
+            const isZoomed = scaleRef.current > 1.05;
             const isSwipe = distance > 30 && duration < 350;
-            if (isSwipe && startInsideBook) {
+            if (isSwipe && startInsideBook && !isZoomed) {
                 const useRotatedCoords = isMobile && forceLandscape;
                 const deltaVal = useRotatedCoords ? deltaY : deltaX;
                 const crossDeltaVal = useRotatedCoords ? deltaX : deltaY;
@@ -322,63 +324,179 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
         };
     }, [isLoading, isDouble, currentPage, numPages, isMobile]);
 
-    // Sync scale state to ref for touch gesture handler
+    // Sync state to refs for event handlers
     const scaleRef = useRef(scale);
-    useEffect(() => {
-        scaleRef.current = scale;
-    }, [scale]);
+    useEffect(() => { scaleRef.current = scale; }, [scale]);
 
-    // Mobile Pinch Gesture tracking for smooth zoom
+    const forceLandscapeRef = useRef(forceLandscape);
+    useEffect(() => { forceLandscapeRef.current = forceLandscape; }, [forceLandscape]);
+
+    const isMobileRef = useRef(isMobile);
+    useEffect(() => { isMobileRef.current = isMobile; }, [isMobile]);
+
+    const isLandscapeRef = useRef(isLandscape);
+    useEffect(() => { isLandscapeRef.current = isLandscape; }, [isLandscape]);
+
+    const touchStateRef = useRef<{
+        isTracking: boolean;
+        touchCount: number;
+        prevCenterX: number;
+        prevCenterY: number;
+        startDist: number;
+        startScale: number;
+        isVerticalDrag: boolean | null;
+    }>({
+        isTracking: false,
+        touchCount: 0,
+        prevCenterX: 0,
+        prevCenterY: 0,
+        startDist: 0,
+        startScale: 1.0,
+        isVerticalDrag: null
+    });
+
+    // Unified Mobile Touch Gesture Controller (Pinch Zoom + 2-Finger 4-Way Scroll + 1-Finger Landscape/Zoom Scroll)
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        let startDist = 0;
-        let startScale = 1.0;
-        let isPinching = false;
-
         const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length >= 2) {
+            const touches = e.touches;
+            const count = touches.length;
+
+            if (count === 1) {
+                touchStateRef.current = {
+                    isTracking: true,
+                    touchCount: 1,
+                    prevCenterX: touches[0].clientX,
+                    prevCenterY: touches[0].clientY,
+                    startDist: 0,
+                    startScale: scaleRef.current,
+                    isVerticalDrag: null
+                };
+            } else if (count >= 2) {
                 isPinchActiveRef.current = true;
-                isPinching = true;
-                startDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
+                const dist = Math.hypot(
+                    touches[0].clientX - touches[1].clientX,
+                    touches[0].clientY - touches[1].clientY
                 );
-                startScale = scaleRef.current;
-                e.stopPropagation(); // Stop propagation down to page-flip children
+                const centerX = (touches[0].clientX + touches[1].clientX) / 2;
+                const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+
+                touchStateRef.current = {
+                    isTracking: true,
+                    touchCount: count,
+                    prevCenterX: centerX,
+                    prevCenterY: centerY,
+                    startDist: dist,
+                    startScale: scaleRef.current,
+                    isVerticalDrag: null
+                };
+
+                e.stopPropagation();
             }
         };
 
         const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length >= 2) {
-                e.stopPropagation(); // Stop propagation down to page-flip children
-            }
-            if (isPinching && e.touches.length === 2) {
-                e.preventDefault(); // prevent native scroll
+            if (!container || !touchStateRef.current.isTracking) return;
+
+            const touches = e.touches;
+            const count = touches.length;
+            const isRotated = forceLandscapeRef.current && isMobileRef.current;
+            const currentScale = scaleRef.current;
+
+            if (count >= 2) {
+                // 2-Finger Gesture: Pan/Scroll in all 4 directions (left/right/top/down) + Pinch Zoom
+                e.stopPropagation();
+                e.preventDefault();
+
+                const touchesArr = Array.from(touches);
+                const centerX = (touchesArr[0].clientX + touchesArr[1].clientX) / 2;
+                const centerY = (touchesArr[0].clientY + touchesArr[1].clientY) / 2;
                 const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
+                    touchesArr[0].clientX - touchesArr[1].clientX,
+                    touchesArr[0].clientY - touchesArr[1].clientY
                 );
-                if (startDist > 0) {
-                    const factor = dist / startDist;
-                    // Apply a damping factor (0.35) to prevent overly sensitive zoom jumps
+
+                const deltaX_screen = centerX - touchStateRef.current.prevCenterX;
+                const deltaY_screen = centerY - touchStateRef.current.prevCenterY;
+
+                touchStateRef.current.prevCenterX = centerX;
+                touchStateRef.current.prevCenterY = centerY;
+
+                // Compute scroll deltas mapped to orientation
+                let dx = deltaX_screen;
+                let dy = deltaY_screen;
+                if (isRotated) {
+                    dx = deltaY_screen;
+                    dy = -deltaX_screen;
+                }
+
+                container.scrollLeft -= dx;
+                container.scrollTop -= dy;
+
+                // Pinch zoom scaling
+                if (touchStateRef.current.startDist > 0 && dist > 0) {
+                    const factor = dist / touchStateRef.current.startDist;
                     const damping = 0.35;
                     const dampedFactor = 1 + (factor - 1) * damping;
-                    const newScale = Math.min(3.0, Math.max(0.6, startScale * dampedFactor));
+                    const newScale = Math.min(3.0, Math.max(0.6, touchStateRef.current.startScale * dampedFactor));
                     setScale(newScale);
                     setZoomInput(Math.round(newScale * 100).toString());
+                }
+
+            } else if (count === 1) {
+                // 1-Finger Gesture
+                const clientX = touches[0].clientX;
+                const clientY = touches[0].clientY;
+
+                const deltaX_screen = clientX - touchStateRef.current.prevCenterX;
+                const deltaY_screen = clientY - touchStateRef.current.prevCenterY;
+
+                touchStateRef.current.prevCenterX = clientX;
+                touchStateRef.current.prevCenterY = clientY;
+
+                let dx = deltaX_screen;
+                let dy = deltaY_screen;
+                if (isRotated) {
+                    dx = deltaY_screen;
+                    dy = -deltaX_screen;
+                }
+
+                if (touchStateRef.current.isVerticalDrag === null) {
+                    if (Math.abs(deltaY_screen) > Math.abs(deltaX_screen) + 2) {
+                        touchStateRef.current.isVerticalDrag = true;
+                    } else if (Math.abs(deltaX_screen) > Math.abs(deltaY_screen) + 2) {
+                        touchStateRef.current.isVerticalDrag = false;
+                    }
+                }
+
+                const isZoomed = currentScale > 1.05;
+                const isLandscapeMode = isLandscapeRef.current || isRotated;
+
+                // Scroll if zoomed in OR if 1-finger vertical scroll in landscape mode
+                if (isZoomed || (isLandscapeMode && touchStateRef.current.isVerticalDrag === true)) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    container.scrollLeft -= dx;
+                    container.scrollTop -= dy;
                 }
             }
         };
 
         const handleTouchEnd = (e: TouchEvent) => {
-            if (isPinching) {
-                isPinching = false;
-                setTimeout(() => {
-                    isPinchActiveRef.current = false;
-                }, 200);
-                e.stopPropagation(); // Stop propagation down to page-flip children
+            if (e.touches.length === 0) {
+                touchStateRef.current.isTracking = false;
+                if (isPinchActiveRef.current) {
+                    setTimeout(() => {
+                        isPinchActiveRef.current = false;
+                    }, 200);
+                }
+            } else if (e.touches.length === 1) {
+                touchStateRef.current.touchCount = 1;
+                touchStateRef.current.prevCenterX = e.touches[0].clientX;
+                touchStateRef.current.prevCenterY = e.touches[0].clientY;
+                touchStateRef.current.startDist = 0;
             }
         };
 
@@ -703,7 +821,7 @@ export default function MagazineReader({ magazine, onClose }: MagazineReaderProp
             {/* Reader Stage (Scroll stage container) with 0.1% background opacity to guarantee 100% WebKit mobile touch hit-testing */}
             <div
                 ref={containerRef}
-                className={`flex-1 relative ${scale > 1.05 ? "overflow-auto" : "overflow-hidden"}`}
+                className="flex-1 relative overflow-auto custom-scrollbar"
                 style={{ 
                     backgroundColor: "rgba(0,0,0,0.001)",
                     overflowAnchor: "none"
